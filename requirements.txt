@@ -50,3 +50,7 @@ python-dotenv==1.0.0
 SQLAlchemy==2.0.25
 Werkzeug==3.0.3
 WTForms==3.1.1
+exifread
+numpy
+opencv-python
+pillow
