@@ -107,21 +107,9 @@ def upload_photos():
                 except Exception as e:
                     logger.warning(f"Metadata extraction failed for {file.filename}: {e}")
                 
-                # Apply auto-enhancement for old photos
-                enhanced_path = None
-                enhancement_settings = {}
-                try:
-                    enhanced_path, enhancement_settings = enhance_for_old_photo(
-                        file_path, 
-                        file_path  # Enhance in-place
-                    )
-                    # Mark as auto-enhanced
-                    photo_metadata['auto_enhanced'] = True
-                    photo_metadata['enhancement_settings'] = json.dumps(enhancement_settings)
-                    logger.info(f"Auto-enhancement applied to {file.filename}")
-                except Exception as e:
-                    logger.warning(f"Auto-enhancement failed for {file.filename}: {e}")
-                    photo_metadata['auto_enhanced'] = False
+                # Skip auto-enhancement to preserve original image quality
+                # Auto-enhancement can be manually applied later if needed
+                photo_metadata['auto_enhanced'] = False
                 
                 # Re-get image info after enhancement (dimensions may have changed)
                 final_image_info = get_image_info(file_path)
@@ -149,24 +137,9 @@ def upload_photos():
                         mime_type=image_info['mime_type'],
                         upload_source=upload_source,
                         
-                        # EXIF Metadata
-                        date_taken=photo_metadata.get('date_taken'),
-                        camera_make=photo_metadata.get('camera_make'),
-                        camera_model=photo_metadata.get('camera_model'),
-                        iso=photo_metadata.get('iso'),
-                        aperture=photo_metadata.get('aperture'),
-                        shutter_speed=photo_metadata.get('shutter_speed'),
-                        focal_length=photo_metadata.get('focal_length'),
-                        flash_used=photo_metadata.get('flash_used'),
-                        gps_latitude=photo_metadata.get('gps_latitude'),
-                        gps_longitude=photo_metadata.get('gps_longitude'),
-                        gps_altitude=photo_metadata.get('gps_altitude'),
-                        orientation=photo_metadata.get('orientation'),
-                        color_space=photo_metadata.get('color_space'),
-                        
-                        # Enhancement info
-                        auto_enhanced=photo_metadata.get('auto_enhanced', False),
-                        enhancement_settings=photo_metadata.get('enhancement_settings')
+                        # Available metadata fields
+                        photo_date=photo_metadata.get('date_taken'),
+                        auto_enhanced=photo_metadata.get('auto_enhanced', False)
                     )
                     
                     db.session.add(photo)
@@ -181,7 +154,7 @@ def upload_photos():
                         'upload_source': upload_source,
                         'thumbnail_url': f"/api/thumbnail/{photo.id}" if thumbnail_path else None,
                         'auto_enhanced': photo_metadata.get('auto_enhanced', False),
-                        'has_metadata': bool(photo_metadata.get('camera_make') or photo_metadata.get('date_taken'))
+                        'has_metadata': bool(photo_metadata.get('date_taken'))
                     })
                     
                 except Exception as db_error:

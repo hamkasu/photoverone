@@ -49,7 +49,7 @@ class Photo(db.Model):
     upload_source = db.Column(db.String(50), default='file')  # 'file' or 'camera'
 
     # EXIF Metadata fields
-    date_taken = db.Column(db.DateTime)  # Original date photo was taken
+    date_taken = db.Column('photo_date', db.DateTime)  # Original date photo was taken
     camera_make = db.Column(db.String(100))  # Camera manufacturer
     camera_model = db.Column(db.String(100))  # Camera model
     
