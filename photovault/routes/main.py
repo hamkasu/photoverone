@@ -2,7 +2,7 @@
 PhotoVault Main Routes Blueprint
 This should only contain routes, not a Flask app
 """
-from flask import Blueprint, render_template, redirect, url_for
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import current_user, login_required
 
 # Create the main blueprint
@@ -163,3 +163,141 @@ def edit_photo(photo_id):
     except Exception as e:
         print(f"Edit photo error: {str(e)}")
         return redirect(url_for('main.dashboard'))
+
+@main_bp.route('/people')
+@login_required
+def people():
+    """People management page"""
+    try:
+        from photovault.models import Person
+        
+        # Get all people for the current user with pagination
+        page = request.args.get('page', 1, type=int)
+        people = Person.query.filter_by(user_id=current_user.id).order_by(Person.name.asc()).paginate(
+            page=page, per_page=12, error_out=False
+        )
+        
+        return render_template('people.html', people=people)
+    except Exception as e:
+        print(f"People page error: {str(e)}")
+        return render_template('people.html', people=None)
+
+@main_bp.route('/people/add', methods=['POST'])
+@login_required
+def add_person():
+    """Add a new person"""
+    try:
+        from photovault.models import Person, db
+        
+        name = request.form.get('name', '').strip()
+        nickname = request.form.get('nickname', '').strip()
+        relationship = request.form.get('relationship', '').strip()
+        birth_year = request.form.get('birth_year')
+        notes = request.form.get('notes', '').strip()
+        
+        if not name:
+            flash('Name is required.', 'error')
+            return redirect(url_for('main.people'))
+        
+        # Convert birth_year to int if provided
+        birth_year_int = None
+        if birth_year:
+            try:
+                birth_year_int = int(birth_year)
+            except ValueError:
+                flash('Birth year must be a valid number.', 'error')
+                return redirect(url_for('main.people'))
+        
+        # Create new person
+        person = Person(
+            user_id=current_user.id,
+            name=name,
+            nickname=nickname if nickname else None,
+            relationship=relationship if relationship else None,
+            birth_year=birth_year_int,
+            notes=notes if notes else None
+        )
+        
+        db.session.add(person)
+        db.session.commit()
+        
+        flash(f'{name} has been added successfully!', 'success')
+        return redirect(url_for('main.people'))
+        
+    except Exception as e:
+        print(f"Add person error: {str(e)}")
+        flash('Error adding person. Please try again.', 'error')
+        return redirect(url_for('main.people'))
+
+@main_bp.route('/people/<int:person_id>/edit', methods=['POST'])
+@login_required
+def edit_person(person_id):
+    """Edit an existing person"""
+    try:
+        from photovault.models import Person, db
+        
+        person = Person.query.get_or_404(person_id)
+        
+        # Verify ownership
+        if person.user_id != current_user.id:
+            flash('Access denied.', 'error')
+            return redirect(url_for('main.people'))
+        
+        name = request.form.get('name', '').strip()
+        nickname = request.form.get('nickname', '').strip()
+        relationship = request.form.get('relationship', '').strip()
+        birth_year = request.form.get('birth_year')
+        notes = request.form.get('notes', '').strip()
+        
+        if not name:
+            flash('Name is required.', 'error')
+            return redirect(url_for('main.people'))
+        
+        # Convert birth_year to int if provided
+        birth_year_int = None
+        if birth_year:
+            try:
+                birth_year_int = int(birth_year)
+            except ValueError:
+                flash('Birth year must be a valid number.', 'error')
+                return redirect(url_for('main.people'))
+        
+        # Update person
+        person.name = name
+        person.nickname = nickname if nickname else None
+        person.relationship = relationship if relationship else None
+        person.birth_year = birth_year_int
+        person.notes = notes if notes else None
+        
+        db.session.commit()
+        
+        flash(f'{name} has been updated successfully!', 'success')
+        return redirect(url_for('main.people'))
+        
+    except Exception as e:
+        print(f"Edit person error: {str(e)}")
+        flash('Error updating person. Please try again.', 'error')
+        return redirect(url_for('main.people'))
+
+@main_bp.route('/api/person/delete/<int:person_id>', methods=['DELETE'])
+@login_required
+def delete_person(person_id):
+    """Delete a person"""
+    try:
+        from photovault.models import Person, db
+        
+        person = Person.query.get_or_404(person_id)
+        
+        # Verify ownership
+        if person.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        name = person.name
+        db.session.delete(person)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': f'{name} deleted successfully'})
+        
+    except Exception as e:
+        print(f"Delete person error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Error deleting person'}), 500

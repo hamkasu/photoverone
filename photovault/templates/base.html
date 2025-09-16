@@ -101,12 +101,10 @@ CALMIC SDN BHD - "Committed to Excellence"
                        href="/gallery" aria-current="page">
                         <i class="bi bi-file-image" aria-hidden="true"></i> Gallery
                     </a>
-                    {# Temporarily commented out until people route is implemented
                     <a class="nav-link {{ 'active' if request.endpoint == 'main.people' }}" 
                        href="{{ url_for('main.people') }}" aria-current="{% if request.endpoint == 'main.people' %}page{% endif %}">
                         <i class="bi bi-people" aria-hidden="true"></i> People
                     </a>
-                    #}
                     <a class="nav-link {{ 'active' if request.endpoint == 'main.about' }}" 
                        href="{{ url_for('main.about') }}" aria-current="{% if request.endpoint == 'main.about' %}page{% endif %}">
                         <i class="bi bi-info-circle" aria-hidden="true"></i> About
