@@ -48,6 +48,38 @@ class Photo(db.Model):
     mime_type = db.Column(db.String(100))
     upload_source = db.Column(db.String(50), default='file')  # 'file' or 'camera'
 
+    # EXIF Metadata fields
+    date_taken = db.Column(db.DateTime)  # Original date photo was taken
+    camera_make = db.Column(db.String(100))  # Camera manufacturer
+    camera_model = db.Column(db.String(100))  # Camera model
+    
+    # Camera settings
+    iso = db.Column(db.Integer)  # ISO sensitivity
+    aperture = db.Column(db.Float)  # f-stop value
+    shutter_speed = db.Column(db.String(50))  # Exposure time
+    focal_length = db.Column(db.Float)  # Focal length in mm
+    flash_used = db.Column(db.Boolean)  # Whether flash was fired
+    
+    # GPS coordinates
+    gps_latitude = db.Column(db.Float)  # GPS latitude in decimal degrees
+    gps_longitude = db.Column(db.Float)  # GPS longitude in decimal degrees
+    gps_altitude = db.Column(db.Float)  # GPS altitude in meters
+    location_name = db.Column(db.String(255))  # Human-readable location
+    
+    # Image properties
+    orientation = db.Column(db.Integer)  # EXIF orientation value
+    color_space = db.Column(db.String(50))  # Color space (sRGB, Adobe RGB, etc.)
+    
+    # Enhancement settings
+    auto_enhanced = db.Column(db.Boolean, default=False)  # Whether auto-enhancement was applied
+    enhancement_settings = db.Column(db.Text)  # JSON of enhancement parameters applied
+    
+    # User-added metadata
+    description = db.Column(db.Text)  # User description of the photo
+    tags = db.Column(db.String(500))  # Comma-separated tags
+    event_name = db.Column(db.String(255))  # Event or occasion name
+    estimated_year = db.Column(db.Integer)  # Estimated year if date_taken unavailable
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

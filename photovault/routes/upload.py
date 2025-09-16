@@ -2,6 +2,7 @@
 
 import os
 import uuid
+import json
 import mimetypes
 from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app, render_template
@@ -11,6 +12,8 @@ from photovault.utils.file_handler import (
     validate_image_file, save_uploaded_file, generate_unique_filename,
     create_thumbnail, get_image_info, delete_file_safely
 )
+from photovault.utils.metadata_extractor import extract_metadata_for_photo
+from photovault.utils.image_enhancement import enhance_for_old_photo
 import logging
 
 # Configure logging
@@ -30,7 +33,7 @@ def upload_page():
 def upload_photos():
     """
     Handle photo upload from file selection or camera capture
-    Supports both single and multiple file uploads
+    Supports both single and multiple file uploads with auto-enhancement and metadata extraction
     """
     try:
         logger.info(f"Upload request from user: {current_user.id}")
@@ -43,25 +46,26 @@ def upload_photos():
             }), 400
         
         files = request.files.getlist('file')
-        if not files or all(file.filename == '' for file in files):
+        
+        # Filter out empty files
+        files = [f for f in files if f.filename]
+        
+        if not files:
             return jsonify({
                 'success': False,
-                'error': 'No files selected'
+                'error': 'No valid files provided'
             }), 400
         
-        # Determine upload source
-        upload_source = request.form.get('source', 'file')
-        if request.headers.get('User-Agent', '').lower().find('mobile') != -1:
-            upload_source = 'camera'
+        logger.info(f"Processing {len(files)} file(s) from {'camera' if request.form.get('upload_source') == 'camera' else 'file'}")
         
-        logger.info(f"Processing {len(files)} file(s) from {upload_source}")
+        # Get upload source
+        upload_source = request.form.get('upload_source', 'file')  # 'file' or 'camera'
         
-        # Process each file
         uploaded_files = []
         errors = []
         
         for file in files:
-            if not file or file.filename == '':
+            if not file.filename:
                 continue
                 
             try:
@@ -95,7 +99,36 @@ def upload_photos():
                     errors.append(f"{file.filename}: Failed to read image information")
                     continue
                 
-                # Create thumbnail
+                # Extract EXIF metadata
+                photo_metadata = {}
+                try:
+                    photo_metadata = extract_metadata_for_photo(file_path)
+                    logger.info(f"Extracted metadata for {file.filename}")
+                except Exception as e:
+                    logger.warning(f"Metadata extraction failed for {file.filename}: {e}")
+                
+                # Apply auto-enhancement for old photos
+                enhanced_path = None
+                enhancement_settings = {}
+                try:
+                    enhanced_path, enhancement_settings = enhance_for_old_photo(
+                        file_path, 
+                        file_path  # Enhance in-place
+                    )
+                    # Mark as auto-enhanced
+                    photo_metadata['auto_enhanced'] = True
+                    photo_metadata['enhancement_settings'] = json.dumps(enhancement_settings)
+                    logger.info(f"Auto-enhancement applied to {file.filename}")
+                except Exception as e:
+                    logger.warning(f"Auto-enhancement failed for {file.filename}: {e}")
+                    photo_metadata['auto_enhanced'] = False
+                
+                # Re-get image info after enhancement (dimensions may have changed)
+                final_image_info = get_image_info(file_path)
+                if final_image_info:
+                    image_info = final_image_info
+                
+                # Create thumbnail (after enhancement)
                 thumb_success, thumb_path_or_error = create_thumbnail(file_path)
                 thumbnail_path = thumb_path_or_error if thumb_success else None
                 
@@ -103,6 +136,7 @@ def upload_photos():
                 try:
                     from photovault.models import Photo, db
                     
+                    # Create photo record with metadata
                     photo = Photo(
                         user_id=current_user.id,
                         filename=unique_filename,
@@ -113,9 +147,26 @@ def upload_photos():
                         width=image_info['width'],
                         height=image_info['height'],
                         mime_type=image_info['mime_type'],
-                        upload_source=upload_source
-
-
+                        upload_source=upload_source,
+                        
+                        # EXIF Metadata
+                        date_taken=photo_metadata.get('date_taken'),
+                        camera_make=photo_metadata.get('camera_make'),
+                        camera_model=photo_metadata.get('camera_model'),
+                        iso=photo_metadata.get('iso'),
+                        aperture=photo_metadata.get('aperture'),
+                        shutter_speed=photo_metadata.get('shutter_speed'),
+                        focal_length=photo_metadata.get('focal_length'),
+                        flash_used=photo_metadata.get('flash_used'),
+                        gps_latitude=photo_metadata.get('gps_latitude'),
+                        gps_longitude=photo_metadata.get('gps_longitude'),
+                        gps_altitude=photo_metadata.get('gps_altitude'),
+                        orientation=photo_metadata.get('orientation'),
+                        color_space=photo_metadata.get('color_space'),
+                        
+                        # Enhancement info
+                        auto_enhanced=photo_metadata.get('auto_enhanced', False),
+                        enhancement_settings=photo_metadata.get('enhancement_settings')
                     )
                     
                     db.session.add(photo)
@@ -128,7 +179,9 @@ def upload_photos():
                         'file_size': image_info['size_bytes'],
                         'dimensions': f"{image_info['width']}x{image_info['height']}",
                         'upload_source': upload_source,
-                        'thumbnail_url': f"/api/thumbnail/{photo.id}" if thumbnail_path else None
+                        'thumbnail_url': f"/api/thumbnail/{photo.id}" if thumbnail_path else None,
+                        'auto_enhanced': photo_metadata.get('auto_enhanced', False),
+                        'has_metadata': bool(photo_metadata.get('camera_make') or photo_metadata.get('date_taken'))
                     })
                     
                 except Exception as db_error:
@@ -172,14 +225,15 @@ def upload_photos():
     except RequestEntityTooLarge:
         return jsonify({
             'success': False,
-            'error': 'File too large. Maximum size: 16MB'
+            'error': 'File too large. Maximum size allowed is 16MB.'
         }), 413
         
     except Exception as e:
-        logger.error(f"Unexpected error in upload endpoint: {str(e)}")
+        logger.error(f"Unexpected upload error: {str(e)}")
         return jsonify({
             'success': False,
-            'error': 'Internal server error occurred'
+            'error': 'Upload processing failed',
+            'details': str(e)
         }), 500
 
 @upload_bp.route('/api/thumbnail/<int:photo_id>')
@@ -201,25 +255,3 @@ def get_thumbnail(photo_id):
     except Exception as e:
         logger.error(f"Error serving thumbnail {photo_id}: {str(e)}")
         return jsonify({'error': 'Failed to serve thumbnail'}), 500
-
-# Error handlers for the blueprint
-@upload_bp.errorhandler(413)
-def too_large(e):
-    return jsonify({
-        'success': False,
-        'error': 'File too large. Maximum size: 16MB'
-    }), 413
-
-@upload_bp.errorhandler(400)
-def bad_request(e):
-    return jsonify({
-        'success': False,
-        'error': 'Bad request'
-    }), 400
-
-@upload_bp.errorhandler(500)
-def internal_error(e):
-    return jsonify({
-        'success': False,
-        'error': 'Internal server error'
-    }), 500

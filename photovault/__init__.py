@@ -96,6 +96,15 @@ def create_app(config_class=None):
     app.register_blueprint(superuser_bp, url_prefix='/superuser')
     app.register_blueprint(photo_bp)
     
+    # Add route to serve uploaded images
+    @app.route('/static/uploads/<path:filename>')
+    def uploaded_file(filename):
+        """Serve uploaded files from the uploads directory"""
+        from flask import send_from_directory
+        import os
+        uploads_dir = app.config.get('UPLOAD_FOLDER')
+        return send_from_directory(uploads_dir, filename)
+    
     # Create database tables
     with app.app_context():
         db.create_all()
