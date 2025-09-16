@@ -3,7 +3,6 @@ Image Enhancement Utilities for PhotoVault
 Provides auto-enhancement functions for digitizing old photographs
 """
 
-import cv2
 import numpy as np
 from PIL import Image, ImageEnhance, ExifTags
 import json
@@ -12,6 +11,16 @@ from typing import Dict, Tuple, Optional, Union
 import os
 
 logger = logging.getLogger(__name__)
+
+# Optional OpenCV import for enhanced features
+try:
+    import cv2
+    OPENCV_AVAILABLE = True
+    logger.info("OpenCV available - full image enhancement features enabled")
+except ImportError as e:
+    cv2 = None
+    OPENCV_AVAILABLE = False
+    logger.warning(f"OpenCV not available - limited image enhancement features: {e}")
 
 class ImageEnhancer:
     """Advanced image enhancement for old photograph restoration"""
@@ -43,11 +52,6 @@ class ImageEnhancer:
         if not os.path.exists(image_path):
             raise FileNotFoundError(f"Image file not found: {image_path}")
         
-        # Load image
-        img = cv2.imread(image_path)
-        if img is None:
-            raise ValueError(f"Could not load image: {image_path}")
-        
         logger.info(f"Starting auto-enhancement for: {image_path}")
         
         # Merge default with custom settings
@@ -55,20 +59,30 @@ class ImageEnhancer:
         if settings:
             enhancement_settings.update(settings)
         
-        # Step 1: Denoise if enabled
-        if enhancement_settings.get('denoise', True):
-            img = self._apply_denoising(img)
-        
-        # Step 2: Apply CLAHE for contrast enhancement
-        if enhancement_settings.get('clahe_enabled', True):
-            img = self._apply_clahe(img)
-        
-        # Step 3: Auto-levels adjustment
-        if enhancement_settings.get('auto_levels', True):
-            img = self._apply_auto_levels(img)
-        
-        # Step 4: Convert to PIL for fine adjustments
-        pil_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        if OPENCV_AVAILABLE:
+            # Full OpenCV enhancement pipeline
+            img = cv2.imread(image_path)
+            if img is None:
+                raise ValueError(f"Could not load image: {image_path}")
+            
+            # Step 1: Denoise if enabled
+            if enhancement_settings.get('denoise', True):
+                img = self._apply_denoising(img)
+            
+            # Step 2: Apply CLAHE for contrast enhancement
+            if enhancement_settings.get('clahe_enabled', True):
+                img = self._apply_clahe(img)
+            
+            # Step 3: Auto-levels adjustment
+            if enhancement_settings.get('auto_levels', True):
+                img = self._apply_auto_levels(img)
+            
+            # Step 4: Convert to PIL for fine adjustments
+            pil_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        else:
+            # Fallback to PIL-only enhancement
+            logger.info("Using PIL-only enhancement (OpenCV not available)")
+            pil_img = Image.open(image_path)
         
         # Step 5: Apply PIL enhancements
         pil_img = self._apply_pil_enhancements(pil_img, enhancement_settings)
@@ -77,19 +91,24 @@ class ImageEnhancer:
         if output_path is None:
             output_path = image_path
         
-        # Convert back to BGR for OpenCV saving
-        final_cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
-        
-        # Save with original quality
-        success = cv2.imwrite(output_path, final_cv_img, [cv2.IMWRITE_JPEG_QUALITY, 95])
-        if not success:
-            raise IOError(f"Failed to save enhanced image: {output_path}")
+        if OPENCV_AVAILABLE:
+            # Convert back to BGR for OpenCV saving
+            final_cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+            # Save with original quality
+            success = cv2.imwrite(output_path, final_cv_img, [cv2.IMWRITE_JPEG_QUALITY, 95])
+            if not success:
+                raise IOError(f"Failed to save enhanced image: {output_path}")
+        else:
+            # Use PIL for saving
+            pil_img.save(output_path, 'JPEG', quality=95)
         
         logger.info(f"Auto-enhancement completed: {output_path}")
         return output_path, enhancement_settings
     
     def _apply_denoising(self, img: np.ndarray) -> np.ndarray:
         """Apply bilateral filtering to reduce noise while preserving edges"""
+        if not OPENCV_AVAILABLE:
+            return img
         try:
             # Bilateral filter - reduces noise while keeping edges sharp
             return cv2.bilateralFilter(img, 9, 75, 75)
@@ -99,6 +118,8 @@ class ImageEnhancer:
     
     def _apply_clahe(self, img: np.ndarray) -> np.ndarray:
         """Apply Contrast Limited Adaptive Histogram Equalization"""
+        if not OPENCV_AVAILABLE:
+            return img
         try:
             # Convert to LAB color space
             lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
