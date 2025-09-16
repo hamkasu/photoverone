@@ -58,27 +58,45 @@
             padding: env(safe-area-inset-top, 20px) 20px 20px;
             background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: center;
+            gap: 15px;
             z-index: 100;
         }
         
-        .back-to-gallery {
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.3);
+        /* Floating Gallery Button */
+        .floating-gallery-btn {
+            position: fixed;
+            bottom: 120px;
+            left: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 3px solid rgba(255, 255, 255, 0.9);
             color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.2s ease;
+            font-size: 24px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            z-index: 150;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+            backdrop-filter: blur(10px);
         }
         
-        .back-to-gallery:hover {
-            background: rgba(255, 255, 255, 0.3);
+        .floating-gallery-btn:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
             color: white;
             text-decoration: none;
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+        }
+        
+        .floating-gallery-btn:active {
+            transform: scale(0.95);
         }
 
         .control-button {
@@ -533,9 +551,6 @@
 
         <!-- Top Controls -->
         <div class="top-controls">
-            <a href="/dashboard" class="back-to-gallery">
-                <span>←</span> Gallery
-            </a>
             <button class="control-button exit-button" id="exitButton">
                 <span>✕</span> Exit
             </button>
@@ -543,6 +558,11 @@
                 <span>⚡</span> Flash
             </button>
         </div>
+        
+        <!-- Floating Gallery Button -->
+        <a href="/dashboard" class="floating-gallery-btn" id="galleryBtn" title="Go to Gallery" aria-label="Go to Gallery">
+            🖼️
+        </a>
 
         <!-- SNAP Button -->
         <button class="snap-button" id="snapButton">
@@ -679,6 +699,12 @@
                 this.setupEventListeners();
                 this.enforceOrientation();
                 await this.requestCameraAccess();
+                
+                // Auto-enter fullscreen after camera is ready (best effort)
+                this.isFullscreenRequested = false;
+                setTimeout(() => {
+                    this.tryEnterFullscreen('auto');
+                }, 1000);
             }
 
             setupElements() {
@@ -722,6 +748,15 @@
 
                 // Prevent context menu on video
                 this.video.addEventListener('contextmenu', (e) => e.preventDefault());
+                
+                // Fullscreen change listener
+                document.addEventListener('fullscreenchange', () => this.handleFullscreenChange());
+                document.addEventListener('webkitfullscreenchange', () => this.handleFullscreenChange());
+                document.addEventListener('mozfullscreenchange', () => this.handleFullscreenChange());
+                document.addEventListener('MSFullscreenChange', () => this.handleFullscreenChange());
+                
+                // User gesture fallback for fullscreen
+                this.setupFullscreenFallback();
                 
                 // Handle orientation changes
                 window.addEventListener('orientationchange', () => {
@@ -910,17 +945,134 @@
             }
 
 
+            setupFullscreenFallback() {
+                // Fallback: Try fullscreen on first user interaction
+                const attemptFullscreen = (event) => {
+                    if (!this.isFullscreenRequested) {
+                        console.log('🎯 User gesture detected, attempting fullscreen');
+                        this.tryEnterFullscreen('user_gesture');
+                    }
+                };
+                
+                // Add listeners for various user gestures
+                this.video.addEventListener('click', attemptFullscreen, { once: true });
+                this.video.addEventListener('touchstart', attemptFullscreen, { once: true });
+                document.getElementById('snapButton').addEventListener('click', attemptFullscreen, { once: true });
+                this.requestPermissionBtn.addEventListener('click', attemptFullscreen, { once: true });
+                
+                // Also try on video play event
+                this.video.addEventListener('play', () => {
+                    if (!this.isFullscreenRequested) {
+                        setTimeout(() => this.tryEnterFullscreen('video_play'), 500);
+                    }
+                }, { once: true });
+            }
+            
+            async tryEnterFullscreen(trigger) {
+                if (this.isFullscreenRequested) return;
+                
+                try {
+                    this.isFullscreenRequested = true;
+                    const element = document.getElementById('cameraApp');
+                    
+                    if (element.requestFullscreen) {
+                        await element.requestFullscreen();
+                    } else if (element.webkitRequestFullscreen) {
+                        await element.webkitRequestFullscreen();
+                    } else if (element.mozRequestFullScreen) {
+                        await element.mozRequestFullScreen();
+                    } else if (element.msRequestFullscreen) {
+                        await element.msRequestFullscreen();
+                    }
+                    
+                    console.log(`✅ Entered fullscreen mode (${trigger})`);
+                    this.isFullscreen = true;
+                } catch (error) {
+                    console.log(`⚠️ Could not enter fullscreen (${trigger}):`, error.message);
+                    this.isFullscreenRequested = false; // Reset to allow retry
+                }
+            }
+            
+            async exitFullscreen() {
+                try {
+                    if (document.exitFullscreen) {
+                        await document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        await document.webkitExitFullscreen();
+                    } else if (document.mozCancelFullScreen) {
+                        await document.mozCancelFullScreen();
+                    } else if (document.msExitFullscreen) {
+                        await document.msExitFullscreen();
+                    }
+                    console.log('✅ Exited fullscreen mode');
+                } catch (error) {
+                    console.log('⚠️ Could not exit fullscreen:', error.message);
+                }
+            }
+            
+            handleFullscreenChange() {
+                const isFullscreen = !!(document.fullscreenElement || 
+                                      document.webkitFullscreenElement || 
+                                      document.mozFullScreenElement || 
+                                      document.msFullscreenElement);
+                
+                console.log('📱 Fullscreen state changed:', isFullscreen ? 'FULLSCREEN' : 'WINDOWED');
+                
+                // Update UI based on fullscreen state
+                if (isFullscreen) {
+                    document.body.style.cursor = 'none';
+                    // Hide cursor after 3 seconds of inactivity in fullscreen
+                    this.setupCursorHiding();
+                } else {
+                    document.body.style.cursor = 'default';
+                    this.clearCursorHiding();
+                }
+            }
+            
+            setupCursorHiding() {
+                let cursorTimeout;
+                
+                const hideCursor = () => {
+                    document.body.style.cursor = 'none';
+                };
+                
+                const showCursor = () => {
+                    document.body.style.cursor = 'default';
+                    clearTimeout(cursorTimeout);
+                    cursorTimeout = setTimeout(hideCursor, 3000);
+                };
+                
+                document.addEventListener('mousemove', showCursor);
+                document.addEventListener('click', showCursor);
+                
+                // Initial timeout
+                cursorTimeout = setTimeout(hideCursor, 3000);
+                
+                this.cursorControls = { showCursor, hideCursor, cursorTimeout };
+            }
+            
+            clearCursorHiding() {
+                if (this.cursorControls) {
+                    clearTimeout(this.cursorControls.cursorTimeout);
+                    document.removeEventListener('mousemove', this.cursorControls.showCursor);
+                    document.removeEventListener('click', this.cursorControls.showCursor);
+                    this.cursorControls = null;
+                }
+            }
+
             exitCamera() {
                 if (this.stream) {
                     this.stream.getTracks().forEach(track => track.stop());
                 }
                 
-                // In a real app, navigate back to main page
-                if (window.history.length > 1) {
-                    window.history.back();
-                } else {
-                    window.location.href = '/';
-                }
+                // Clear cursor hiding
+                this.clearCursorHiding();
+                
+                // Exit fullscreen before leaving
+                this.exitFullscreen().finally(() => {
+                    window.location.href = '/dashboard';
+                });
+            }
             }
 
             // Zoom functionality
