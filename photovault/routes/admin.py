@@ -140,7 +140,7 @@ def user_detail(user_id):
     user = User.query.get_or_404(user_id)
     
     # Get user's photos
-    photos = Photo.query.filter_by(user_id=user_id).order_by(Photo.uploaded_at.desc()).all()
+    photos = Photo.query.filter_by(user_id=user_id).order_by(Photo.created_at.desc()).all()
     
     # Calculate statistics manually
     total_photos = len(photos)
@@ -362,7 +362,7 @@ def statistics():
                 edited_photos += 1
             if photo.file_size:
                 total_size += photo.file_size
-            if photo.uploaded_at and photo.uploaded_at >= thirty_days_ago:
+            if photo.created_at and photo.created_at >= thirty_days_ago:
                 recent_uploads += 1
         
         # Most active users - simple approach
