@@ -392,7 +392,7 @@
         <div class="demo-mode" id="demoMode">
             <div class="demo-content">
                 <div class="permission-icon">📱</div>
-                <div class="demo-title">PhotoVault Camera</div>
+                <div class="demo-title">PhotoVault Camera - UPDATED v2</div>
                 <div class="permission-description">
                     Professional camera interface with tap-to-capture functionality
                 </div>
@@ -499,13 +499,52 @@
             }
 
             detectDemoEnvironment() {
-                // Detect if running in artifact/iframe environment
+                // Detect if running in restricted environments that don't support camera
                 try {
-                    return window.self !== window.top || 
-                           window.location.protocol === 'blob:' ||
-                           !navigator.mediaDevices ||
-                           window.location.hostname.includes('claude.ai');
+                    // Debug logging to understand the environment
+                    console.log('🔍 Camera Environment Debug:');
+                    console.log('  Protocol:', window.location.protocol);
+                    console.log('  Hostname:', window.location.hostname);
+                    console.log('  MediaDevices available:', !!navigator.mediaDevices);
+                    console.log('  getUserMedia available:', !!navigator.mediaDevices?.getUserMedia);
+                    
+                    // Check for missing MediaDevices API
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        console.log('❌ MediaDevices API not available');
+                        return true;
+                    }
+                    
+                    // Check for specific restricted environments (but not Replit)
+                    if (window.location.protocol === 'blob:' ||
+                        window.location.hostname.includes('claude.ai')) {
+                        console.log('❌ Blocked restricted environment detected');
+                        return true;
+                    }
+                    
+                    // Allow camera access in development environments like Replit
+                    // Only block if we're in a clearly restricted context
+                    const isHttps = window.location.protocol === 'https:';
+                    const isLocalhost = window.location.hostname === 'localhost' || 
+                                      window.location.hostname === '127.0.0.1';
+                    const isReplit = window.location.hostname.includes('replit') || 
+                                   window.location.hostname.includes('repl.co') ||
+                                   window.location.hostname.includes('replit.dev');
+                    
+                    console.log('  Is HTTPS:', isHttps);
+                    console.log('  Is Localhost:', isLocalhost);
+                    console.log('  Is Replit:', isReplit);
+                    
+                    // Allow if it's HTTPS, localhost, or Replit
+                    if (isHttps || isLocalhost || isReplit) {
+                        console.log('✅ Environment allowed for camera access');
+                        return false;
+                    }
+                    
+                    // Block for HTTP in production environments
+                    console.log('❌ Blocked: HTTP in production environment');
+                    return true;
                 } catch (e) {
+                    console.log('❌ Error in detection logic:', e);
                     return true;
                 }
             }

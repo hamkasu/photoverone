@@ -61,8 +61,8 @@ class ProductionConfig(Config):
     # Production logging
     LOG_TO_STDOUT = os.environ.get('LOG_TO_STDOUT')
     
-    @classmethod
-    def init_app(cls, app):
+    @staticmethod
+    def init_app(app):
         Config.init_app(app)
         
         # Log to stderr in production
