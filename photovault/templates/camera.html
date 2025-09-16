@@ -119,39 +119,96 @@
             box-shadow: 0 0 20px rgba(255, 193, 7, 0.4);
         }
 
-        /* Capture Area Overlay */
-        .capture-overlay {
+        /* Removed tap-anywhere capture overlay */
+
+        /* SNAP Button */
+        .snap-button {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            cursor: crosshair;
-            z-index: 50;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff4757, #ff3838);
+            border: 4px solid rgba(255, 255, 255, 0.9);
+            color: white;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(255, 71, 87, 0.4);
+        }
+
+        .snap-button:hover {
+            transform: translateX(-50%) scale(1.1);
+            box-shadow: 0 6px 25px rgba(255, 71, 87, 0.6);
+        }
+
+        .snap-button:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+
+        .snap-button:disabled {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.4);
+            cursor: not-allowed;
+        }
+
+        /* Zoom Controls */
+        .zoom-controls {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .zoom-btn {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        /* Capture Hint */
-        .capture-hint {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
-            padding: 12px 24px;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: 500;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            animation: breathe 3s ease-in-out infinite;
+        .zoom-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.1);
         }
 
-        @keyframes breathe {
-            0%, 100% { opacity: 0.8; transform: translateX(-50%) scale(1); }
-            50% { opacity: 1; transform: translateX(-50%) scale(1.02); }
+        .zoom-level {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Video Zoom */
+        #cameraVideo {
+            transition: transform 0.3s ease;
+            transform-origin: center center;
         }
 
         /* Flash Effect */
@@ -309,10 +366,44 @@
             }
         }
 
+        /* Force Landscape Mode */
+        @media (orientation: portrait) {
+            .landscape-warning {
+                display: flex !important;
+            }
+        }
+
+        .landscape-warning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+            flex-direction: column;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .rotate-icon {
+            font-size: 60px;
+            animation: rotatePhone 2s ease-in-out infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes rotatePhone {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+        }
+
         /* Landscape Mode Optimization */
         @media (orientation: landscape) {
-            .capture-hint {
-                bottom: 15px;
+            .snap-button {
+                bottom: 25px;
             }
             
             .photo-preview {
@@ -320,6 +411,10 @@
                 right: 15px;
                 width: 60px;
                 height: 60px;
+            }
+            
+            .zoom-controls {
+                right: 15px;
             }
         }
 
@@ -399,9 +494,10 @@
                 </div>
                 
                 <ul class="demo-features">
-                    <li>📸 <strong>Tap anywhere</strong> to capture photos</li>
+                    <li>📸 <strong>Press SNAP button</strong> to capture photos</li>
                     <li>🌟 <strong>Fullscreen mode</strong> with landscape optimization</li>
                     <li>⚡ <strong>Flash control</strong> for better lighting</li>
+                    <li>🔍 <strong>Zoom controls</strong> with pinch-to-zoom</li>
                     <li>🖼️ <strong>Photo preview</strong> thumbnail</li>
                     <li>📱 <strong>Mobile responsive</strong> design</li>
                     <li>🔐 <strong>Secure camera access</strong> handling</li>
@@ -427,8 +523,12 @@
         <div class="camera-viewport">
             <video id="cameraVideo" autoplay playsinline muted></video>
             
-            <!-- Capture Overlay -->
-            <div class="capture-overlay" id="captureOverlay"></div>
+            <!-- Zoom Controls -->
+            <div class="zoom-controls" id="zoomControls">
+                <button class="zoom-btn" id="zoomInBtn">+</button>
+                <div class="zoom-level" id="zoomLevel">1.0x</div>
+                <button class="zoom-btn" id="zoomOutBtn">-</button>
+            </div>
         </div>
 
         <!-- Top Controls -->
@@ -444,10 +544,10 @@
             </button>
         </div>
 
-        <!-- Capture Hint -->
-        <div class="capture-hint" id="captureHint">
-            📸 Tap screen to capture
-        </div>
+        <!-- SNAP Button -->
+        <button class="snap-button" id="snapButton">
+            📷 SNAP
+        </button>
 
         <!-- Photo Preview -->
         <div class="photo-preview" id="photoPreview">
@@ -456,6 +556,13 @@
 
         <!-- Flash Effect -->
         <div class="flash-effect" id="flashEffect"></div>
+
+        <!-- Landscape Warning -->
+        <div class="landscape-warning" id="landscapeWarning">
+            <div class="rotate-icon">📱</div>
+            <h3>Please Rotate Your Device</h3>
+            <p>For the best camera experience, please rotate your device to landscape mode.</p>
+        </div>
 
         <!-- Permission Screen -->
         <div class="permission-screen hidden" id="permissionScreen">
@@ -563,18 +670,21 @@
                 this.stream = null;
                 this.flashEnabled = false;
                 this.photos = [];
+                this.zoomLevel = 1.0;
+                this.maxZoom = 3.0;
+                this.minZoom = 1.0;
+                this.zoomStep = 0.2;
                 
                 this.setupElements();
                 this.setupEventListeners();
+                this.enforceOrientation();
                 await this.requestCameraAccess();
             }
 
             setupElements() {
-                this.captureOverlay = document.getElementById('captureOverlay');
                 this.flashEffect = document.getElementById('flashEffect');
                 this.photoPreview = document.getElementById('photoPreview');
                 this.previewImage = document.getElementById('previewImage');
-                this.captureHint = document.getElementById('captureHint');
                 this.permissionScreen = document.getElementById('permissionScreen');
                 
                 // Buttons
@@ -584,12 +694,23 @@
             }
 
             setupEventListeners() {
-                // Tap to capture
-                this.captureOverlay.addEventListener('click', (e) => this.capturePhoto(e));
-                this.captureOverlay.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    this.capturePhoto(e);
+                // SNAP button to capture (prevent double-trigger on mobile)
+                let captureInProgress = false;
+                document.getElementById('snapButton').addEventListener('click', () => {
+                    if (!captureInProgress) {
+                        captureInProgress = true;
+                        this.capturePhoto().finally(() => {
+                            setTimeout(() => { captureInProgress = false; }, 500);
+                        });
+                    }
                 });
+                
+                // Zoom controls
+                document.getElementById('zoomInBtn').addEventListener('click', () => this.zoomIn());
+                document.getElementById('zoomOutBtn').addEventListener('click', () => this.zoomOut());
+                
+                // Pinch to zoom on video
+                this.setupPinchZoom();
 
                 // Control buttons
                 this.exitButton.addEventListener('click', () => this.exitCamera());
@@ -599,12 +720,20 @@
                 // Photo preview
                 this.photoPreview.addEventListener('click', () => this.openLastPhoto());
 
-                // Prevent context menu
-                this.captureOverlay.addEventListener('contextmenu', (e) => e.preventDefault());
+                // Prevent context menu on video
+                this.video.addEventListener('contextmenu', (e) => e.preventDefault());
                 
                 // Handle orientation changes
                 window.addEventListener('orientationchange', () => {
-                    setTimeout(() => this.handleOrientationChange(), 500);
+                    setTimeout(() => {
+                        // Refresh camera constraints for better orientation handling
+                        if (this.stream) {
+                            this.canvas.width = this.video.videoWidth;
+                            this.canvas.height = this.video.videoHeight;
+                        }
+                        // Re-check orientation for landscape warning
+                        this.enforceOrientation();
+                    }, 500);
                 });
             }
 
@@ -669,7 +798,6 @@
                 try {
                     // Visual feedback
                     this.flashEffect.classList.add('active');
-                    this.captureHint.style.opacity = '0.5';
                     
                     // Capture frame
                     this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
@@ -698,7 +826,6 @@
                 } finally {
                     setTimeout(() => {
                         this.flashEffect.classList.remove('active');
-                        this.captureHint.style.opacity = '1';
                     }, 300);
                 }
             }
@@ -782,13 +909,6 @@
                 }
             }
 
-            handleOrientationChange() {
-                // Refresh camera constraints for better orientation handling
-                if (this.stream) {
-                    this.canvas.width = this.video.videoWidth;
-                    this.canvas.height = this.video.videoHeight;
-                }
-            }
 
             exitCamera() {
                 if (this.stream) {
@@ -801,6 +921,76 @@
                 } else {
                     window.location.href = '/';
                 }
+            }
+
+            // Zoom functionality
+            zoomIn() {
+                if (this.zoomLevel < this.maxZoom) {
+                    this.zoomLevel = Math.min(this.maxZoom, this.zoomLevel + this.zoomStep);
+                    this.applyZoom();
+                }
+            }
+
+            zoomOut() {
+                if (this.zoomLevel > this.minZoom) {
+                    this.zoomLevel = Math.max(this.minZoom, this.zoomLevel - this.zoomStep);
+                    this.applyZoom();
+                }
+            }
+
+            applyZoom() {
+                if (this.video) {
+                    this.video.style.transform = `scale(${this.zoomLevel})`;
+                    document.getElementById('zoomLevel').textContent = `${this.zoomLevel.toFixed(1)}x`;
+                }
+            }
+
+            setupPinchZoom() {
+                let startDistance = 0;
+                let startZoom = 1.0;
+
+                this.video.addEventListener('touchstart', (e) => {
+                    if (e.touches.length === 2) {
+                        e.preventDefault();
+                        startDistance = this.getTouchDistance(e.touches[0], e.touches[1]);
+                        startZoom = this.zoomLevel;
+                    }
+                });
+
+                this.video.addEventListener('touchmove', (e) => {
+                    if (e.touches.length === 2) {
+                        e.preventDefault();
+                        const currentDistance = this.getTouchDistance(e.touches[0], e.touches[1]);
+                        const scale = currentDistance / startDistance;
+                        const newZoom = Math.min(this.maxZoom, Math.max(this.minZoom, startZoom * scale));
+                        
+                        this.zoomLevel = newZoom;
+                        this.applyZoom();
+                    }
+                });
+            }
+
+            getTouchDistance(touch1, touch2) {
+                return Math.sqrt(
+                    Math.pow(touch2.clientX - touch1.clientX, 2) +
+                    Math.pow(touch2.clientY - touch1.clientY, 2)
+                );
+            }
+
+            enforceOrientation() {
+                const checkOrientation = () => {
+                    const isPortrait = window.innerHeight > window.innerWidth;
+                    const warning = document.getElementById('landscapeWarning');
+                    if (warning) {
+                        warning.style.display = isPortrait ? 'flex' : 'none';
+                    }
+                };
+
+                checkOrientation();
+                window.addEventListener('resize', checkOrientation);
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(checkOrientation, 500);
+                });
             }
         }
 
