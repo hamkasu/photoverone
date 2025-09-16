@@ -1,0 +1,47 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+-->
+
+<!-- photovault/templates/admin/profile.html -->
+{% extends "base.html" %}
+{% block title %}Superuser Profile - PhotoVault{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Superuser Profile</h2>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5>{{ user.username }}</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>Joined:</strong> {{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else 'N/A' }}</p>
+            <p><strong>Superuser:</strong> 
+                {% if user.is_superuser %}
+                    <span class="badge bg-success">Yes</span>
+                {% else %}
+                    <span class="badge bg-secondary">No</span>
+                {% endif %}
+            </p>
+            <p><strong>Admin:</strong> 
+                {% if user.is_admin %}
+                    <span class="badge bg-info">Yes</span>
+                {% else %}
+                    <span class="badge bg-secondary">No</span>
+                {% endif %}
+            </p>
+            
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-primary">Admin Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

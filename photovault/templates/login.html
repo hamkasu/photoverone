@@ -1,0 +1,94 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card">
+                <div class="card-header text-center">
+                    <img src="{{ url_for('static', filename='img/calmic-logo.png') }}" 
+                         alt="Calmic Logo" 
+                         height="40" 
+                         class="mb-2"
+                         onerror="this.style.display='none';">
+                    <h4 class="mb-0">Sign In to PhotoVault</h4>
+                    <small class="text-muted">Calmic Sdn Bhd</small>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username or Email</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="username" 
+                                   name="username" 
+                                   required 
+                                   autocomplete="username"
+                                   placeholder="Enter your username or email">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="password" 
+                                   name="password" 
+                                   required 
+                                   autocomplete="current-password"
+                                   placeholder="Enter your password">
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" 
+                                   class="form-check-input" 
+                                   id="remember" 
+                                   name="remember">
+                            <label class="form-check-label" for="remember">
+                                Remember me on this device
+                            </label>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-box-arrow-in-right"></i> Sign In
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center">
+                    <small class="text-muted">
+                        Don't have an account? 
+                        <a href="{{ url_for('auth.register') }}" class="text-decoration-none">
+                            Create one here
+                        </a>
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Company info -->
+            <div class="text-center mt-4">
+                <small class="text-muted">
+                    Professional photo management by 
+                    <strong>Calmic Sdn Bhd</strong>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

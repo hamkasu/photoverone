@@ -1,0 +1,398 @@
+/* PhotoVault Enhanced Camera Styles */
+
+/* Full Screen Camera Container */
+.camera-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000;
+    z-index: 9999;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.3s ease;
+}
+
+.camera-fullscreen.active {
+    display: flex;
+}
+
+.camera-fullscreen.entering {
+    opacity: 0;
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.camera-fullscreen.exiting {
+    opacity: 1;
+    animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.95); }
+}
+
+/* Camera Video Element */
+.camera-fullscreen video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: crosshair;
+    transition: filter 0.2s ease;
+}
+
+.camera-fullscreen video:hover {
+    filter: brightness(1.05);
+}
+
+/* Camera Controls Overlay */
+.camera-controls {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10000;
+    animation: slideDown 0.5s ease;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Camera Selection in Full Screen */
+.camera-select-fullscreen {
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+    font-size: 16px;
+    min-width: 200px;
+    transition: all 0.3s ease;
+}
+
+.camera-select-fullscreen:focus {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    outline: none;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.camera-select-fullscreen option {
+    background: #333;
+    color: white;
+}
+
+/* Close Camera Button */
+.close-camera {
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.close-camera:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.close-camera:active {
+    transform: scale(0.95);
+}
+
+/* Camera Info Display */
+.camera-info {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px 25px;
+    border-radius: 30px;
+    z-index: 10000;
+    backdrop-filter: blur(10px);
+    animation: slideUp 0.5s ease;
+    max-width: 90vw;
+}
+
+@keyframes slideUp {
+    from { transform: translate(-50%, 20px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.camera-info div {
+    margin: 5px 0;
+}
+
+.camera-info i {
+    margin-right: 8px;
+    color: #00d4ff;
+}
+
+/* Capture Flash Effect */
+.capture-indicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10001;
+    transition: opacity 0.1s ease;
+}
+
+.capture-indicator.flash {
+    opacity: 0.9;
+    animation: captureFlash 0.3s ease;
+}
+
+@keyframes captureFlash {
+    0% { opacity: 0; }
+    50% { opacity: 0.9; }
+    100% { opacity: 0; }
+}
+
+/* Enhanced Camera Button */
+.btn-camera {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    padding: 15px 30px;
+    font-size: 18px;
+    font-weight: 600;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-camera::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+}
+
+.btn-camera:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-camera:hover::before {
+    left: 100%;
+}
+
+.btn-camera:active {
+    transform: translateY(0) scale(1);
+}
+
+.btn-camera:disabled {
+    background: #6c757d;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-camera:disabled:hover {
+    transform: none;
+}
+
+/* Landscape Orientation Prompt */
+.landscape-prompt {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.95);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    z-index: 10002;
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    max-width: 90vw;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 1; }
+}
+
+.landscape-prompt i {
+    color: #00d4ff;
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(90deg); }
+}
+
+.landscape-prompt h5 {
+    margin: 15px 0 10px 0;
+    font-weight: 600;
+}
+
+.landscape-prompt p {
+    margin: 0;
+    opacity: 0.9;
+    line-height: 1.4;
+}
+
+/* Hide landscape prompt in landscape mode */
+@media screen and (orientation: landscape) {
+    .landscape-prompt {
+        display: none !important;
+    }
+}
+
+/* Mobile-specific styles */
+@media screen and (max-width: 768px) {
+    .camera-controls {
+        top: 15px;
+        left: 15px;
+        right: 15px;
+    }
+    
+    .camera-select-fullscreen {
+        min-width: 150px;
+        font-size: 14px;
+        padding: 10px 12px;
+    }
+    
+    .close-camera {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+    
+    .camera-info {
+        bottom: 20px;
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+    
+    .btn-camera {
+        font-size: 16px;
+        padding: 12px 24px;
+    }
+}
+
+/* Loading animation for camera initialization */
+.camera-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    text-align: center;
+    z-index: 10000;
+}
+
+.camera-loading .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Success feedback animation */
+.capture-success {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 212, 255, 0.95);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 50px;
+    z-index: 10002;
+    animation: captureSuccess 2s ease;
+    pointer-events: none;
+}
+
+@keyframes captureSuccess {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+/* Upload area enhancements */
+.upload-area {
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.upload-area:hover {
+    border-color: #007bff !important;
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,123,255,0.2);
+}
+
+.upload-area.drag-over {
+    border-color: #28a745 !important;
+    background: linear-gradient(135deg, #e8f5e8 0%, #c3e6c3 100%);
+    transform: scale(1.02);
+}
+
+/* Responsive improvements */
+@media screen and (max-height: 600px) and (orientation: landscape) {
+    .camera-info {
+        bottom: 15px;
+        padding: 8px 15px;
+        font-size: 12px;
+    }
+    
+    .camera-controls {
+        top: 10px;
+    }
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .camera-fullscreen video {
+        image-rendering: optimizeQuality;
+    }
+}

@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Debug Test - PhotoVault</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .debug-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .success { border-left: 4px solid #28a745; }
+        .error { border-left: 4px solid #dc3545; }
+        .warning { border-left: 4px solid #ffc107; }
+        .info { border-left: 4px solid #17a2b8; }
+        #videoPreview {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            background: #000;
+            border-radius: 8px;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">🔍 PhotoVault Camera Debug Test</h4>
+                    </div>
+                    <div class="card-body">
+                        
+                        <!-- Browser Info -->
+                        <div class="step">
+                            <h5>📋 Browser Information</h5>
+                            <div id="browserInfo" class="debug-box info">
+                                Loading browser information...
+                            </div>
+                        </div>
+                        
+                        <!-- Camera Support Check -->
+                        <div class="step">
+                            <h5>🎥 Camera API Support</h5>
+                            <div id="cameraSupport" class="debug-box">
+                                Checking camera API support...
+                            </div>
+                        </div>
+                        
+                        <!-- Permission Test -->
+                        <div class="step">
+                            <h5>🔐 Camera Permission Test</h5>
+                            <button id="requestPermissionBtn" class="btn btn-primary mb-3">
+                                Request Camera Permission
+                            </button>
+                            <div id="permissionResult" class="debug-box">
+                                Click the button above to test camera permissions.
+                            </div>
+                        </div>
+                        
+                        <!-- Device Enumeration -->
+                        <div class="step">
+                            <h5>📷 Camera Device Detection</h5>
+                            <button id="enumerateBtn" class="btn btn-success mb-3">
+                                Detect Cameras
+                            </button>
+                            <div id="deviceList" class="debug-box">
+                                Click the button above to detect cameras.
+                            </div>
+                        </div>
+                        
+                        <!-- Camera Test -->
+                        <div class="step">
+                            <h5>🎬 Camera Preview Test</h5>
+                            <div class="mb-3">
+                                <select id="cameraSelect" class="form-select" style="display: none;">
+                                    <option value="">No cameras detected</option>
+                                </select>
+                            </div>
+                            <button id="testCameraBtn" class="btn btn-warning mb-3" disabled>
+                                Test Selected Camera
+                            </button>
+                            <button id="stopCameraBtn" class="btn btn-danger mb-3" style="display: none;">
+                                Stop Camera
+                            </button>
+                            <div>
+                                <video id="videoPreview" autoplay playsinline muted style="display: none;"></video>
+                            </div>
+                            <div id="cameraResult" class="debug-box">
+                                Camera test results will appear here.
+                            </div>
+                        </div>
+                        
+                        <!-- Debug Log -->
+                        <div class="step">
+                            <h5>📝 Debug Log</h5>
+                            <div id="debugLog" class="debug-box" style="max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.85rem;">
+                                Debug messages will appear here...
+                            </div>
+                            <button id="clearLogBtn" class="btn btn-sm btn-outline-secondary mt-2">Clear Log</button>
+                        </div>
+                        
+                        <!-- Troubleshooting -->
+                        <div class="step">
+                            <h5>🛠️ Troubleshooting Tips</h5>
+                            <div class="debug-box warning">
+                                <strong>Common Issues:</strong><br>
+                                • <strong>HTTPS Required:</strong> Camera access requires HTTPS in production<br>
+                                • <strong>Permission Blocked:</strong> Check browser address bar for camera icon<br>
+                                • <strong>Camera In Use:</strong> Close other apps using the camera<br>
+                                • <strong>Browser Support:</strong> Try Chrome, Firefox, or Edge<br>
+                                • <strong>Privacy Settings:</strong> Check browser camera permissions
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Debug Logger
+        class DebugLogger {
+            constructor() {
+                this.logElement = document.getElementById('debugLog');
+                this.log('🚀 PhotoVault Camera Debug Started');
+            }
+            
+            log(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                const icon = {
+                    'info': 'ℹ️',
+                    'success': '✅',
+                    'error': '❌',
+                    'warning': '⚠️'
+                }[type] || 'ℹ️';
+                
+                const logEntry = `[${timestamp}] ${icon} ${message}`;
+                console.log(logEntry);
+                
+                if (this.logElement) {
+                    this.logElement.innerHTML += logEntry + '<br>';
+                    this.logElement.scrollTop = this.logElement.scrollHeight;
+                }
+            }
+            
+            clear() {
+                if (this.logElement) {
+                    this.logElement.innerHTML = 'Debug log cleared...<br>';
+                }
+            }
+        }
+
+        // Camera Debug Tester
+        class CameraDebugTester {
+            constructor() {
+                this.logger = new DebugLogger();
+                this.currentStream = null;
+                this.availableCameras = [];
+                
+                this.init();
+            }
+            
+            init() {
+                this.logger.log('Initializing camera debug tester');
+                
+                this.showBrowserInfo();
+                this.checkCameraSupport();
+                this.bindEvents();
+            }
+            
+            bindEvents() {
+                document.getElementById('requestPermissionBtn')?.addEventListener('click', () => {
+                    this.testPermissions();
+                });
+                
+                document.getElementById('enumerateBtn')?.addEventListener('click', () => {
+                    this.enumerateDevices();
+                });
+                
+                document.getElementById('testCameraBtn')?.addEventListener('click', () => {
+                    this.testCamera();
+                });
+                
+                document.getElementById('stopCameraBtn')?.addEventListener('click', () => {
+                    this.stopCamera();
+                });
+                
+                document.getElementById('clearLogBtn')?.addEventListener('click', () => {
+                    this.logger.clear();
+                });
+            }
+            
+            showBrowserInfo() {
+                const info = {
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    language: navigator.language,
+                    cookieEnabled: navigator.cookieEnabled,
+                    onLine: navigator.onLine,
+                    protocol: window.location.protocol,
+                    host: window.location.host
+                };
+                
+                let html = '<strong>Browser Details:</strong><br>';
+                Object.entries(info).forEach(([key, value]) => {
+                    html += `• ${key}: ${value}<br>`;
+                });
+                
+                const isHttps = window.location.protocol === 'https:';
+                const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                
+                if (!isHttps && !isLocalhost) {
+                    html += '<br><span style="color: #dc3545;"><strong>⚠️ WARNING: HTTPS required for camera access in production!</strong></span>';
+                }
+                
+                document.getElementById('browserInfo').innerHTML = html;
+                this.logger.log(`Browser: ${navigator.userAgent.split(' ').pop()}`);
+                this.logger.log(`Protocol: ${window.location.protocol}`);
+            }
+            
+            checkCameraSupport() {
+                const supportElement = document.getElementById('cameraSupport');
+                
+                if (!navigator.mediaDevices) {
+                    supportElement.innerHTML = '❌ <strong>navigator.mediaDevices not supported</strong>';
+                    supportElement.className = 'debug-box error';
+                    this.logger.log('navigator.mediaDevices not supported', 'error');
+                    return;
+                }
+                
+                if (!navigator.mediaDevices.getUserMedia) {
+                    supportElement.innerHTML = '❌ <strong>getUserMedia not supported</strong>';
+                    supportElement.className = 'debug-box error';
+                    this.logger.log('getUserMedia not supported', 'error');
+                    return;
+                }
+                
+                if (!navigator.mediaDevices.enumerateDevices) {
+                    supportElement.innerHTML = '❌ <strong>enumerateDevices not supported</strong>';
+                    supportElement.className = 'debug-box error';
+                    this.logger.log('enumerateDevices not supported', 'error');
+                    return;
+                }
+                
+                supportElement.innerHTML = '✅ <strong>Camera API fully supported!</strong><br>• getUserMedia: ✅<br>• enumerateDevices: ✅';
+                supportElement.className = 'debug-box success';
+                this.logger.log('Camera API fully supported', 'success');
+            }
+            
+            async testPermissions() {
+                const resultElement = document.getElementById('permissionResult');
+                const btn = document.getElementById('requestPermissionBtn');
+                
+                btn.disabled = true;
+                btn.textContent = 'Testing...';
+                resultElement.innerHTML = '🔄 Requesting camera permission...';
+                resultElement.className = 'debug-box info';
+                
+                this.logger.log('Requesting camera permissions...');
+                
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: true, 
+                        audio: false 
+                    });
+                    
+                    // Immediately stop the stream
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    resultElement.innerHTML = '✅ <strong>Camera permission granted!</strong><br>Camera access is working properly.';
+                    resultElement.className = 'debug-box success';
+                    this.logger.log('Camera permission granted', 'success');
+                    
+                    // Enable enumerate button
+                    document.getElementById('enumerateBtn').disabled = false;
+                    
+                } catch (error) {
+                    let errorMessage = '❌ <strong>Camera permission denied or error:</strong><br>';
+                    
+                    switch (error.name) {
+                        case 'NotAllowedError':
+                            errorMessage += 'User denied camera access. Check browser permissions.';
+                            break;
+                        case 'NotFoundError':
+                            errorMessage += 'No camera found on this device.';
+                            break;
+                        case 'NotReadableError':
+                            errorMessage += 'Camera is already in use by another application.';
+                            break;
+                        case 'OverconstrainedError':
+                            errorMessage += 'Camera constraints could not be satisfied.';
+                            break;
+                        case 'SecurityError':
+                            errorMessage += 'Security error - HTTPS may be required.';
+                            break;
+                        default:
+                            errorMessage += `${error.name}: ${error.message}`;
+                    }
+                    
+                    resultElement.innerHTML = errorMessage;
+                    resultElement.className = 'debug-box error';
+                    this.logger.log(`Permission error: ${error.name} - ${error.message}`, 'error');
+                    
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Request Camera Permission';
+                }
+            }
+            
+            async enumerateDevices() {
+                const resultElement = document.getElementById('deviceList');
+                const btn = document.getElementById('enumerateBtn');
+                const cameraSelect = document.getElementById('cameraSelect');
+                
+                btn.disabled = true;
+                btn.textContent = 'Detecting...';
+                resultElement.innerHTML = '🔄 Detecting cameras...';
+                resultElement.className = 'debug-box info';
+                
+                this.logger.log('Enumerating media devices...');
+                
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    this.logger.log(`Found ${devices.length} total media devices`);
+                    
+                    // Filter video input devices
+                    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                    this.availableCameras = videoDevices;
+                    
+                    this.logger.log(`Found ${videoDevices.length} video input devices`);
+                    
+                    if (videoDevices.length === 0) {
+                        resultElement.innerHTML = '⚠️ <strong>No cameras detected</strong><br>Make sure a camera is connected and permissions are granted.';
+                        resultElement.className = 'debug-box warning';
+                        this.logger.log('No video input devices found', 'warning');
+                        return;
+                    }
+                    
+                    // Display results
+                    let html = `✅ <strong>Found ${videoDevices.length} camera(s):</strong><br><br>`;
+                    
+                    videoDevices.forEach((device, index) => {
+                        const deviceId = device.deviceId || 'unknown';
+                        const label = device.label || `Camera ${index + 1}`;
+                        const kind = device.kind;
+                        
+                        html += `<strong>Camera ${index + 1}:</strong><br>`;
+                        html += `• Label: ${label}<br>`;
+                        html += `• Device ID: ${deviceId.substring(0, 20)}...<br>`;
+                        html += `• Kind: ${kind}<br><br>`;
+                        
+                        this.logger.log(`Camera ${index + 1}: ${label} (${deviceId.substring(0, 20)}...)`);
+                    });
+                    
+                    resultElement.innerHTML = html;
+                    resultElement.className = 'debug-box success';
+                    
+                    // Populate select dropdown
+                    cameraSelect.innerHTML = '<option value="">Select a camera...</option>';
+                    videoDevices.forEach((device, index) => {
+                        const option = document.createElement('option');
+                        option.value = device.deviceId;
+                        option.textContent = device.label || `Camera ${index + 1}`;
+                        cameraSelect.appendChild(option);
+                    });
+                    
+                    cameraSelect.style.display = 'block';
+                    document.getElementById('testCameraBtn').disabled = false;
+                    
+                } catch (error) {
+                    resultElement.innerHTML = `❌ <strong>Error detecting cameras:</strong><br>${error.name}: ${error.message}`;
+                    resultElement.className = 'debug-box error';
+                    this.logger.log(`Enumeration error: ${error.name} - ${error.message}`, 'error');
+                    
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Detect Cameras';
+                }
+            }
+            
+            async testCamera() {
+                const cameraSelect = document.getElementById('cameraSelect');
+                const selectedDeviceId = cameraSelect.value;
+                
+                if (!selectedDeviceId) {
+                    this.logger.log('No camera selected', 'warning');
+                    return;
+                }
+                
+                const resultElement = document.getElementById('cameraResult');
+                const testBtn = document.getElementById('testCameraBtn');
+                const stopBtn = document.getElementById('stopCameraBtn');
+                const video = document.getElementById('videoPreview');
+                
+                testBtn.disabled = true;
+                testBtn.textContent = 'Starting...';
+                resultElement.innerHTML = '🔄 Starting camera...';
+                resultElement.className = 'debug-box info';
+                
+                this.logger.log(`Testing camera: ${selectedDeviceId.substring(0, 20)}...`);
+                
+                try {
+                    // Stop any existing stream
+                    this.stopCamera();
+                    
+                    const constraints = {
+                        video: {
+                            deviceId: { exact: selectedDeviceId },
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        },
+                        audio: false
+                    };
+                    
+                    this.logger.log('Requesting camera stream with constraints:', 'info');
+                    console.log('Camera constraints:', constraints);
+                    
+                    this.currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    
+                    video.srcObject = this.currentStream;
+                    video.style.display = 'block';
+                    
+                    resultElement.innerHTML = '✅ <strong>Camera test successful!</strong><br>Live preview is showing above.';
+                    resultElement.className = 'debug-box success';
+                    
+                    stopBtn.style.display = 'inline-block';
+                    this.logger.log('Camera started successfully', 'success');
+                    
+                    // Log video track info
+                    const videoTrack = this.currentStream.getVideoTracks()[0];
+                    if (videoTrack) {
+                        const settings = videoTrack.getSettings();
+                        this.logger.log(`Video settings: ${settings.width}x${settings.height}`);
+                    }
+                    
+                } catch (error) {
+                    resultElement.innerHTML = `❌ <strong>Camera test failed:</strong><br>${error.name}: ${error.message}`;
+                    resultElement.className = 'debug-box error';
+                    this.logger.log(`Camera test failed: ${error.name} - ${error.message}`, 'error');
+                    
+                } finally {
+                    testBtn.disabled = false;
+                    testBtn.textContent = 'Test Selected Camera';
+                }
+            }
+            
+            stopCamera() {
+                if (this.currentStream) {
+                    this.currentStream.getTracks().forEach(track => {
+                        track.stop();
+                        this.logger.log(`Stopped track: ${track.kind}`);
+                    });
+                    this.currentStream = null;
+                }
+                
+                const video = document.getElementById('videoPreview');
+                const stopBtn = document.getElementById('stopCameraBtn');
+                const resultElement = document.getElementById('cameraResult');
+                
+                video.style.display = 'none';
+                video.srcObject = null;
+                stopBtn.style.display = 'none';
+                
+                resultElement.innerHTML = '⏹️ Camera stopped.';
+                resultElement.className = 'debug-box info';
+                
+                this.logger.log('Camera stopped', 'info');
+            }
+        }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🔍 Starting PhotoVault Camera Debug Test');
+            window.cameraDebugTester = new CameraDebugTester();
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (window.cameraDebugTester && window.cameraDebugTester.currentStream) {
+                window.cameraDebugTester.stopCamera();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - PhotoVault</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('main.index') }}">
+                <i class="fas fa-camera me-2"></i>PhotoVault
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('main.gallery') }}">Gallery</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/upload">Upload</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.gallery') }}">All Photos</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <span class="navbar-text me-3">Hello, {{ current_user.username }}!</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container-fluid py-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row mb-4">
+            <div class="col">
+                <h1>Dashboard</h1>
+                <p class="text-muted">Welcome to your PhotoVault dashboard</p>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-images fa-3x text-primary mb-3"></i>
+                        <h3 class="card-title">{{ total_photos }}</h3>
+                        <p class="card-text">Total Photos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-camera fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Take Photos</h5>
+                        <a href="/upload" class="btn btn-success">
+                            <i class="fas fa-camera me-2"></i>Camera
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-upload fa-3x text-info mb-3"></i>
+                        <h5 class="card-title">Upload Files</h5>
+                        <a href="/upload" class="btn btn-info">
+                            <i class="fas fa-upload me-2"></i>Upload
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-folder fa-3x text-warning mb-3"></i>
+                        <h5 class="card-title">All Photos</h5>
+                        <a href="{{ url_for('main.gallery') }}" class="btn btn-warning">
+                            <i class="fas fa-images me-2"></i>Browse
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <h3>Recent Photos</h3>
+                {% if photos %}
+                    <div class="row g-3">
+                        {% for photo in photos %}
+                        <div class="col-md-3">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    {% if photo.filename %}
+                                        <img src="{{ url_for('static', filename='uploads/' + photo.user_id|string + '/' + photo.filename) }}" 
+                                             class="img-fluid rounded mb-2" 
+                                             alt="{{ photo.original_name }}"
+                                             style="height: 200px; width: 100%; object-fit: cover;">
+                                    {% else %}
+                                        <i class="fas fa-image fa-2x text-muted mb-2"></i>
+                                    {% endif %}
+                                    <h6 class="card-title">{{ photo.original_name[:20] }}...</h6>
+                                    <p class="card-text small text-muted">{{ photo.created_at.strftime('%Y-%m-%d') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-images fa-4x text-muted mb-3"></i>
+                        <h4>No photos yet</h4>
+                        <p class="text-muted">Start by taking your first photo or uploading some files!</p>
+                        <a href="/upload" class="btn btn-primary">
+                            <i class="fas fa-camera me-2"></i>Get Started
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,421 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+-->
+
+{% extends "base.html" %}
+
+{% block title %}{{ photo.original_name }} - PhotoVault{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0" id="photoTitle">{{ photo.original_name }}</h5>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="toggleRename()" title="Rename photo">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <a href="{{ url_for('main.editor', photo_id=photo.id) }}" 
+                           class="btn btn-outline-warning btn-sm" title="Edit photo">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{{ url_for('static', filename='uploads/' + photo.filename) }}" 
+                           download="{{ photo.original_name }}" 
+                           class="btn btn-outline-success btn-sm" title="Download original">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        {% if photo.edited_filename %}
+                        <a href="{{ url_for('static', filename='uploads/' + photo.edited_filename) }}" 
+                           target="_blank" 
+                           class="btn btn-outline-info btn-sm" title="View edited version">
+                            <i class="bi bi-eye-fill"></i>
+                        </a>
+                        {% endif %}
+                        <button class="btn btn-outline-danger btn-sm" onclick="deletePhoto({{ photo.id }})" title="Delete photo">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Rename Form (hidden by default) -->
+                    <div id="renameForm" class="p-3 border-bottom" style="display: none;">
+                        <form method="POST" action="{{ url_for('main.rename_photo', photo_id=photo.id) }}">
+                            <div class="input-group">
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="new_name" 
+                                       id="newName"
+                                       value="{{ photo.original_name }}" 
+                                       placeholder="Enter new photo name"
+                                       required>
+                                <button type="submit" class="btn btn-success" title="Save changes">
+                                    <i class="bi bi-check"></i>
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="toggleRename()" title="Cancel rename">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <img src="{{ url_for('static', filename='uploads/' + photo.filename) }}" 
+                         class="img-fluid w-100" 
+                         alt="{{ photo.original_name }}"
+                         style="max-height: 70vh; object-fit: contain;">
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Photo Details</h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">Original Name:</dt>
+                        <dd class="col-sm-7">{{ photo.original_name }}</dd>
+                        
+                        <dt class="col-sm-5">Uploaded:</dt>
+                        <dd class="col-sm-7">{{ photo.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+                        
+                        <dt class="col-sm-5">File Size:</dt>
+                        <dd class="col-sm-7">{{ "%.2f"|format(photo.file_size / 1024 / 1024) }} MB</dd>
+                        
+                        <dt class="col-sm-5">Dimensions:</dt>
+                        <dd class="col-sm-7">{{ photo.width }} × {{ photo.height }}</dd>
+                        
+                        {% if photo.edited_filename %}
+                        <dt class="col-sm-5">Status:</dt>
+                        <dd class="col-sm-7"><span class="badge bg-success">Edited</span></dd>
+                        {% else %}
+                        <dt class="col-sm-5">Status:</dt>
+                        <dd class="col-sm-7"><span class="badge bg-secondary">Original</span></dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+            
+            <!-- People Tagging -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-people"></i> People in Photo
+                    </h6>
+                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#tagPersonModal">
+                        <i class="bi bi-person-plus"></i> Tag Person
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if tagged_people %}
+                    <div class="mb-3">
+                        {% for tagged in tagged_people %}
+                        <span class="badge bg-primary me-2 mb-2 d-inline-flex align-items-center">
+                            <i class="bi bi-person-circle me-1"></i>
+                            {{ tagged.person.name }}
+                            {% if tagged.person.nickname %}
+                            <small class="ms-1">"{{ tagged.person.nickname }}"</small>
+                            {% endif %}
+                            <button type="button" class="btn-close btn-close-white ms-2" 
+                                    onclick="untagPerson({{ photo.id }}, {{ tagged.person.id }}, '{{ tagged.person.name }}')"
+                                    title="Remove tag"></button>
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-3">No people tagged in this photo yet</p>
+                    {% endif %}
+                    
+                    <!-- Quick tag buttons for recently used people -->
+                    {% if all_people %}
+                    <small class="text-muted">Quick tag:</small>
+                    <div class="mt-2">
+                        {% for person in all_people[:5] %}
+                        {% set is_already_tagged = false %}
+                        {% for tagged in tagged_people %}
+                        {% if tagged.person.id == person.id %}
+                        {% set is_already_tagged = true %}
+                        {% endif %}
+                        {% endfor %}
+                        {% if not is_already_tagged %}
+                        <button class="btn btn-outline-secondary btn-sm me-1 mb-1" 
+                                onclick="tagPersonQuick({{ photo.id }}, {{ person.id }}, '{{ person.name }}')">
+                            <i class="bi bi-plus"></i> {{ person.name }}
+                        </button>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="/people" class="btn btn-outline-success">
+                            <i class="bi bi-people"></i> Manage People
+                        </a>
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-house"></i> Back to Dashboard
+                        </a>
+                        <a href="/gallery" class="btn btn-outline-secondary">
+                            <i class="bi bi-images"></i> Back to Gallery
+                        </a>
+                        <a href="{{ url_for('static', filename='uploads/' + photo.filename) }}" 
+                           target="_blank" 
+                           class="btn btn-outline-info">
+                            <i class="bi bi-arrows-fullscreen"></i> View Full Size
+                        </a>
+                        <button class="btn btn-danger" onclick="deletePhoto({{ photo.id }})">
+                            <i class="bi bi-trash"></i> Delete Photo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tag Person Modal -->
+<div class="modal fade" id="tagPersonModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tag Person in Photo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% if all_people %}
+                <div class="mb-3">
+                    <label for="personSelect" class="form-label">Select Person</label>
+                    <select class="form-select" id="personSelect">
+                        <option value="">Choose a person...</option>
+                        {% for person in all_people %}
+                        {% set is_already_tagged = false %}
+                        {% for tagged in tagged_people %}
+                            {% if tagged.person.id == person.id %}
+                                {% set is_already_tagged = true %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if not is_already_tagged %}
+                        <option value="{{ person.id }}">
+                            {{ person.name }}
+                            {% if person.nickname %} "{{ person.nickname }}"{% endif %}
+                            {% if person.relationship %} ({{ person.relationship }}){% endif %}
+                        </option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                {% else %}
+                <div class="text-center">
+                    <p class="text-muted">No people available for tagging.</p>
+                    <a href="/people" class="btn btn-primary">
+                        <i class="bi bi-person-plus"></i> Add People First
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                {% if all_people %}
+                <button type="button" class="btn btn-primary" onclick="tagPersonFromModal({{ photo.id }})">
+                    <i class="bi bi-plus"></i> Tag Person
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Helper function to get CSRF token
+function getCSRFToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content 
+        || document.querySelector('input[name="csrf_token"]')?.value;
+}
+
+// Helper function to show user feedback
+function showUserFeedback(message, type = 'info') {
+    // Create a toast notification or use existing alert system
+    if (type === 'error') {
+        alert('Error: ' + message);
+    } else if (type === 'success') {
+        // Could be enhanced with a proper toast notification system
+        alert(message);
+    } else {
+        alert(message);
+    }
+}
+
+function deletePhoto(photoId) {
+    if (confirm('Are you sure you want to delete this photo? This action cannot be undone.')) {
+        const csrfToken = getCSRFToken();
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        };
+        
+        if (csrfToken) {
+            headers['X-CSRFToken'] = csrfToken;
+        }
+        
+        fetch(`/api/photo/delete/${photoId}`, {
+            method: 'DELETE',
+            headers: headers
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showUserFeedback('Photo deleted successfully!', 'success');
+                window.location.href = '{{ url_for("main.dashboard") }}';
+            } else {
+                showUserFeedback('Error deleting photo: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Delete photo error:', error);
+            showUserFeedback('Error deleting photo. Please try again.', 'error');
+        });
+    }
+}
+
+function toggleRename() {
+    const form = document.getElementById('renameForm');
+    const input = document.getElementById('newName');
+    
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        input.focus();
+        input.select();
+    } else {
+        form.style.display = 'none';
+    }
+}
+
+// People tagging functions
+function tagPersonQuick(photoId, personId, personName) {
+    tagPerson(photoId, personId, personName);
+}
+
+function tagPersonFromModal(photoId) {
+    const select = document.getElementById('personSelect');
+    const personId = select.value;
+    const personName = select.options[select.selectedIndex].text;
+    
+    if (!personId) {
+        showUserFeedback('Please select a person to tag', 'error');
+        return;
+    }
+    
+    tagPerson(photoId, personId, personName);
+    
+    // Hide modal after successful tagging
+    try {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('tagPersonModal'));
+        if (modal) {
+            modal.hide();
+        }
+    } catch (e) {
+        console.warn('Could not hide modal:', e);
+    }
+}
+
+function tagPerson(photoId, personId, personName) {
+    const csrfToken = getCSRFToken();
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+    };
+    
+    if (csrfToken) {
+        headers['X-CSRFToken'] = csrfToken;
+    }
+    
+    fetch(`/api/photo/${photoId}/tag_person`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+            person_id: personId,
+            manually_tagged: true
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showUserFeedback(`Successfully tagged ${personName}!`, 'success');
+            // Refresh to show updated tags
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showUserFeedback('Error tagging person: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Tag person error:', error);
+        showUserFeedback('Error tagging person. Please try again.', 'error');
+    });
+}
+
+function untagPerson(photoId, personId, personName) {
+    if (confirm(`Remove ${personName} from this photo?`)) {
+        const csrfToken = getCSRFToken();
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        };
+        
+        if (csrfToken) {
+            headers['X-CSRFToken'] = csrfToken;
+        }
+        
+        fetch(`/api/photo/${photoId}/untag_person/${personId}`, {
+            method: 'DELETE',
+            headers: headers
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showUserFeedback(`Successfully removed ${personName} from photo!`, 'success');
+                // Refresh to show updated tags
+                setTimeout(() => location.reload(), 500);
+            } else {
+                showUserFeedback('Error removing tag: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Untag person error:', error);
+            showUserFeedback('Error removing tag. Please try again.', 'error');
+        });
+    }
+}
+</script>
+{% endblock %}

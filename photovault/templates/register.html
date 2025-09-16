@@ -1,0 +1,95 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h4 class="mb-0">Create PhotoVault Account</h4>
+                    <small class="text-muted">Join Calmic's photo management platform</small>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="username" 
+                                   name="username" 
+                                   required 
+                                   placeholder="Choose a username"
+                                   minlength="3">
+                            <small class="form-text text-muted">
+                                3+ characters, letters, numbers, and underscores only
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" 
+                                   class="form-control" 
+                                   id="email" 
+                                   name="email" 
+                                   required 
+                                   placeholder="Enter your email address">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="password" 
+                                   name="password" 
+                                   required 
+                                   placeholder="Create a strong password"
+                                   minlength="8">
+                            <small class="form-text text-muted">
+                                Minimum 8 characters with uppercase, lowercase, and number
+                            </small>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="confirm_password" 
+                                   name="confirm_password" 
+                                   required 
+                                   placeholder="Confirm your password">
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                Create Account
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center">
+                    <small class="text-muted">
+                        Already have an account? 
+                        <a href="{{ url_for('auth.login') }}">Sign in here</a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

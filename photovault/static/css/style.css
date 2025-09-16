@@ -1,0 +1,608 @@
+/*
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+*/
+
+/* PhotoVault - Ultra Conservative Professional Styling */
+
+/* Typography - Muted and Professional */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #495057;
+    background-color: #fafbfc;
+    font-weight: 400;
+}
+
+/* Ultra Conservative Color Palette */
+:root {
+    --primary-color: #495057;           /* Muted dark gray */
+    --secondary-color: #868e96;         /* Light gray */
+    --success-color: #51a351;           /* Muted green */
+    --info-color: #5bc0de;              /* Muted blue */
+    --warning-color: #f0ad4e;           /* Muted orange */
+    --danger-color: #d9534f;            /* Muted red */
+    --light-bg: #fafbfc;                /* Very light background */
+    --lighter-bg: #ffffff;              /* White */
+    --border-color: #e1e5e9;            /* Very light border */
+    --text-muted: #6c757d;              /* Muted text */
+    --text-dark: #495057;               /* Dark text */
+}
+
+/* Company Branding - Very Subtle */
+.navbar-brand {
+    font-weight: 500;
+    font-size: 1.2rem;
+    padding: 0.5rem 0;
+    color: #ffffff !important;
+}
+
+.navbar-brand img {
+    border-radius: 2px;
+    opacity: 0.9;
+}
+
+.brand-text {
+    line-height: 1.3;
+}
+
+.brand-name {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #ffffff;
+    margin-bottom: -1px;
+}
+
+.company-name {
+    font-size: 0.7rem;
+    color: #ced4da;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+}
+
+/* Navigation - Subtle and Professional */
+.navbar-dark {
+    background-color: var(--primary-color) !important;
+    border-bottom: 1px solid #dee2e6;
+    box-shadow: none;
+}
+
+.navbar-dark .navbar-nav .nav-link {
+    color: rgba(255,255,255,0.85) !important;
+    font-weight: 400;
+    padding: 0.5rem 0.875rem;
+    border-radius: 3px;
+    margin: 0 1px;
+    transition: all 0.15s ease;
+}
+
+.navbar-dark .navbar-nav .nav-link:hover {
+    color: #ffffff !important;
+    background-color: rgba(255,255,255,0.08);
+}
+
+.navbar-dark .navbar-nav .nav-link.active {
+    color: #ffffff !important;
+    background-color: rgba(255,255,255,0.12);
+}
+
+/* Dropdown Menus - Very Subtle */
+.dropdown-menu {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    font-size: 0.875rem;
+    background-color: var(--lighter-bg);
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    color: var(--text-dark);
+    transition: background-color 0.1s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: var(--text-dark);
+}
+
+.dropdown-header {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Badge Styling - Very Conservative */
+.badge {
+    font-size: 0.6em;
+    font-weight: 400;
+    padding: 0.25em 0.4em;
+}
+
+.badge.bg-danger {
+    background-color: var(--danger-color) !important;
+}
+
+.badge.bg-warning {
+    background-color: var(--warning-color) !important;
+    color: #ffffff !important;
+}
+
+/* Cards - Clean and Minimal */
+.card {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: box-shadow 0.15s ease;
+    background-color: var(--lighter-bg);
+}
+
+.card:hover {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 500;
+    color: var(--text-dark);
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+}
+
+.card-title {
+    margin-bottom: 0.5rem;
+    color: var(--text-dark);
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+/* Buttons - Very Professional and Muted */
+.btn {
+    border-radius: 3px;
+    font-weight: 400;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    transition: all 0.15s ease;
+    border-width: 1px;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background-color: #343a40;
+    border-color: #343a40;
+    transform: none;
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: #ffffff;
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.btn-info {
+    background-color: var(--info-color);
+    border-color: var(--info-color);
+}
+
+.btn-warning {
+    background-color: var(--warning-color);
+    border-color: var(--warning-color);
+    color: #ffffff;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-secondary {
+    color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+/* Statistics Cards - Very Muted Colors */
+.stats-card {
+    border-radius: 4px;
+    padding: 1.25rem;
+    text-align: center;
+    color: #ffffff;
+    border: none;
+}
+
+.stats-card.bg-primary {
+    background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+}
+
+.stats-card.bg-success {
+    background: linear-gradient(135deg, #51a351 0%, #449d44 100%);
+}
+
+.stats-card.bg-info {
+    background: linear-gradient(135deg, #5bc0de 0%, #46b8da 100%);
+}
+
+.stats-card.bg-warning {
+    background: linear-gradient(135deg, #f0ad4e 0%, #eea236 100%);
+}
+
+.stats-card.bg-secondary {
+    background: linear-gradient(135deg, #868e96 0%, #6c757d 100%);
+}
+
+.stats-number {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.stats-label {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    font-weight: 400;
+}
+
+/* Photo Grid - Very Clean Layout */
+.photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.875rem;
+    margin-top: 1rem;
+}
+
+.photo-item {
+    position: relative;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    background-color: var(--lighter-bg);
+}
+
+.photo-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.photo-item img {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+    border-radius: 8px;
+    transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.photo-item img:hover {
+    transform: scale(1.02);
+    filter: brightness(1.1);
+}
+
+.photo-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(73, 80, 87, 0.8));
+    color: #ffffff;
+    padding: 0.875rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.photo-item:hover .photo-overlay {
+    opacity: 1;
+}
+
+/* Forms - Very Clean and Professional */
+.form-control {
+    border-radius: 3px;
+    border: 1px solid var(--border-color);
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    background-color: var(--lighter-bg);
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.15rem rgba(73, 80, 87, 0.1);
+}
+
+.form-label {
+    font-weight: 500;
+    color: var(--text-dark);
+    margin-bottom: 0.375rem;
+    font-size: 0.875rem;
+}
+
+/* Alerts - Very Subtle and Professional */
+.alert {
+    border: 1px solid;
+    border-radius: 3px;
+    font-size: 0.875rem;
+    font-weight: 400;
+    padding: 0.75rem 1rem;
+}
+
+.alert-success {
+    background-color: #f4f8f4;
+    color: #2d5a2d;
+    border-color: #c3e6c3;
+}
+
+.alert-danger {
+    background-color: #fdf2f2;
+    color: #842029;
+    border-color: #f5c2c7;
+}
+
+.alert-warning {
+    background-color: #fefbf0;
+    color: #664d03;
+    border-color: #ffeaa7;
+}
+
+.alert-info {
+    background-color: #f0f9ff;
+    color: #055160;
+    border-color: #b8daff;
+}
+
+/* Footer - Very Subtle */
+footer {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    border-top: 1px solid #dee2e6;
+}
+
+footer .text-muted {
+    color: #ced4da !important;
+}
+
+/* Progress Bars - Conservative */
+.progress {
+    background-color: #e9ecef;
+    border-radius: 3px;
+    height: 0.625rem;
+}
+
+.progress-bar {
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+/* Upload Area - Very Clean */
+.upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 4px;
+    padding: 2rem;
+    text-align: center;
+    background-color: var(--lighter-bg);
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+    color: var(--text-muted);
+}
+
+.upload-area:hover {
+    border-color: var(--primary-color);
+    background-color: #f8f9fa;
+}
+
+.upload-area.dragover {
+    border-color: var(--primary-color);
+    background-color: #f1f3f4;
+}
+
+/* Hero Sections - Very Subtle */
+.hero-section {
+    background: linear-gradient(135deg, #fafbfc 0%, #f1f3f4 100%);
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+/* Feature Icons - Muted */
+.feature-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+}
+
+.feature-icon.bg-primary {
+    background: var(--primary-color) !important;
+}
+
+.feature-icon.bg-success {
+    background: var(--success-color) !important;
+}
+
+.feature-icon.bg-info {
+    background: var(--info-color) !important;
+}
+
+/* CTA Sections */
+.cta-section {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    body {
+        font-size: 13px;
+    }
+    
+    .brand-name {
+        font-size: 1.1rem;
+    }
+    
+    .company-name {
+        font-size: 0.65rem;
+    }
+    
+    .navbar-brand img {
+        height: 32px !important;
+    }
+    
+    .photo-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.625rem;
+    }
+    
+    .photo-item img {
+        height: 120px;
+    }
+    
+    .upload-area {
+        padding: 1.5rem 1rem;
+    }
+    
+    .hero-section {
+        padding: 1.5rem 1rem !important;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .navbar,
+    footer,
+    .btn,
+    .alert {
+        display: none !important;
+    }
+    
+    body {
+        font-size: 12px;
+        color: #000 !important;
+        background: #fff !important;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus Indicators - Subtle */
+.btn:focus,
+.form-control:focus,
+.nav-link:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+}
+
+/* Loading States */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.spinner-border-sm {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+/* Text Colors - Conservative */
+.text-primary { color: var(--primary-color) !important; }
+.text-secondary { color: var(--secondary-color) !important; }
+.text-success { color: var(--success-color) !important; }
+.text-info { color: var(--info-color) !important; }
+.text-warning { color: var(--warning-color) !important; }
+.text-danger { color: var(--danger-color) !important; }
+.text-muted { color: var(--text-muted) !important; }/* Fix for Statistics Page Visibility Issues */
+
+/* Ensure statistics cards have proper contrast */
+.card.bg-gradient h3,
+.card.bg-gradient h4,
+.card.bg-gradient h5,
+.card.bg-gradient p,
+.card.bg-gradient small {
+    color: #ffffff !important;
+}
+
+/* Fix specific background colors */
+.bg-primary, .bg-primary * {
+    color: #ffffff !important;
+}
+
+.bg-success, .bg-success * {
+    color: #ffffff !important;
+}
+
+.bg-info, .bg-info * {
+    color: #ffffff !important;
+}
+
+.bg-warning, .bg-warning * {
+    color: #212529 !important;
+}
+
+.bg-danger, .bg-danger * {
+    color: #ffffff !important;
+}
+
+.bg-secondary, .bg-secondary * {
+    color: #ffffff !important;
+}
+
+/* Ensure card text is always visible */
+.card {
+    background-color: #ffffff !important;
+    color: #495057 !important;
+}
+
+.card-body {
+    color: inherit !important;
+}
+
+/* Statistics cards specific fixes */
+.stats-card h3,
+.stats-card h4 {
+    font-weight: 600 !important;
+    margin-bottom: 0.25rem !important;
+}
+
+.stats-card p,
+.stats-card small {
+    opacity: 0.9;
+    margin-bottom: 0 !important;
+}
+
