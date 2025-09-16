@@ -1,5 +1,11 @@
+[phases.setup]
+nixPkgs = ["python311", "pip"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
 [start]
-cmd = "gunicorn --bind 0.0.0.0:$PORT wsgi:app"
+cmd = "gunicorn --bind 0.0.0.0:$PORT --workers 2 wsgi:app"
 
 [variables]
 PORT = "8080"
