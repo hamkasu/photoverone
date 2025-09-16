@@ -104,14 +104,37 @@ def profile():
         # Calculate user statistics
         from photovault.models import Photo
         from datetime import datetime
+        import os
         
         # Get all photos for current user
         user_photos = Photo.query.filter_by(user_id=current_user.id).all()
         
-        # Calculate statistics
+        # Calculate statistics - update file sizes if they're missing
         total_photos = len(user_photos)
         edited_photos = sum(1 for photo in user_photos if photo.edited_filename and photo.edited_filename.strip())
-        total_size = sum(photo.file_size or 0 for photo in user_photos)
+        
+        # Calculate total size, and update database if file_size is missing
+        total_size = 0
+        for photo in user_photos:
+            if photo.file_size and photo.file_size > 0:
+                total_size += photo.file_size
+            else:
+                # Try to get file size from disk and update database
+                try:
+                    if os.path.exists(photo.file_path):
+                        file_size = os.path.getsize(photo.file_path)
+                        photo.file_size = file_size
+                        total_size += file_size
+                        # Don't commit yet - batch update
+                except:
+                    pass
+        
+        # Commit any file size updates
+        try:
+            from photovault.extensions import db
+            db.session.commit()
+        except:
+            pass
         
         # Format member since date
         if current_user.created_at:
