@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Join Family Vault - PhotoVault{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-box-arrow-in-right"></i> Join Family Vault
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">Enter the vault code shared by the vault owner to join their family vault.</p>
+                    
+                    <form method="POST" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="mb-3">
+                            <label for="vault_code" class="form-label">Vault Code <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control text-uppercase" id="vault_code" name="vault_code" required
+                                   placeholder="Enter vault code (e.g., ABC123)" style="font-family: 'Courier New', monospace;">
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('family.index') }}" class="btn btn-outline-secondary me-md-2">
+                                <i class="bi bi-arrow-left"></i> Back
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Join Vault
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

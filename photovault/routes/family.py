@@ -401,6 +401,83 @@ def join_vault():
     
     return render_template('family/join_vault.html')
 
+@family_bp.route('/vault/<int:vault_id>/add-photos', methods=['GET', 'POST'])
+@login_required
+def add_photos(vault_id):
+    """Add photos to family vault"""
+    vault = FamilyVault.query.get_or_404(vault_id)
+    
+    # Check if user can add content to vault
+    member = FamilyMember.query.filter_by(vault_id=vault_id, user_id=current_user.id, status='active').first()
+    if not member or not member.can_add_content():
+        flash('You do not have permission to add photos to this vault.', 'error')
+        return redirect(url_for('family.view_vault', vault_id=vault_id))
+    
+    if request.method == 'POST':
+        # Get selected photo IDs
+        photo_ids = request.form.getlist('photo_ids')
+        caption = request.form.get('caption', '').strip()
+        
+        if not photo_ids:
+            flash('Please select at least one photo to share.', 'error')
+            return redirect(url_for('family.add_photos', vault_id=vault_id))
+        
+        shared_count = 0
+        skipped_count = 0
+        
+        for photo_id in photo_ids:
+            try:
+                photo = Photo.query.filter_by(id=int(photo_id), user_id=current_user.id).first()
+                if not photo:
+                    continue
+                
+                # Check if photo is already shared to this vault
+                existing_share = VaultPhoto.query.filter_by(vault_id=vault_id, photo_id=photo_id).first()
+                if existing_share:
+                    skipped_count += 1
+                    continue
+                
+                # Share photo
+                vault_photo = VaultPhoto(
+                    vault_id=vault_id,
+                    photo_id=photo_id,
+                    shared_by=current_user.id,
+                    caption=caption if caption else None
+                )
+                
+                db.session.add(vault_photo)
+                shared_count += 1
+                
+            except Exception as e:
+                logger.error(f"Failed to share photo {photo_id}: {str(e)}")
+                continue
+        
+        try:
+            db.session.commit()
+            
+            # Create success message
+            message_parts = []
+            if shared_count > 0:
+                message_parts.append(f'{shared_count} photo{"s" if shared_count != 1 else ""} shared successfully')
+            if skipped_count > 0:
+                message_parts.append(f'{skipped_count} photo{"s" if skipped_count != 1 else ""} already in vault')
+            
+            flash(', '.join(message_parts) + '.', 'success')
+            return redirect(url_for('family.view_vault', vault_id=vault_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Failed to save shared photos: {str(e)}")
+            flash('Failed to share photos. Please try again.', 'error')
+    
+    # GET request - show photo selection page
+    page = request.args.get('page', 1, type=int)
+    photos = Photo.query.filter_by(user_id=current_user.id)\
+                       .order_by(Photo.created_at.desc())\
+                       .paginate(page=page, per_page=20, error_out=False)
+    
+    return render_template('family/add_photos.html', vault=vault, photos=photos)
+
 @family_bp.route('/api/vaults/<int:vault_id>/members/<int:member_id>/role', methods=['PUT'])
 @login_required
 def update_member_role(vault_id, member_id):

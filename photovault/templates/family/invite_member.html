@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Invite Member - {{ vault.name }} - PhotoVault{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-person-plus"></i> Invite Member to {{ vault.name }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">Send an invitation to join this family vault via email.</p>
+                    
+                    <form method="POST" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="email" name="email" required
+                                   placeholder="Enter email address">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Role <span class="text-danger">*</span></label>
+                            <select class="form-control" id="role" name="role" required>
+                                <option value="member" selected>Member (can view and add content)</option>
+                                <option value="admin">Admin (can manage vault and members)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('family.view_vault', vault_id=vault.id) }}" class="btn btn-outline-secondary me-md-2">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-envelope"></i> Send Invitation
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
