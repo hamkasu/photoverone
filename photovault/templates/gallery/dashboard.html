@@ -123,6 +123,13 @@
                                     {% endif %}
                                     <h6 class="card-title">{{ photo.original_name[:20] }}...</h6>
                                     <p class="card-text small text-muted">{{ photo.created_at.strftime('%Y-%m-%d') }}</p>
+                                    {% if photo.voice_memo_count and photo.voice_memo_count > 0 %}
+                                    <div class="mb-1">
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-microphone"></i> {{ photo.voice_memo_count }}
+                                        </span>
+                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

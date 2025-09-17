@@ -15,6 +15,10 @@ CALMIC SDN BHD - "Committed to Excellence"
 
 {% block title %}Dashboard{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/voice-memo.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <!-- Welcome Header -->
@@ -133,14 +137,25 @@ CALMIC SDN BHD - "Committed to Excellence"
                             <div class="photo-overlay">
                                 <h6>{{ photo.original_name }}</h6>
                                 <small>{{ photo.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
-                                {% if photo.edited_filename %}
-                                <span class="badge bg-success mt-1">Edited</span>
-                                {% endif %}
+                                <div class="photo-badges mt-1">
+                                    {% if photo.edited_filename %}
+                                    <span class="badge bg-success">Edited</span>
+                                    {% endif %}
+                                    {% if photo.voice_memo_count and photo.voice_memo_count > 0 %}
+                                    <span class="badge bg-info">
+                                        <i class="bi bi-mic-fill"></i> {{ photo.voice_memo_count }}
+                                    </span>
+                                    {% endif %}
+                                </div>
                                 <div class="photo-actions mt-1">
                                     <a href="/gallery" 
                                        class="btn btn-outline-light btn-sm" title="View photo">
                                         <i class="bi bi-eye"></i>
                                     </a>
+                                    <button onclick="openVoiceMemo({{ photo.id }})" 
+                                            class="btn btn-outline-light btn-sm" title="Voice memo">
+                                        <i class="bi bi-mic"></i>
+                                    </button>
                                     <a href="#" onclick="editPhoto({{ photo.id }})" 
                                        class="btn btn-outline-light btn-sm" title="Edit photo">
                                         <i class="bi bi-pencil"></i>
@@ -217,6 +232,24 @@ CALMIC SDN BHD - "Committed to Excellence"
     </div>
 </div>
 
+<!-- Voice Memo Modal -->
+<div class="modal fade" id="voiceMemoModal" tabindex="-1" aria-labelledby="voiceMemoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="voiceMemoModalLabel">
+                    <i class="bi bi-mic"></i> Voice Memo for <span id="photoName"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="voiceMemoContainer"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/voice-memo.js') }}"></script>
 <script>
 function deletePhoto(photoId) {
     if (confirm('Are you sure you want to delete this photo? This action cannot be undone.')) {
@@ -246,6 +279,52 @@ function deletePhoto(photoId) {
 function editPhoto(photoId) {
     // Open photo editor - this will be implemented next
     window.open(`/photos/${photoId}/edit`, '_blank');
+}
+
+let currentVoiceMemoRecorder = null;
+
+function openVoiceMemo(photoId) {
+    // Find the photo name from the dashboard
+    const photoElement = document.querySelector(`[onclick="deletePhoto(${photoId})"]`).closest('.photo-item');
+    const photoName = photoElement.querySelector('h6').textContent;
+    
+    // Set modal title
+    document.getElementById('photoName').textContent = photoName;
+    
+    // Clean up previous recorder if exists
+    if (currentVoiceMemoRecorder) {
+        currentVoiceMemoRecorder = null;
+    }
+    
+    // Clear container
+    document.getElementById('voiceMemoContainer').innerHTML = '';
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('voiceMemoModal'));
+    modal.show();
+    
+    // Initialize voice memo recorder after modal is shown
+    modal._element.addEventListener('shown.bs.modal', function() {
+        try {
+            currentVoiceMemoRecorder = new VoiceMemoRecorder(photoId, 'voiceMemoContainer');
+        } catch (error) {
+            console.error('Error initializing voice memo recorder:', error);
+            document.getElementById('voiceMemoContainer').innerHTML = 
+                '<div class="alert alert-danger">Error initializing voice recorder. Please try again.</div>';
+        }
+    }, { once: true });
+    
+    // Clean up when modal is hidden
+    modal._element.addEventListener('hidden.bs.modal', function() {
+        if (currentVoiceMemoRecorder) {
+            // Stop any ongoing recording
+            if (currentVoiceMemoRecorder.isRecording) {
+                currentVoiceMemoRecorder.stopRecording();
+            }
+            currentVoiceMemoRecorder = null;
+        }
+        document.getElementById('voiceMemoContainer').innerHTML = '';
+    }, { once: true });
 }
 </script>
 {% endblock %}

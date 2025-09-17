@@ -479,10 +479,13 @@ def upload_voice_memo(photo_id):
         if not audio_file.filename:
             return jsonify({'success': False, 'error': 'No audio file selected'}), 400
         
-        # Validate audio file type
-        allowed_audio_types = {'audio/webm', 'audio/wav', 'audio/mp3', 'audio/ogg', 'audio/mp4'}
-        if audio_file.content_type not in allowed_audio_types:
-            return jsonify({'success': False, 'error': 'Invalid audio file type'}), 400
+        # Validate audio file type (handle codec variations)
+        content_type = audio_file.content_type.lower()
+        base_type = content_type.split(';')[0].strip()  # Remove codec specifications
+        
+        allowed_audio_types = {'audio/webm', 'audio/wav', 'audio/mp3', 'audio/ogg', 'audio/mp4', 'audio/mpeg'}
+        if base_type not in allowed_audio_types:
+            return jsonify({'success': False, 'error': f'Invalid audio file type: {content_type}'}), 400
         
         # Generate unique filename
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -511,6 +514,18 @@ def upload_voice_memo(photo_id):
             duration = float(duration) if duration else None
         except (ValueError, TypeError):
             duration = None
+        
+        # Auto-generate descriptive title if not provided
+        if not title:
+            if transcript and len(transcript.strip()) > 0:
+                # Use first few words of transcript
+                words = transcript.strip().split()[:4]
+                title = f"Memo: {' '.join(words)}..."
+            else:
+                # Use photo name and timestamp
+                photo_name = photo.original_name.split('.')[0] if photo.original_name else 'Photo'
+                time_str = datetime.now().strftime('%H:%M')
+                title = f"Voice memo for {photo_name[:20]} at {time_str}"
         
         # Create voice memo record
         voice_memo = VoiceMemo(
