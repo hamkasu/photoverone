@@ -205,6 +205,7 @@ Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST" id="editPersonForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Person</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -253,6 +254,25 @@ function editPerson(id, name, nickname, relationship, birth_year, notes) {
     
     new bootstrap.Modal(document.getElementById('editPersonModal')).show();
 }
+
+// Ensure CSRF token is fresh on form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const editForm = document.getElementById('editPersonForm');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            // Refresh CSRF token right before submission
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const csrfInput = this.querySelector('input[name="csrf_token"]');
+            
+            if (csrfToken && csrfInput) {
+                csrfInput.value = csrfToken;
+                console.log('CSRF token refreshed for edit form submission:', csrfToken.substring(0, 10) + '...');
+            } else {
+                console.error('CSRF token or input field not found');
+            }
+        });
+    }
+});
 
 function deletePerson(personId, personName) {
     if (confirm(`Are you sure you want to delete ${personName}? This will also remove all their photo tags.`)) {
