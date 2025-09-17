@@ -265,3 +265,187 @@ class VoiceMemo(db.Model):
     
     def __repr__(self):
         return f'<VoiceMemo {self.filename} for Photo {self.photo_id}>'
+
+class FamilyVault(db.Model):
+    """Family vault model for shared photo collections"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    vault_code = db.Column(db.String(20), unique=True, nullable=False)  # Unique code for sharing
+    is_public = db.Column(db.Boolean, default=False)  # Whether discoverable by vault code
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    creator = db.relationship('User', backref='created_vaults')
+    members = db.relationship('FamilyMember', backref='vault', lazy='dynamic', cascade='all, delete-orphan')
+    invitations = db.relationship('VaultInvitation', backref='vault', lazy='dynamic', cascade='all, delete-orphan')
+    shared_photos = db.relationship('VaultPhoto', backref='vault', lazy='dynamic', cascade='all, delete-orphan')
+    stories = db.relationship('Story', backref='vault', lazy='dynamic', cascade='all, delete-orphan')
+    
+    @property
+    def member_count(self):
+        """Count of active members in this vault"""
+        return self.members.filter_by(status='active').count()
+    
+    def get_member_role(self, user_id):
+        """Get the role of a user in this vault"""
+        member = self.members.filter_by(user_id=user_id, status='active').first()
+        return member.role if member else None
+    
+    def has_member(self, user_id):
+        """Check if user is an active member of this vault"""
+        return self.members.filter_by(user_id=user_id, status='active').first() is not None
+    
+    def __repr__(self):
+        return f'<FamilyVault {self.name}>'
+
+class FamilyMember(db.Model):
+    """Family member model for vault access control"""
+    id = db.Column(db.Integer, primary_key=True)
+    vault_id = db.Column(db.Integer, db.ForeignKey('family_vault.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='member')  # 'admin', 'contributor', 'member'
+    status = db.Column(db.String(20), nullable=False, default='active')  # 'active', 'inactive', 'removed'
+    invited_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', foreign_keys=[user_id], backref='vault_memberships')
+    inviter = db.relationship('User', foreign_keys=[invited_by])
+    
+    def can_manage_vault(self):
+        """Check if member can manage vault settings"""
+        return self.role in ['admin']
+    
+    def can_add_content(self):
+        """Check if member can add photos and stories"""
+        return self.role in ['admin', 'contributor']
+    
+    def can_view_content(self):
+        """Check if member can view vault content"""
+        return self.status == 'active'
+    
+    def __repr__(self):
+        return f'<FamilyMember {self.user.username if self.user else "Unknown"} in {self.vault.name if self.vault else "Unknown"}>'
+
+class VaultInvitation(db.Model):
+    """Vault invitation model for inviting family members"""
+    id = db.Column(db.Integer, primary_key=True)
+    vault_id = db.Column(db.Integer, db.ForeignKey('family_vault.id'), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    invited_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='member')
+    status = db.Column(db.String(20), nullable=False, default='pending')  # 'pending', 'accepted', 'declined', 'expired'
+    invitation_token = db.Column(db.String(100), unique=True, nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    accepted_at = db.Column(db.DateTime)
+    
+    # Relationships
+    inviter = db.relationship('User', backref='sent_invitations')
+    
+    @property
+    def is_expired(self):
+        """Check if invitation has expired"""
+        return datetime.utcnow() > self.expires_at
+    
+    @property
+    def is_pending(self):
+        """Check if invitation is still pending"""
+        return self.status == 'pending' and not self.is_expired
+    
+    def accept(self, user):
+        """Accept the invitation and create family member"""
+        if not self.is_pending:
+            return False
+            
+        # Create family member
+        member = FamilyMember(
+            vault_id=self.vault_id,
+            user_id=user.id,
+            role=self.role,
+            invited_by=self.invited_by
+        )
+        db.session.add(member)
+        
+        # Update invitation status
+        self.status = 'accepted'
+        self.accepted_at = datetime.utcnow()
+        
+        return True
+    
+    def __repr__(self):
+        return f'<VaultInvitation {self.email} to {self.vault.name if self.vault else "Unknown"}>'
+
+class VaultPhoto(db.Model):
+    """Association model for photos shared in family vaults"""
+    id = db.Column(db.Integer, primary_key=True)
+    vault_id = db.Column(db.Integer, db.ForeignKey('family_vault.id'), nullable=False)
+    photo_id = db.Column(db.Integer, db.ForeignKey('photo.id'), nullable=False)
+    shared_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    caption = db.Column(db.Text)  # Caption specific to this vault
+    shared_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    photo = db.relationship('Photo', backref='vault_shares')
+    sharer = db.relationship('User', backref='shared_photos')
+    
+    def __repr__(self):
+        return f'<VaultPhoto {self.photo.original_name if self.photo else "Unknown"} in {self.vault.name if self.vault else "Unknown"}>'
+
+class Story(db.Model):
+    """Story model for family narratives and memories"""
+    id = db.Column(db.Integer, primary_key=True)
+    vault_id = db.Column(db.Integer, db.ForeignKey('family_vault.id'), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    story_type = db.Column(db.String(50), default='memory')  # 'memory', 'biography', 'event', 'tradition'
+    is_published = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    author = db.relationship('User', backref='authored_stories')
+    photo_attachments = db.relationship('StoryPhoto', backref='story', lazy='dynamic', cascade='all, delete-orphan')
+    person_mentions = db.relationship('StoryPerson', backref='story', lazy='dynamic', cascade='all, delete-orphan')
+    
+    @property
+    def word_count(self):
+        """Approximate word count of the story"""
+        return len(self.content.split()) if self.content else 0
+    
+    def __repr__(self):
+        return f'<Story "{self.title}" by {self.author.username if self.author else "Unknown"}>'
+
+class StoryPhoto(db.Model):
+    """Association model for photos attached to stories"""
+    id = db.Column(db.Integer, primary_key=True)
+    story_id = db.Column(db.Integer, db.ForeignKey('story.id'), nullable=False)
+    photo_id = db.Column(db.Integer, db.ForeignKey('photo.id'), nullable=False)
+    caption = db.Column(db.Text)
+    order_index = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    photo = db.relationship('Photo', backref='story_attachments')
+    
+    def __repr__(self):
+        return f'<StoryPhoto {self.photo.original_name if self.photo else "Unknown"} in Story {self.story_id}>'
+
+class StoryPerson(db.Model):
+    """Association model for people mentioned in stories"""
+    id = db.Column(db.Integer, primary_key=True)
+    story_id = db.Column(db.Integer, db.ForeignKey('story.id'), nullable=False)
+    person_id = db.Column(db.Integer, db.ForeignKey('person.id'), nullable=False)
+    role_in_story = db.Column(db.String(100))  # Their role or significance in this story
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    person = db.relationship('Person', backref='story_mentions')
+    
+    def __repr__(self):
+        return f'<StoryPerson {self.person.name if self.person else "Unknown"} in Story {self.story_id}>'
