@@ -3,7 +3,7 @@ from datetime import timedelta
 
 class Config:
     """Base configuration class"""
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-change-in-production'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # File upload settings
@@ -51,8 +51,10 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(os.path.dirname(os.path.abspath(__file__)), 'photovault.db')
+    
+    # Production requires these environment variables - will be validated in init_app
+    SECRET_KEY = os.environ.get('SECRET_KEY') or None
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or None
     
     # Strict security for production
     SESSION_COOKIE_SECURE = True
@@ -65,20 +67,34 @@ class ProductionConfig(Config):
     def init_app(app):
         Config.init_app(app)
         
-        # Log to stderr in production
+        # Validate required production environment variables
+        if not app.config.get('SECRET_KEY'):
+            raise RuntimeError('SECRET_KEY environment variable must be set for production')
+        if not app.config.get('SQLALCHEMY_DATABASE_URI'):
+            raise RuntimeError('DATABASE_URL environment variable must be set for production')
+        
+        # Configure logging for production
         import logging
+        import sys
         from logging.handlers import RotatingFileHandler
         
         if not app.debug:
-            # File logging
-            if not os.path.exists('logs'):
-                os.mkdir('logs')
-            file_handler = RotatingFileHandler('logs/photovault.log', maxBytes=10240000, backupCount=10)
-            file_handler.setFormatter(logging.Formatter(
-                '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-            ))
-            file_handler.setLevel(logging.INFO)
-            app.logger.addHandler(file_handler)
+            # Use stdout/stderr logging for containerized environments (Replit Autoscale)
+            if os.environ.get('LOG_TO_STDOUT', '').lower() in ['true', '1', 'yes']:
+                stream_handler = logging.StreamHandler(sys.stdout)
+                stream_handler.setFormatter(logging.Formatter(
+                    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+                ))
+                stream_handler.setLevel(logging.INFO)
+                app.logger.addHandler(stream_handler)
+            else:
+                # Default to stdout for production deployments like Replit Autoscale
+                stream_handler = logging.StreamHandler(sys.stdout)
+                stream_handler.setFormatter(logging.Formatter(
+                    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+                ))
+                stream_handler.setLevel(logging.INFO)
+                app.logger.addHandler(stream_handler)
             
             app.logger.setLevel(logging.INFO)
             app.logger.info('PhotoVault startup')

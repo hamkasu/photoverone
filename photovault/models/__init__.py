@@ -213,3 +213,48 @@ class PasswordResetToken(db.Model):
     
     def __repr__(self):
         return f'<PasswordResetToken {self.token[:8]}...>'
+
+class VoiceMemo(db.Model):
+    """Voice memo model for audio recordings attached to photos"""
+    id = db.Column(db.Integer, primary_key=True)
+    photo_id = db.Column(db.Integer, db.ForeignKey('photo.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # Audio file information
+    filename = db.Column(db.String(255), nullable=False)
+    original_name = db.Column(db.String(255), nullable=False)
+    file_path = db.Column(db.String(500), nullable=False)
+    file_size = db.Column(db.Integer)  # Size in bytes
+    mime_type = db.Column(db.String(100))  # audio/webm, audio/wav, etc.
+    duration = db.Column(db.Float)  # Duration in seconds
+    
+    # User metadata
+    title = db.Column(db.String(200))  # Optional title for the voice memo
+    transcript = db.Column(db.Text)  # Optional transcription of the memo
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    photo = db.relationship('Photo', backref='voice_memos')
+    user = db.relationship('User', backref='voice_memos')
+    
+    @property
+    def file_size_mb(self):
+        """Return file size in MB"""
+        if self.file_size:
+            return round(self.file_size / 1024 / 1024, 2)
+        return 0
+    
+    @property
+    def duration_formatted(self):
+        """Return duration in MM:SS format"""
+        if self.duration:
+            minutes = int(self.duration // 60)
+            seconds = int(self.duration % 60)
+            return f"{minutes:02d}:{seconds:02d}"
+        return "00:00"
+    
+    def __repr__(self):
+        return f'<VoiceMemo {self.filename} for Photo {self.photo_id}>'

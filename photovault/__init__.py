@@ -105,9 +105,11 @@ def create_app(config_class=None):
         uploads_dir = app.config.get('UPLOAD_FOLDER')
         return send_from_directory(uploads_dir, filename)
     
-    # Create database tables
+    # Initialize database
     with app.app_context():
-        db.create_all()
+        # Only create tables in development/testing; production should use migrations
+        if app.debug or app.testing:
+            db.create_all()
         
         # Bootstrap superuser account if environment variables are set
         _create_superuser_if_needed(app)
