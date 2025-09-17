@@ -15,6 +15,10 @@ CALMIC SDN BHD - "Committed to Excellence"
 
 {% block title %}{{ photo.original_name }} - PhotoVault{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/voice-memo.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="row">
@@ -158,6 +162,11 @@ CALMIC SDN BHD - "Committed to Excellence"
                     </div>
                     {% endif %}
                 </div>
+            </div>
+            
+            <!-- Voice Memos Section -->
+            <div class="card mt-3">
+                <div id="voiceMemoContainer"></div>
             </div>
             
             <div class="card mt-3">
@@ -418,4 +427,17 @@ function untagPerson(photoId, personId, personName) {
     }
 }
 </script>
+
+<!-- Voice Memo Functionality -->
+<script src="{{ url_for('static', filename='js/voice-memo.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize voice memo recorder for this photo
+    const voiceMemoRecorder = new VoiceMemoRecorder({{ photo.id }}, 'voiceMemoContainer');
+});
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Additional voice memo related scripts if needed -->
 {% endblock %}

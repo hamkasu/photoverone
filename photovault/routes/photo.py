@@ -454,6 +454,249 @@ def delete_photo(photo_id):
             'error': 'Failed to delete photo'
         }), 500
 
+# Voice Memo API Endpoints
+
+@photo_bp.route('/api/photos/<int:photo_id>/voice-memos', methods=['POST'])
+@login_required
+def upload_voice_memo(photo_id):
+    """Upload a voice memo for a photo"""
+    try:
+        from photovault.models import VoiceMemo
+        import uuid
+        import os
+        from werkzeug.utils import secure_filename
+        
+        # Get the photo and verify ownership
+        photo = Photo.query.get_or_404(photo_id)
+        if photo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        # Check if audio file was provided
+        if 'audio' not in request.files:
+            return jsonify({'success': False, 'error': 'No audio file provided'}), 400
+        
+        audio_file = request.files['audio']
+        if not audio_file.filename:
+            return jsonify({'success': False, 'error': 'No audio file selected'}), 400
+        
+        # Validate audio file type
+        allowed_audio_types = {'audio/webm', 'audio/wav', 'audio/mp3', 'audio/ogg', 'audio/mp4'}
+        if audio_file.content_type not in allowed_audio_types:
+            return jsonify({'success': False, 'error': 'Invalid audio file type'}), 400
+        
+        # Generate unique filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_id = str(uuid.uuid4())[:8]
+        file_extension = audio_file.filename.rsplit('.', 1)[1].lower() if '.' in audio_file.filename else 'webm'
+        filename = f"voice_memo_{photo_id}_{timestamp}_{unique_id}.{file_extension}"
+        
+        # Create voice memos directory
+        voice_memo_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(current_user.id), 'voice_memos')
+        os.makedirs(voice_memo_dir, exist_ok=True)
+        
+        # Save audio file
+        file_path = os.path.join(voice_memo_dir, filename)
+        audio_file.save(file_path)
+        
+        # Get file size
+        file_size = os.path.getsize(file_path)
+        
+        # Get optional metadata from request
+        title = request.form.get('title', '').strip()
+        transcript = request.form.get('transcript', '').strip()
+        duration = request.form.get('duration')  # Duration in seconds from frontend
+        
+        # Convert duration to float if provided
+        try:
+            duration = float(duration) if duration else None
+        except (ValueError, TypeError):
+            duration = None
+        
+        # Create voice memo record
+        voice_memo = VoiceMemo(
+            photo_id=photo_id,
+            user_id=current_user.id,
+            filename=filename,
+            original_name=secure_filename(audio_file.filename),
+            file_path=file_path,
+            file_size=file_size,
+            mime_type=audio_file.content_type,
+            duration=duration,
+            title=title if title else None,
+            transcript=transcript if transcript else None
+        )
+        
+        db.session.add(voice_memo)
+        db.session.commit()
+        
+        logger.info(f"Voice memo uploaded for photo {photo_id} by user {current_user.id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Voice memo uploaded successfully',
+            'voice_memo': {
+                'id': voice_memo.id,
+                'filename': voice_memo.filename,
+                'duration': voice_memo.duration,
+                'duration_formatted': voice_memo.duration_formatted,
+                'file_size_mb': voice_memo.file_size_mb,
+                'title': voice_memo.title,
+                'transcript': voice_memo.transcript,
+                'created_at': voice_memo.created_at.isoformat()
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error uploading voice memo for photo {photo_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'Failed to upload voice memo'}), 500
+
+@photo_bp.route('/api/photos/<int:photo_id>/voice-memos', methods=['GET'])
+@login_required
+def get_voice_memos(photo_id):
+    """Get all voice memos for a photo"""
+    try:
+        from photovault.models import VoiceMemo
+        
+        # Get the photo and verify ownership
+        photo = Photo.query.get_or_404(photo_id)
+        if photo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        # Get voice memos for this photo
+        voice_memos = VoiceMemo.query.filter_by(photo_id=photo_id).order_by(VoiceMemo.created_at.desc()).all()
+        
+        memos_data = []
+        for memo in voice_memos:
+            memos_data.append({
+                'id': memo.id,
+                'filename': memo.filename,
+                'original_name': memo.original_name,
+                'duration': memo.duration,
+                'duration_formatted': memo.duration_formatted,
+                'file_size_mb': memo.file_size_mb,
+                'title': memo.title,
+                'transcript': memo.transcript,
+                'created_at': memo.created_at.isoformat(),
+                'updated_at': memo.updated_at.isoformat() if memo.updated_at != memo.created_at else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'voice_memos': memos_data,
+            'total': len(memos_data)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting voice memos for photo {photo_id}: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to get voice memos'}), 500
+
+@photo_bp.route('/api/voice-memos/<int:memo_id>', methods=['GET'])
+@login_required
+def serve_voice_memo(memo_id):
+    """Serve/download a voice memo file"""
+    try:
+        from photovault.models import VoiceMemo
+        from flask import send_file
+        
+        # Get the voice memo and verify ownership
+        voice_memo = VoiceMemo.query.get_or_404(memo_id)
+        if voice_memo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        # Check if file exists
+        if not os.path.exists(voice_memo.file_path):
+            return jsonify({'success': False, 'error': 'Voice memo file not found'}), 404
+        
+        # Serve the file
+        return send_file(
+            voice_memo.file_path,
+            mimetype=voice_memo.mime_type,
+            as_attachment=False,
+            download_name=voice_memo.original_name
+        )
+        
+    except Exception as e:
+        logger.error(f"Error serving voice memo {memo_id}: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to serve voice memo'}), 500
+
+@photo_bp.route('/api/voice-memos/<int:memo_id>', methods=['PUT'])
+@login_required
+def update_voice_memo(memo_id):
+    """Update voice memo metadata (title, transcript)"""
+    try:
+        from photovault.models import VoiceMemo
+        
+        # Get the voice memo and verify ownership
+        voice_memo = VoiceMemo.query.get_or_404(memo_id)
+        if voice_memo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No data provided'}), 400
+        
+        # Update title if provided
+        if 'title' in data:
+            voice_memo.title = data['title'].strip() if data['title'] else None
+        
+        # Update transcript if provided
+        if 'transcript' in data:
+            voice_memo.transcript = data['transcript'].strip() if data['transcript'] else None
+        
+        voice_memo.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        logger.info(f"Voice memo {memo_id} updated by user {current_user.id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Voice memo updated successfully',
+            'voice_memo': {
+                'id': voice_memo.id,
+                'title': voice_memo.title,
+                'transcript': voice_memo.transcript,
+                'updated_at': voice_memo.updated_at.isoformat()
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating voice memo {memo_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'Failed to update voice memo'}), 500
+
+@photo_bp.route('/api/voice-memos/<int:memo_id>', methods=['DELETE'])
+@login_required
+def delete_voice_memo(memo_id):
+    """Delete a voice memo"""
+    try:
+        from photovault.models import VoiceMemo
+        
+        # Get the voice memo and verify ownership
+        voice_memo = VoiceMemo.query.get_or_404(memo_id)
+        if voice_memo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        # Delete physical file
+        if voice_memo.file_path and os.path.exists(voice_memo.file_path):
+            os.remove(voice_memo.file_path)
+        
+        # Delete from database
+        db.session.delete(voice_memo)
+        db.session.commit()
+        
+        logger.info(f"Voice memo {memo_id} deleted by user {current_user.id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Voice memo deleted successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error deleting voice memo {memo_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'Failed to delete voice memo'}), 500
+
 # Error handlers for the blueprint
 @photo_bp.errorhandler(413)
 def too_large(e):
