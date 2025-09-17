@@ -38,7 +38,7 @@ def photos():
         photos = None
         flash('Photo database not ready yet.', 'info')
     
-    return render_template('gallery/photos.html', photos=photos)
+    return render_template('gallery/photos.html', photos=photos, current_filter='all')
 
 @gallery_bp.route('/albums')
 @login_required
@@ -98,3 +98,36 @@ def delete_photo(photo_id):
         flash('Error deleting photo or database not ready.', 'error')
     
     return redirect(url_for('gallery.dashboard'))
+@gallery_bp.route('/photos/originals')
+@login_required
+def originals():
+    """Show only original photos (no edited versions)"""
+    try:
+        from photovault.models import Photo
+        page = request.args.get('page', 1, type=int)
+        photos = Photo.query.filter_by(user_id=current_user.id)\
+                          .filter(Photo.edited_filename.is_(None))\
+                          .order_by(Photo.created_at.desc())\
+                          .paginate(page=page, per_page=20, error_out=False)
+    except Exception as e:
+        photos = None
+        flash('Photo database not ready yet.', 'info')
+    
+    return render_template('gallery/originals.html', photos=photos)
+
+@gallery_bp.route('/photos/edited')
+@login_required
+def edited():
+    """Show only edited photos"""
+    try:
+        from photovault.models import Photo
+        page = request.args.get('page', 1, type=int)
+        photos = Photo.query.filter_by(user_id=current_user.id)\
+                          .filter(Photo.edited_filename.isnot(None))\
+                          .order_by(Photo.created_at.desc())\
+                          .paginate(page=page, per_page=20, error_out=False)
+    except Exception as e:
+        photos = None
+        flash('Photo database not ready.', 'info')
+    
+    return render_template('gallery/edited.html', photos=photos)
