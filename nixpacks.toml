@@ -5,9 +5,8 @@ nixPkgs = ["python311", "pip", "libGL", "mesa", "libglvnd-dev", "pkg-config", "l
 cmds = ["pip install -r requirements.txt"]
 
 [start]
-cmd = "gunicorn --bind 0.0.0.0:$PORT --workers 2 wsgi:app"
+cmd = "gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --graceful-timeout 30 --threads 2 wsgi:app"
 
 [variables]
-PORT = "8080"
 PYTHONPATH = "/app"
 LD_LIBRARY_PATH = "/nix/store"
