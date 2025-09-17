@@ -90,10 +90,11 @@ def process_uploaded_file(file, upload_source='file'):
         unique_id = str(uuid.uuid4())
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
-        # Create secure filename
-        original_name = secure_filename(file.filename) if file.filename else f"capture_{timestamp}"
-        safe_filename = f"{unique_id}_{timestamp}.{file_extension}"
-        thumbnail_filename = f"thumb_{safe_filename}"
+        # Create secure filename with username
+        from flask_login import current_user
+        original_name = f"{current_user.username}_{secure_filename(file.filename)}" if file.filename else f"{current_user.username}_capture_{timestamp}"
+        safe_filename = f"{current_user.username}_{unique_id}_{timestamp}.{file_extension}"
+        thumbnail_filename = f"{current_user.username}_thumb_{safe_filename}"
         
         # Create upload directories if they don't exist
         upload_dir = current_app.config.get('UPLOAD_FOLDER', 'uploads')

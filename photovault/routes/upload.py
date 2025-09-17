@@ -75,10 +75,11 @@ def upload_photos():
                     errors.append(f"{file.filename}: {validation_msg}")
                     continue
                 
-                # Generate unique filename
+                # Generate unique filename with username
                 unique_filename = generate_unique_filename(
                     file.filename, 
-                    prefix='camera' if upload_source == 'camera' else 'upload'
+                    prefix='camera' if upload_source == 'camera' else 'upload',
+                    username=current_user.username
                 )
                 
                 # Save file
@@ -128,7 +129,7 @@ def upload_photos():
                     photo = Photo(
                         user_id=current_user.id,
                         filename=unique_filename,
-                        original_name=file.filename or f'capture_{datetime.now().strftime("%Y%m%d_%H%M%S")}.jpg',
+                        original_name=f"{current_user.username}_{file.filename}" if file.filename else f'{current_user.username}_capture_{datetime.now().strftime("%Y%m%d_%H%M%S")}.jpg',
                         file_path=file_path,
                         thumbnail_path=thumbnail_path,
                         file_size=image_info['size_bytes'],
@@ -148,7 +149,7 @@ def upload_photos():
                     uploaded_files.append({
                         'id': photo.id,
                         'filename': unique_filename,
-                        'original_name': file.filename,
+                        'original_name': f"{current_user.username}_{file.filename}" if file.filename else f'{current_user.username}_capture',
                         'file_size': image_info['size_bytes'],
                         'dimensions': f"{image_info['width']}x{image_info['height']}",
                         'upload_source': upload_source,

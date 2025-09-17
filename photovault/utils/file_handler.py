@@ -118,13 +118,14 @@ def save_uploaded_file(file, filename, user_id=None):
         logger.error(f'Error saving file {filename}: {str(e)}')
         return False, f'Save error: {str(e)}'
 
-def generate_unique_filename(original_filename, prefix=""):
+def generate_unique_filename(original_filename, prefix="", username=None):
     """
     Generate a unique filename while preserving the original extension
     
     Args:
         original_filename: Original filename from upload
         prefix: Optional prefix for the filename
+        username: Optional username to include at the start of filename
         
     Returns:
         str: Unique filename with original extension
@@ -141,11 +142,23 @@ def generate_unique_filename(original_filename, prefix=""):
     unique_id = str(uuid.uuid4().hex)[:12]
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     
-    # Combine with prefix if provided
+    # Build filename components
     if prefix:
-        unique_name = f"{prefix}_{timestamp}_{unique_id}"
+        parts = []
+        if username:
+            parts.append(secure_filename(username))
+        parts.append(prefix)
+        parts.append(timestamp)
+        parts.append(unique_id)
+        unique_name = "_".join(parts)
     else:
-        unique_name = f"{timestamp}_{unique_id}"
+        parts = []
+        if username:
+            parts.append(secure_filename(username))
+        parts.append("upload")
+        parts.append(timestamp)
+        parts.append(unique_id)
+        unique_name = "_".join(parts)
     
     return f"{unique_name}{file_ext}"
 

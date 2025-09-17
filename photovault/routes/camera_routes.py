@@ -50,11 +50,11 @@ def upload_image():
                 'error': 'Invalid file type'
             }), 400
 
-        # Generate secure filename
+        # Generate secure filename with username
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         unique_id = str(uuid.uuid4())[:8]
         file_extension = get_file_extension(file.filename)
-        filename = f"camera_{timestamp}_{unique_id}{file_extension}"
+        filename = f"{current_user.username}_camera_{timestamp}_{unique_id}{file_extension}"
         
         # Ensure upload directory exists
         upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], str(current_user.id))
@@ -74,7 +74,7 @@ def upload_image():
                 
                 photo = Photo(
                     filename=filename,
-                    original_name=file.filename or 'camera-capture.jpg',
+                    original_name=f"{current_user.username}_{file.filename}" if file.filename else f'{current_user.username}_camera-capture.jpg',
                     user_id=current_user.id,
                     file_path=file_path,
                     created_at=datetime.utcnow(),
