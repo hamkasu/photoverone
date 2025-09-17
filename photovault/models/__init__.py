@@ -77,6 +77,9 @@ class Person(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
+    # Back reference to association object
+    photo_people_records = db.relationship('PhotoPerson', back_populates='person', overlaps="photos")
+    
     def __repr__(self):
         return f'<Person {self.name}>'
 
@@ -125,7 +128,11 @@ class Photo(db.Model):
     
     # Many-to-many relationship with people through PhotoPerson association
     people = db.relationship('Person', secondary='photo_people', lazy='subquery',
-                           backref=db.backref('photos', lazy=True))
+                           backref=db.backref('photos', lazy=True, overlaps="photo_people_records"), 
+                           overlaps="photo_people_records")
+    
+    # Back reference to association object
+    photo_people_records = db.relationship('PhotoPerson', back_populates='photo', overlaps="people,photos")
     
     def __repr__(self):
         return f'<Photo {self.filename}>'
@@ -163,8 +170,8 @@ class PhotoPerson(db.Model):
     notes = db.Column(db.String(255))  # Optional notes about the identification
     
     # Relationships
-    photo = db.relationship('Photo', backref='photo_people_records')
-    person = db.relationship('Person', backref='photo_people_records')
+    photo = db.relationship('Photo', back_populates='photo_people_records', overlaps="people,photos")
+    person = db.relationship('Person', back_populates='photo_people_records', overlaps="people,photos")
     
     # Ensure unique photo-person combinations
     __table_args__ = (db.UniqueConstraint('photo_id', 'person_id', name='unique_photo_person'),)

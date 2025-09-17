@@ -432,8 +432,21 @@ def delete_photo(photo_id):
         if photo.thumbnail_path and os.path.exists(photo.thumbnail_path):
             os.remove(photo.thumbnail_path)
             
-        if photo.edited_path and os.path.exists(photo.edited_path):
-            os.remove(photo.edited_path)
+        # Delete edited version if it exists
+        if photo.edited_filename:
+            edited_path = os.path.join(current_app.config['UPLOAD_FOLDER'], str(photo.user_id), photo.edited_filename)
+            if os.path.exists(edited_path):
+                os.remove(edited_path)
+        
+        # Delete associated voice memos first
+        from photovault.models import VoiceMemo
+        voice_memos = VoiceMemo.query.filter_by(photo_id=photo.id).all()
+        for memo in voice_memos:
+            # Delete voice memo file if it exists
+            if memo.file_path and os.path.exists(memo.file_path):
+                os.remove(memo.file_path)
+            # Delete memo from database
+            db.session.delete(memo)
         
         # Delete from database
         db.session.delete(photo)
