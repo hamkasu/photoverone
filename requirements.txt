@@ -38,3 +38,11 @@ gunicorn==21.2.0
 # Development Tools
 python-decouple==3.8
 alembic==1.13.1
+Flask
+gunicorn
+opencv-python
+Pillow
+python-dotenv
+email-validator
+exifread
+psycopg2-binary
