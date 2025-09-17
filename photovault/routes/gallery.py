@@ -66,7 +66,7 @@ def view_photo(photo_id):
     try:
         from photovault.models import Photo
         photo = Photo.query.filter_by(id=photo_id, user_id=current_user.id).first_or_404()
-        return render_template('gallery/photo_detail.html', photo=photo)
+        return render_template('view_photo.html', photo=photo, tagged_people=[], all_people=[])
     except Exception as e:
         flash('Photo not found or database not ready.', 'error')
         return redirect(url_for('gallery.dashboard'))

@@ -87,6 +87,7 @@ def create_app(config_class=None):
     from photovault.routes.superuser import superuser_bp
     from photovault.routes.photo import photo_bp
     from photovault.routes.camera_routes import camera_bp
+    from photovault.routes.gallery import gallery_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -95,6 +96,7 @@ def create_app(config_class=None):
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(superuser_bp, url_prefix='/superuser')
     app.register_blueprint(photo_bp)
+    app.register_blueprint(gallery_bp)
     
     # Add route to serve uploaded images
     @app.route('/static/uploads/<path:filename>')
