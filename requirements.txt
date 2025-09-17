@@ -38,3 +38,27 @@ gunicorn==21.2.0
 # Development Tools
 python-decouple==3.8
 alembic==1.13.1
+alembic
+blinker
+click
+email-validator
+exifread
+Flask
+Flask-Login
+Flask-Migrate
+Flask-SQLAlchemy
+Flask-WTF
+gunicorn
+itsdangerous
+Jinja2
+MarkupSafe
+numpy
+opencv-python
+Pillow
+psycopg2-binary
+python-decouple
+python-dotenv
+scikit-image
+SQLAlchemy
+Werkzeug
+WTForms
