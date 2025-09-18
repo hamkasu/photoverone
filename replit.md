@@ -60,14 +60,16 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## September 18, 2025 - Photo Editor Responsive Sizing Fix
-- **Issue Resolved**: Fixed image sizing problem in photo editor where images were sized for laptop screens regardless of device
+## September 18, 2025 - Photo Editor Responsive Sizing & Save Functionality Fixed
+- **Image Sizing Fixed**: Resolved image sizing problem where editor images were sized for laptop screens regardless of device
 - **Responsive Canvas**: Modified `resizeCanvas()` function to calculate available screen space and scale images to fit device screens
-- **Aspect Ratio Preservation**: Ensures images maintain their proper proportions on all device sizes (mobile, tablet, desktop)
+- **Aspect Ratio Preservation**: Ensures images maintain proper proportions on all device sizes (mobile, tablet, desktop)
 - **Coordinate Mapping**: Updated `getMousePos()` function for accurate drawing and interaction with scaled images
 - **Dynamic Adaptation**: Added window resize listener for device orientation changes and responsive behavior
-- **Mobile Optimization**: Editor now provides optimal viewing and editing experience across all device types
-- **Enhanced User Experience**: Drawing tools (pen, shapes, text, filters) work accurately with the responsive canvas system
+- **Mobile Optimization**: Editor provides optimal viewing and editing experience across all device types
+- **Toolbox Layout Improved**: Widened editing toolbox and optimized button layout to prevent word wrapping in markup tool labels
+- **Save Functionality Fixed**: Resolved save failure issue by ensuring CSRF token is properly available to JavaScript
+- **Security Maintained**: Fixed save functionality while keeping all CSRF protection intact - no security compromises
 
 ## September 18, 2025 - Simultaneous Quad-Photo Capture Feature Added
 - **New Feature**: Enhanced camera interface with simultaneous quad-photo capture capability
