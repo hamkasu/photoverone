@@ -56,8 +56,17 @@ function initEditor() {
     document.getElementById('lineWidth').addEventListener('input', updateLineWidth);
     document.getElementById('fontSize').addEventListener('input', updateFontSize);
     
-    // Initialize editor when page loads
-    document.addEventListener('DOMContentLoaded', initEditor);
+    // Add window resize listener for responsive canvas
+    window.addEventListener('resize', function() {
+        if (image) {
+            setTimeout(() => {
+                resizeCanvas();
+                applyFilters();
+            }, 100); // Small delay to allow layout to stabilize
+        }
+    });
+    
+    // Note: Editor initialization happens via the global DOMContentLoaded listener at bottom of file
 }
 
 function handleTouchStart(e) {
@@ -183,9 +192,12 @@ function stopDrawing() {
 
 function getMousePos(canvas, evt) {
     const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
     return [
-        (evt.clientX - rect.left) / (rect.right - rect.left) * canvas.width,
-        (evt.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
+        (evt.clientX - rect.left) * scaleX,
+        (evt.clientY - rect.top) * scaleY
     ];
 }
 
@@ -217,7 +229,7 @@ function applyFilters() {
     ctx.rotate(rotation * Math.PI / 180);
     ctx.translate(-canvas.width / 2, -canvas.height / 2);
     
-    // Draw image
+    // Draw image scaled to fit canvas
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
     
     // Apply filters if needed (for more advanced filters, you'd use getImageData)
@@ -235,8 +247,37 @@ function applyFilters() {
 
 function resizeCanvas() {
     if (!image) return;
-    canvas.width = image.width;
-    canvas.height = image.height;
+    
+    // Get the container dimensions (considering the col-md-9 layout)
+    const container = canvas.parentElement;
+    const containerWidth = container.clientWidth - 20; // Account for padding
+    
+    // Calculate available height more accurately
+    const containerRect = container.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const availableHeight = viewportHeight - containerRect.top - 100; // Account for bottom margins
+    const containerHeight = Math.max(300, availableHeight); // Minimum height of 300px
+    
+    // Calculate the scale factor to fit the image within the container
+    const scaleX = containerWidth / image.width;
+    const scaleY = containerHeight / image.height;
+    const scale = Math.min(scaleX, scaleY, 1); // Don't scale up, only scale down
+    
+    // Set canvas dimensions to scaled image size
+    canvas.width = image.width * scale;
+    canvas.height = image.height * scale;
+    
+    // Store scale factor for coordinate conversion
+    canvas.dataset.scale = scale;
+    
+    // Apply CSS styling to ensure proper display
+    canvas.style.maxWidth = '100%';
+    canvas.style.maxHeight = '80vh';
+    canvas.style.border = '2px solid #ddd';
+    canvas.style.borderRadius = '8px';
+    canvas.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+    canvas.style.display = 'block';
+    canvas.style.margin = '0 auto';
 }
 
 function saveEdit() {
