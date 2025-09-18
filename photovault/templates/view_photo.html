@@ -34,16 +34,20 @@ CALMIC SDN BHD - "Committed to Excellence"
                            class="btn btn-outline-warning btn-sm" title="Edit photo">
                             <i class="bi bi-pencil"></i>
                         </a>
-                        <a href="{{ url_for('static', filename='uploads/' + photo.filename) }}" 
+                        <a href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
                            download="{{ photo.original_name }}" 
                            class="btn btn-outline-success btn-sm" title="Download original">
                             <i class="bi bi-download"></i>
                         </a>
                         {% if photo.edited_filename %}
-                        <a href="{{ url_for('static', filename='uploads/' + photo.edited_filename) }}" 
+                        <a href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
                            target="_blank" 
                            class="btn btn-outline-info btn-sm" title="View edited version">
                             <i class="bi bi-eye-fill"></i>
+                        </a>
+                        <a href="{{ url_for('gallery.compare_single_photo', photo_id=photo.id) }}" 
+                           class="btn btn-outline-primary btn-sm" title="Compare original vs edited">
+                            <i class="bi bi-compare"></i>
                         </a>
                         {% endif %}
                         <button class="btn btn-outline-danger btn-sm" onclick="deletePhoto({{ photo.id }})" title="Delete photo">
@@ -73,7 +77,7 @@ CALMIC SDN BHD - "Committed to Excellence"
                         </form>
                     </div>
                     
-                    <img src="{{ url_for('static', filename='uploads/' + photo.filename) }}" 
+                    <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
                          class="img-fluid w-100" 
                          alt="{{ photo.original_name }}"
                          style="max-height: 70vh; object-fit: contain;">
@@ -184,7 +188,12 @@ CALMIC SDN BHD - "Committed to Excellence"
                         <a href="/gallery" class="btn btn-outline-secondary">
                             <i class="bi bi-images"></i> Back to Gallery
                         </a>
-                        <a href="{{ url_for('static', filename='uploads/' + photo.filename) }}" 
+                        {% if photo.edited_filename %}
+                        <a href="{{ url_for('gallery.compare_single_photo', photo_id=photo.id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-compare"></i> Compare Versions
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
                            target="_blank" 
                            class="btn btn-outline-info">
                             <i class="bi bi-arrows-fullscreen"></i> View Full Size

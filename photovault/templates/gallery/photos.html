@@ -33,6 +33,9 @@ CALMIC SDN BHD - "Committed to Excellence"
                 <a href="{{ url_for('gallery.edited') }}" class="btn btn-outline-success">
                     <i class="bi bi-pencil"></i> Edited Only
                 </a>
+                <a href="{{ url_for('gallery.compare_photos') }}" class="btn btn-outline-info">
+                    <i class="bi bi-compare"></i> Compare
+                </a>
             </div>
         </div>
     </div>
@@ -44,11 +47,11 @@ CALMIC SDN BHD - "Committed to Excellence"
             <div class="card h-100">
                 <!-- Display edited image if it exists, otherwise show original -->
                 {% if photo.edited_filename %}
-                    <img src="{{ url_for('static', filename='uploads/' + photo.user_id|string + '/' + photo.edited_filename) }}" 
+                    <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
                          class="card-img-top" 
                          alt="{{ photo.original_name }} (Edited)">
                 {% else %}
-                    <img src="{{ url_for('static', filename='uploads/' + photo.user_id|string + '/' + photo.filename) }}" 
+                    <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
                          class="card-img-top" 
                          alt="{{ photo.original_name }}">
                 {% endif %}
@@ -91,14 +94,14 @@ CALMIC SDN BHD - "Committed to Excellence"
                         </a>
                         <!-- Download -->
                         {% if photo.edited_filename %}
-                        <a href="{{ url_for('static', filename='uploads/' + photo.user_id|string + '/' + photo.edited_filename) }}" 
+                        <a href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
                            download="{{ photo.original_name }}_edited" 
                            class="btn btn-outline-success" 
                            title="Download edited version">
                             <i class="bi bi-download"></i>
                         </a>
                         {% else %}
-                        <a href="{{ url_for('static', filename='uploads/' + photo.user_id|string + '/' + photo.filename) }}" 
+                        <a href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
                            download="{{ photo.original_name }}" 
                            class="btn btn-outline-success" 
                            title="Download original">
