@@ -50,9 +50,12 @@ def dashboard():
         from photovault.models import Photo
         
         total_photos = Photo.query.filter_by(user_id=current_user.id).count()
-        # For now, assume all photos are originals since there's no edited version tracking yet
-        edited_photos = 0
-        original_photos = total_photos
+        # Count photos with edited versions
+        edited_photos = Photo.query.filter_by(user_id=current_user.id)\
+                              .filter(Photo.edited_filename.isnot(None))\
+                              .count()
+        # Original photos are those without edited versions
+        original_photos = total_photos - edited_photos
         
         # Calculate total storage used (in MB)
         photos = Photo.query.filter_by(user_id=current_user.id).all()
