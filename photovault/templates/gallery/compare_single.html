@@ -307,7 +307,7 @@ CALMIC SDN BHD - "Committed to Excellence"
         </div>
 
         <div class="comparison-actions">
-            <a href="{{ url_for('main.editor', photo_id=photo.id) }}" class="btn btn-warning">
+            <a href="{{ url_for('main.edit_photo', photo_id=photo.id) }}" class="btn btn-warning">
                 <i class="bi bi-pencil"></i> Continue Editing
             </a>
             <a href="{{ url_for('static', filename='uploads/' + photo.filename) }}" 
