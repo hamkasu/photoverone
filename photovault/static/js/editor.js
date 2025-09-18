@@ -248,7 +248,7 @@ function applyFilters() {
 function resizeCanvas() {
     if (!image) return;
     
-    // Get the container dimensions (considering the col-md-9 layout)
+    // Get the container dimensions (considering the col-md-8 layout)
     const container = canvas.parentElement;
     const containerWidth = container.clientWidth - 20; // Account for padding
     

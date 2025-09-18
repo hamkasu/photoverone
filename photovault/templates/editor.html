@@ -17,12 +17,12 @@ CALMIC SDN BHD - "Committed to Excellence"
 {% block content %}
 <div class="container-fluid mt-3">
     <div class="row">
-        <div class="col-md-9">
+        <div class="col-md-8">
             <canvas id="canvas"></canvas>
             <!-- Load the ORIGINAL image as the source for editing -->
             <img id="sourceImage" src="{{ url_for('static', filename='uploads/' + photo.user_id|string + '/' + photo.filename) }}" style="display: none;">
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
                     <h5>Editing Tools</h5>
@@ -47,34 +47,34 @@ CALMIC SDN BHD - "Committed to Excellence"
                     </div>
 
                     <h6>Markup Tools</h6>
-                    <div class="row mb-3">
-                        <div class="col-4 mb-2">
-                            <button class="btn btn-outline-primary btn-sm w-100" onclick="setTool('pen')">
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-lg-4 mb-2">
+                            <button class="btn btn-outline-primary btn-sm w-100 text-nowrap" onclick="setTool('pen')">
                                 <i class="bi bi-pen"></i> Pen
                             </button>
                         </div>
-                        <div class="col-4 mb-2">
-                            <button class="btn btn-outline-primary btn-sm w-100" onclick="setTool('highlight')">
+                        <div class="col-6 col-lg-4 mb-2">
+                            <button class="btn btn-outline-primary btn-sm w-100 text-nowrap" onclick="setTool('highlight')">
                                 <i class="bi bi-highlighter"></i> Highlight
                             </button>
                         </div>
-                        <div class="col-4 mb-2">
-                            <button class="btn btn-outline-primary btn-sm w-100" onclick="setTool('arrow')">
+                        <div class="col-6 col-lg-4 mb-2">
+                            <button class="btn btn-outline-primary btn-sm w-100 text-nowrap" onclick="setTool('arrow')">
                                 <i class="bi bi-arrow-up-right"></i> Arrow
                             </button>
                         </div>
-                        <div class="col-4 mb-2">
-                            <button class="btn btn-outline-primary btn-sm w-100" onclick="setTool('rectangle')">
+                        <div class="col-6 col-lg-4 mb-2">
+                            <button class="btn btn-outline-primary btn-sm w-100 text-nowrap" onclick="setTool('rectangle')">
                                 <i class="bi bi-square"></i> Box
                             </button>
                         </div>
-                        <div class="col-4 mb-2">
-                            <button class="btn btn-outline-primary btn-sm w-100" onclick="setTool('circle')">
+                        <div class="col-6 col-lg-4 mb-2">
+                            <button class="btn btn-outline-primary btn-sm w-100 text-nowrap" onclick="setTool('circle')">
                                 <i class="bi bi-circle"></i> Circle
                             </button>
                         </div>
-                        <div class="col-4 mb-2">
-                            <button class="btn btn-outline-primary btn-sm w-100" onclick="setTool('text')">
+                        <div class="col-6 col-lg-4 mb-2">
+                            <button class="btn btn-outline-primary btn-sm w-100 text-nowrap" onclick="setTool('text')">
                                 <i class="bi bi-fonts"></i> Text
                             </button>
                         </div>
