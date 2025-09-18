@@ -16,6 +16,11 @@ class PhotoVaultEnhancedCamera {
         this.isCapturing = false;
         this.orientationLocked = false;
         
+        // Photo capture mode management  
+        this.captureMode = 'single'; // 'single' | 'sequential' | 'quad'
+        this.quadrantOrder = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+        this.currentQuadrant = 0;
+        
         // Configuration
         this.config = {
             maxFileSize: 16 * 1024 * 1024, // 16MB
@@ -30,6 +35,9 @@ class PhotoVaultEnhancedCamera {
         
         // Initialize system
         this.initialize();
+        
+        // Initialize UI state
+        this.initializeQuadUI();
     }
 
     initializeElements() {
@@ -42,7 +50,7 @@ class PhotoVaultEnhancedCamera {
         elements.closeCameraBtn = document.getElementById('close-camera');
         
         // Video and canvas
-        elements.cameraVideo = document.getElementById('camera-video');
+        elements.cameraVideo = document.getElementById('cameraVideo');
         elements.photoCanvas = document.getElementById('photo-canvas');
         elements.cameraFullscreen = document.getElementById('camera-fullscreen');
         
@@ -55,6 +63,12 @@ class PhotoVaultEnhancedCamera {
         // File upload
         elements.fileInput = document.getElementById('file-input');
         elements.uploadArea = document.querySelector('.upload-area');
+        
+        // Quad mode elements
+        elements.multiPhotoButton = document.getElementById('multiPhotoButton');
+        elements.modeSelector = document.getElementById('modeSelector');
+        elements.quadSplitOverlay = document.getElementById('quadSplitOverlay');
+        elements.snapButton = document.getElementById('snapButton');
         
         return elements;
     }
@@ -239,7 +253,7 @@ class PhotoVaultEnhancedCamera {
         // Video tap/click to capture
         this.elements.cameraVideo?.addEventListener('click', (e) => {
             if (this.isFullscreen && !this.isCapturing) {
-                this.capturePhoto();
+                this.handleCaptureAction();
             }
         });
         
@@ -259,7 +273,7 @@ class PhotoVaultEnhancedCamera {
                     case 'Enter':
                         e.preventDefault();
                         if (!this.isCapturing) {
-                            this.capturePhoto();
+                            this.handleCaptureAction();
                         }
                         break;
                 }
@@ -291,6 +305,21 @@ class PhotoVaultEnhancedCamera {
         window.addEventListener('resize', () => {
             if (this.isFullscreen) {
                 this.handleWindowResize();
+            }
+        });
+        
+        // Quad mode event listeners
+        this.elements.multiPhotoButton?.addEventListener('click', () => {
+            this.toggleMultiPhotoMode();
+        });
+        
+        this.elements.modeSelector?.addEventListener('click', () => {
+            this.toggleCaptureMode();
+        });
+        
+        this.elements.snapButton?.addEventListener('click', () => {
+            if (this.isFullscreen && !this.isCapturing) {
+                this.handleCaptureAction();
             }
         });
     }
@@ -788,6 +817,415 @@ class PhotoVaultEnhancedCamera {
             this.currentStream.getVideoTracks().forEach(track => {
                 track.enabled = true;
             });
+        }
+    }
+    
+    // Photo Capture Mode Methods
+    toggleMultiPhotoMode() {
+        if (this.captureMode === 'single') {
+            this.captureMode = 'sequential';
+        } else {
+            this.captureMode = 'single';
+        }
+        this.updateModeUI();
+    }
+    
+    toggleCaptureMode() {
+        if (this.captureMode === 'sequential') {
+            this.captureMode = 'quad';
+        } else if (this.captureMode === 'quad') {
+            this.captureMode = 'sequential';
+        }
+        this.updateModeUI();
+    }
+    
+    updateModeUI() {
+        const button = this.elements.multiPhotoButton;
+        const icon = document.getElementById('multiPhotoIcon');
+        const text = document.getElementById('multiPhotoText');
+        const modeSelector = this.elements.modeSelector;
+        
+        // Update multi-photo button
+        if (this.captureMode === 'single') {
+            button?.classList.remove('active');
+            if (icon) icon.textContent = '📷';
+            if (text) text.textContent = 'Single';
+            this.hideQuadOverlay();
+            console.log('🔄 Single photo mode activated');
+        } else {
+            button?.classList.add('active');
+            if (icon) icon.textContent = '📷✕4';
+            if (text) text.textContent = 'Multi';
+            console.log('🔄 Multi-photo mode activated');
+        }
+        
+        // Update mode selector visibility and text
+        if (this.captureMode === 'single') {
+            if (modeSelector) modeSelector.style.display = 'none';
+        } else {
+            if (modeSelector) modeSelector.style.display = 'flex';
+            
+            if (this.captureMode === 'sequential') {
+                modeSelector?.classList.remove('quad-mode');
+                if (modeSelector) modeSelector.textContent = '🔢 Sequential';
+                this.hideQuadOverlay();
+                console.log('🔄 Sequential mode active');
+            } else if (this.captureMode === 'quad') {
+                modeSelector?.classList.add('quad-mode');
+                if (modeSelector) modeSelector.textContent = '🔲 Quad Split';
+                this.showQuadOverlay();
+                console.log('🔄 Quad Split mode active');
+            }
+        }
+    }
+    
+    handleCaptureAction() {
+        switch (this.captureMode) {
+            case 'quad':
+                this.captureQuadPhotos();
+                break;
+            case 'sequential':
+                this.captureSequentialPhotos();
+                break;
+            case 'single':
+            default:
+                this.capturePhoto();
+                break;
+        }
+    }
+    
+    showQuadOverlay() {
+        this.elements.quadSplitOverlay?.classList.remove('hidden');
+    }
+    
+    hideQuadOverlay() {
+        this.elements.quadSplitOverlay?.classList.add('hidden');
+    }
+    
+    initializeQuadUI() {
+        // Initialize mode UI based on current mode (single)
+        this.updateModeUI();
+        
+        console.log('🎯 Photo capture UI initialized - starting in Single Photo mode');
+    }
+    
+    async captureSequentialPhotos() {
+        if (!this.currentStream || !this.isFullscreen || this.isCapturing) return;
+        
+        this.isCapturing = true;
+        console.log('📸🔢 Starting sequential photo capture...');
+        
+        try {
+            let successCount = 0;
+            const totalPhotos = 4;
+            
+            for (let i = 0; i < totalPhotos; i++) {
+                // Show countdown
+                await this.showSequentialCountdown(i + 1, totalPhotos);
+                
+                // Capture photo
+                const success = await this.captureSinglePhotoSequential(i + 1);
+                if (success) {
+                    successCount++;
+                }
+                
+                // Small delay between captures
+                if (i < totalPhotos - 1) {
+                    await this.delay(1000);
+                }
+            }
+            
+            if (successCount === totalPhotos) {
+                this.showCaptureSuccess(`📷✕4 All ${totalPhotos} sequential photos captured successfully!`);
+                console.log(`✅ All ${totalPhotos} sequential photos captured`);
+                
+                // Auto-exit after successful capture
+                setTimeout(() => {
+                    this.exitFullScreenCamera();
+                }, 2000);
+            } else if (successCount > 0) {
+                this.showCaptureSuccess(`⚠️ ${successCount}/${totalPhotos} sequential photos captured`);
+                console.log(`⚠️ ${successCount}/${totalPhotos} sequential photos captured`);
+            } else {
+                throw new Error('All sequential photo captures failed');
+            }
+            
+        } catch (error) {
+            console.error('❌ Failed to capture sequential photos:', error);
+            this.showError('Failed to capture sequential photos: ' + error.message);
+        } finally {
+            this.isCapturing = false;
+        }
+    }
+    
+    async showSequentialCountdown(current, total) {
+        return new Promise((resolve) => {
+            // Create countdown display
+            const countdown = document.createElement('div');
+            countdown.className = 'sequential-countdown';
+            countdown.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                font-size: 48px;
+                font-weight: bold;
+                padding: 30px 50px;
+                border-radius: 15px;
+                z-index: 300;
+                text-align: center;
+                backdrop-filter: blur(10px);
+                border: 3px solid rgba(255, 255, 255, 0.3);
+            `;
+            countdown.innerHTML = `
+                <div style="font-size: 24px; margin-bottom: 10px;">Photo ${current} of ${total}</div>
+                <div style="font-size: 72px; color: #4ade80;">3</div>
+            `;
+            
+            document.body.appendChild(countdown);
+            
+            let count = 3;
+            const countdownInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdown.querySelector('div:last-child').textContent = count;
+                    countdown.querySelector('div:last-child').style.color = count === 1 ? '#ff4757' : '#4ade80';
+                } else {
+                    countdown.querySelector('div:last-child').textContent = '📸';
+                    countdown.querySelector('div:last-child').style.color = '#ffd700';
+                    clearInterval(countdownInterval);
+                    
+                    setTimeout(() => {
+                        if (countdown.parentNode) {
+                            countdown.parentNode.removeChild(countdown);
+                        }
+                        resolve();
+                    }, 500);
+                }
+            }, 1000);
+        });
+    }
+    
+    async captureSinglePhotoSequential(photoNumber) {
+        try {
+            // Visual feedback
+            this.showCaptureFlash();
+            this.triggerHapticFeedback();
+            
+            // Get video element
+            const video = this.elements.cameraVideo;
+            const canvas = this.elements.photoCanvas;
+            const ctx = canvas.getContext('2d');
+            
+            // Wait for video to be properly loaded
+            if (video.videoWidth === 0 || video.videoHeight === 0) {
+                throw new Error('Video not ready');
+            }
+            
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw video frame to canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert to blob
+            const blob = await new Promise((resolve, reject) => {
+                canvas.toBlob(resolve, 'image/jpeg', this.config.captureQuality);
+                setTimeout(() => reject(new Error('Capture timeout')), 5000);
+            });
+            
+            if (!blob) {
+                throw new Error('Failed to create image blob');
+            }
+            
+            // Create file
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const filename = `photovault-sequential-${photoNumber}-${timestamp}.jpg`;
+            const file = new File([blob], filename, { type: 'image/jpeg' });
+            
+            console.log(`📷 Sequential photo ${photoNumber} captured: ${filename}`);
+            
+            // Upload the photo
+            return await this.uploadFileWithSequential(file, photoNumber);
+            
+        } catch (error) {
+            console.error(`❌ Failed to capture sequential photo ${photoNumber}:`, error);
+            return false;
+        }
+    }
+    
+    async uploadFileWithSequential(file, photoNumber) {
+        console.log(`📤 Uploading sequential photo ${photoNumber}: ${file.name}`);
+        
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('sequence_number', photoNumber.toString());
+            
+            const response = await fetch('/camera/upload', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                console.log(`✅ Sequential photo ${photoNumber} upload successful: ${file.name}`);
+                return true;
+            } else {
+                console.error(`❌ Sequential photo ${photoNumber} upload failed: ${result.error}`);
+                return false;
+            }
+            
+        } catch (error) {
+            console.error(`❌ Sequential photo ${photoNumber} upload error:`, error);
+            return false;
+        }
+    }
+    
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    async captureQuadPhotos() {
+        if (!this.currentStream || !this.isFullscreen || this.isCapturing) return;
+        
+        this.isCapturing = true;
+        console.log('📸🔲 Capturing quad photos...');
+        
+        try {
+            // Visual feedback
+            this.showCaptureFlash();
+            this.triggerHapticFeedback();
+            
+            // Get video element
+            const video = this.elements.cameraVideo;
+            const canvas = this.elements.photoCanvas;
+            const ctx = canvas.getContext('2d');
+            
+            // Wait for video to be properly loaded
+            if (video.videoWidth === 0 || video.videoHeight === 0) {
+                throw new Error('Video not ready');
+            }
+            
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            console.log('📐 Capturing quad at resolution:', canvas.width, 'x', canvas.height);
+            
+            // Draw full video frame to canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Calculate quadrant dimensions
+            const quadWidth = canvas.width / 2;
+            const quadHeight = canvas.height / 2;
+            
+            // Capture each quadrant
+            const quadrants = [
+                { name: 'top-left', x: 0, y: 0 },
+                { name: 'top-right', x: quadWidth, y: 0 },
+                { name: 'bottom-left', x: 0, y: quadHeight },
+                { name: 'bottom-right', x: quadWidth, y: quadHeight }
+            ];
+            
+            const uploadPromises = [];
+            
+            for (const quadrant of quadrants) {
+                // Create new canvas for each quadrant
+                const quadCanvas = document.createElement('canvas');
+                quadCanvas.width = quadWidth;
+                quadCanvas.height = quadHeight;
+                const quadCtx = quadCanvas.getContext('2d');
+                
+                // Draw the quadrant section from main canvas
+                quadCtx.drawImage(
+                    canvas, 
+                    quadrant.x, quadrant.y, quadWidth, quadHeight,
+                    0, 0, quadWidth, quadHeight
+                );
+                
+                // Convert quadrant to blob
+                const blob = await new Promise((resolve, reject) => {
+                    quadCanvas.toBlob(resolve, 'image/jpeg', this.config.captureQuality);
+                    setTimeout(() => reject(new Error('Capture timeout')), 5000);
+                });
+                
+                if (!blob) {
+                    throw new Error(`Failed to create image blob for ${quadrant.name}`);
+                }
+                
+                // Create file for this quadrant
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                const filename = `photovault-quad-${quadrant.name}-${timestamp}.jpg`;
+                const file = new File([blob], filename, { type: 'image/jpeg' });
+                
+                // Upload this quadrant with quadrant info
+                uploadPromises.push(this.uploadFileWithQuadrant(file, quadrant.name));
+            }
+            
+            // Wait for all uploads to complete
+            const results = await Promise.allSettled(uploadPromises);
+            const successCount = results.filter(result => result.status === 'fulfilled' && result.value).length;
+            
+            if (successCount === 4) {
+                this.showCaptureSuccess('🔲 All 4 quad photos captured and uploaded successfully!');
+                console.log('✅ All quad photos captured successfully');
+                
+                // Auto-exit after successful capture
+                setTimeout(() => {
+                    this.exitFullScreenCamera();
+                }, 2000);
+            } else if (successCount > 0) {
+                this.showCaptureSuccess(`⚠️ ${successCount}/4 quad photos uploaded successfully`);
+                console.log(`⚠️ ${successCount}/4 quad photos uploaded`);
+            } else {
+                throw new Error('All quad photo uploads failed');
+            }
+            
+        } catch (error) {
+            console.error('❌ Failed to capture quad photos:', error);
+            this.showError('Failed to capture quad photos: ' + error.message);
+        } finally {
+            this.isCapturing = false;
+        }
+    }
+    
+    async uploadFileWithQuadrant(file, quadrant) {
+        console.log(`📤 Uploading quadrant ${quadrant}: ${file.name}`);
+        
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('quadrant', quadrant);
+            
+            const response = await fetch('/camera/upload', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                console.log(`✅ Quadrant ${quadrant} upload successful: ${file.name}`);
+                return true;
+            } else {
+                console.error(`❌ Quadrant ${quadrant} upload failed: ${result.error}`);
+                return false;
+            }
+            
+        } catch (error) {
+            console.error(`❌ Quadrant ${quadrant} upload error:`, error);
+            return false;
         }
     }
 }

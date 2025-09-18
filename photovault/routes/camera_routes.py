@@ -12,10 +12,10 @@ import uuid
 from PIL import Image
 import io
 
-# Create camera blueprint
-camera_bp = Blueprint('camera', __name__)
+# Create camera blueprint with URL prefix to avoid conflicts
+camera_bp = Blueprint('camera', __name__, url_prefix='/camera')
 
-@camera_bp.route('/camera')
+@camera_bp.route('/')
 @login_required
 def camera():
     """Render the enhanced camera page with full screen support"""
@@ -50,11 +50,21 @@ def upload_image():
                 'error': 'Invalid file type'
             }), 400
 
-        # Generate secure filename with username
+        # Get capture mode information
+        quadrant = request.form.get('quadrant', '')
+        sequence_number = request.form.get('sequence_number', '')
+        
+        # Generate secure filename with username and mode info
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         unique_id = str(uuid.uuid4())[:8]
         file_extension = get_file_extension(file.filename)
-        filename = f"{current_user.username}_camera_{timestamp}_{unique_id}{file_extension}"
+        
+        if quadrant:
+            filename = f"{current_user.username}_camera_quad_{quadrant}_{timestamp}_{unique_id}{file_extension}"
+        elif sequence_number:
+            filename = f"{current_user.username}_camera_seq_{sequence_number}_{timestamp}_{unique_id}{file_extension}"
+        else:
+            filename = f"{current_user.username}_camera_{timestamp}_{unique_id}{file_extension}"
         
         # Ensure upload directory exists
         upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], str(current_user.id))
@@ -72,15 +82,23 @@ def upload_image():
                 # Import your models - adjust path as needed
                 from photovault.models import Photo, db
                 
+                # Prepare photo metadata
+                original_name = f"{current_user.username}_{file.filename}" if file.filename else f'{current_user.username}_camera-capture.jpg'
+                if quadrant:
+                    original_name = f"{current_user.username}_quad_{quadrant}_capture.jpg"
+                elif sequence_number:
+                    original_name = f"{current_user.username}_sequential_{sequence_number}_capture.jpg"
+                
                 photo = Photo(
                     filename=filename,
-                    original_name=f"{current_user.username}_{file.filename}" if file.filename else f'{current_user.username}_camera-capture.jpg',
+                    original_name=original_name,
                     user_id=current_user.id,
                     file_path=file_path,
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow(),
                     file_size=os.path.getsize(file_path),
-                    upload_source='camera'  # Mark as camera capture
+                    upload_source='camera',  # Mark as camera capture
+                    # Note: quadrant info is preserved in filename and original_name
                 )
                 
                 db.session.add(photo)
