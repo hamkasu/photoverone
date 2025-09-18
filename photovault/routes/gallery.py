@@ -9,6 +9,12 @@ import os
 # Create the gallery blueprint
 gallery_bp = Blueprint('gallery', __name__)
 
+@gallery_bp.route('/gallery')
+@login_required
+def gallery():
+    """Gallery index - redirect to photos"""
+    return redirect(url_for('gallery.photos'))
+
 @gallery_bp.route('/dashboard')
 @login_required
 def dashboard():
