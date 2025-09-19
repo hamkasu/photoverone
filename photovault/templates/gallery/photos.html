@@ -14,6 +14,42 @@ CALMIC SDN BHD - "Committed to Excellence"
 <!-- photovault/templates/gallery/photos.html -->
 {% extends "base.html" %}
 {% block title %}All Photos - PhotoVault{% endblock %}
+
+{% block extra_css %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+.photo-checkbox {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    padding: 5px;
+    display: none;
+}
+
+.photo-card:hover .photo-checkbox,
+.photo-card.selected .photo-checkbox {
+    display: block;
+}
+
+.photo-card.selected {
+    border: 3px solid #007bff;
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
+}
+
+.photo-card.selected .card-img-top {
+    opacity: 0.8;
+}
+
+.photo-select {
+    width: 1.2rem;
+    height: 1.2rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="row mb-4">
@@ -40,21 +76,57 @@ CALMIC SDN BHD - "Committed to Excellence"
         </div>
     </div>
 
+    <!-- Bulk Actions Bar -->
+    <div class="row mb-3" id="bulkActionsBar" style="display: none;">
+        <div class="col">
+            <div class="card bg-light">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span id="selectedCount">0</span> photos selected
+                        </div>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-primary" onclick="selectAllPhotos()">
+                                <i class="bi bi-check-all"></i> Select All
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="clearAllSelection()">
+                                <i class="bi bi-x-square"></i> Clear
+                            </button>
+                            <button type="button" class="btn btn-danger" onclick="bulkDeletePhotos()" id="bulkDeleteBtn" disabled>
+                                <i class="bi bi-trash"></i> Delete Selected
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {% if photos and photos.items %}
     <div class="row" id="photoGrid">
         {% for photo in photos.items %}
         <div class="col-md-3 mb-4">
-            <div class="card h-100">
-                <!-- Display edited image if it exists, otherwise show original -->
-                {% if photo.edited_filename %}
-                    <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
-                         class="card-img-top" 
-                         alt="{{ photo.original_name }} (Edited)">
-                {% else %}
-                    <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
-                         class="card-img-top" 
-                         alt="{{ photo.original_name }}">
-                {% endif %}
+            <div class="card h-100 photo-card" data-photo-id="{{ photo.id }}">
+                <div class="position-relative">
+                    <!-- Selection checkbox -->
+                    <div class="photo-checkbox">
+                        <input type="checkbox" class="form-check-input photo-select" value="{{ photo.id }}" onchange="updateSelection()">
+                    </div>
+                    <!-- Display thumbnail if available, fallback to full image -->
+                    {% if photo.thumbnail_path %}
+                        <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.thumbnail_path.split('/')[-1]) }}" 
+                             class="card-img-top" 
+                             alt="{{ photo.original_name }}">
+                    {% elif photo.edited_filename %}
+                        <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
+                             class="card-img-top" 
+                             alt="{{ photo.original_name }} (Edited)">
+                    {% else %}
+                        <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                             class="card-img-top" 
+                             alt="{{ photo.original_name }}">
+                    {% endif %}
+                </div>
                 
                 <div class="card-body d-flex flex-column">
                     <p class="card-text small flex-grow-1">{{ photo.original_name }}</p>
@@ -175,13 +247,15 @@ CALMIC SDN BHD - "Committed to Excellence"
 </div>
 
 <script>
+// Single photo deletion
 function deletePhoto(photoId) {
     if (confirm('Are you sure you want to delete this photo? This action cannot be undone.')) {
         fetch(`/api/photos/${photoId}/delete`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
             }
         })
         .then(response => response.json())
@@ -199,5 +273,117 @@ function deletePhoto(photoId) {
         });
     }
 }
+
+// Bulk selection and deletion functionality
+function updateSelection() {
+    const checkboxes = document.querySelectorAll('.photo-select');
+    const checkedBoxes = document.querySelectorAll('.photo-select:checked');
+    const bulkActionsBar = document.getElementById('bulkActionsBar');
+    const selectedCount = document.getElementById('selectedCount');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    
+    // Update count
+    selectedCount.textContent = checkedBoxes.length;
+    
+    // Show/hide bulk actions bar
+    if (checkedBoxes.length > 0) {
+        bulkActionsBar.style.display = 'block';
+        bulkDeleteBtn.disabled = false;
+    } else {
+        bulkActionsBar.style.display = 'none';
+        bulkDeleteBtn.disabled = true;
+    }
+    
+    // Update card visual state
+    checkboxes.forEach(checkbox => {
+        const card = checkbox.closest('.photo-card');
+        if (checkbox.checked) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+    });
+}
+
+function selectAllPhotos() {
+    const checkboxes = document.querySelectorAll('.photo-select');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    updateSelection();
+}
+
+function clearAllSelection() {
+    const checkboxes = document.querySelectorAll('.photo-select');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    updateSelection();
+}
+
+function bulkDeletePhotos() {
+    const checkedBoxes = document.querySelectorAll('.photo-select:checked');
+    const photoIds = Array.from(checkedBoxes).map(cb => cb.value);
+    
+    if (photoIds.length === 0) {
+        alert('Please select photos to delete.');
+        return;
+    }
+    
+    const confirmMessage = `Are you sure you want to delete ${photoIds.length} photo${photoIds.length > 1 ? 's' : ''}? This action cannot be undone.`;
+    
+    if (confirm(confirmMessage)) {
+        // Disable button during deletion
+        const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+        bulkDeleteBtn.disabled = true;
+        bulkDeleteBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
+        
+        fetch('/api/photos/bulk-delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                photo_ids: photoIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Successfully deleted ${data.deleted_count} photo${data.deleted_count > 1 ? 's' : ''}!`);
+                location.reload();
+            } else {
+                alert('Error deleting photos: ' + (data.error || 'Unknown error'));
+                // Re-enable button
+                bulkDeleteBtn.disabled = false;
+                bulkDeleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete Selected';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting photos. Please try again.');
+            // Re-enable button
+            bulkDeleteBtn.disabled = false;
+            bulkDeleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete Selected';
+        });
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateSelection();
+    
+    // Enable clicking on photo image to toggle selection
+    document.querySelectorAll('.photo-card img').forEach(img => {
+        img.addEventListener('click', function(e) {
+            e.preventDefault();
+            const checkbox = this.closest('.photo-card').querySelector('.photo-select');
+            checkbox.checked = !checkbox.checked;
+            updateSelection();
+        });
+    });
+});
 </script>
 {% endblock %}

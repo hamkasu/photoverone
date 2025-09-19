@@ -486,6 +486,144 @@ def delete_photo(photo_id):
             'error': 'Failed to delete photo'
         }), 500
 
+@photo_bp.route('/api/photos/bulk-delete', methods=['POST'])
+@login_required
+def bulk_delete_photos():
+    """Delete multiple photos in bulk"""
+    try:
+        data = request.get_json()
+        if not data or 'photo_ids' not in data:
+            return jsonify({
+                'success': False,
+                'error': 'No photo IDs provided'
+            }), 400
+        
+        photo_ids = data['photo_ids']
+        if not photo_ids or not isinstance(photo_ids, list):
+            return jsonify({
+                'success': False,
+                'error': 'Invalid photo IDs format'
+            }), 400
+        
+        # Convert to integers and filter out invalid values
+        try:
+            photo_ids = [int(pid) for pid in photo_ids if str(pid).isdigit()]
+        except (ValueError, TypeError):
+            return jsonify({
+                'success': False,
+                'error': 'Invalid photo ID format'
+            }), 400
+        
+        if not photo_ids:
+            return jsonify({
+                'success': False,
+                'error': 'No valid photo IDs provided'
+            }), 400
+        
+        # Get photos that belong to current user
+        photos_to_delete = Photo.query.filter(
+            Photo.id.in_(photo_ids),
+            Photo.user_id == current_user.id
+        ).all()
+        
+        if not photos_to_delete:
+            return jsonify({
+                'success': False,
+                'error': 'No photos found or access denied'
+            }), 404
+        
+        deleted_count = 0
+        errors = []
+        
+        # Get upload folder for security validation
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'photovault/uploads')
+        user_upload_dir = os.path.realpath(os.path.join(upload_folder, str(current_user.id)))
+        
+        def is_safe_path(filepath, base_dir):
+            """Validate that filepath is within base_dir to prevent path traversal"""
+            try:
+                real_path = os.path.realpath(filepath)
+                return real_path.startswith(base_dir + os.sep) or real_path == base_dir
+            except (OSError, ValueError):
+                return False
+        
+        for photo in photos_to_delete:
+            try:
+                # Validate and delete physical files with path security
+                if photo.file_path and os.path.exists(photo.file_path):
+                    if is_safe_path(photo.file_path, user_upload_dir):
+                        os.remove(photo.file_path)
+                
+                if photo.thumbnail_path and os.path.exists(photo.thumbnail_path):
+                    if is_safe_path(photo.thumbnail_path, user_upload_dir):
+                        os.remove(photo.thumbnail_path)
+                    
+                # Delete edited version if it exists
+                if photo.edited_filename:
+                    edited_path = os.path.join(user_upload_dir, photo.edited_filename)
+                    if os.path.exists(edited_path):
+                        os.remove(edited_path)
+                
+                # Delete all associated records that reference this photo
+                from photovault.models import VoiceMemo, VaultPhoto, PhotoPerson, StoryPhoto
+                
+                # Delete associated voice memos
+                voice_memos = VoiceMemo.query.filter_by(photo_id=photo.id).all()
+                for memo in voice_memos:
+                    if memo.file_path and os.path.exists(memo.file_path):
+                        if is_safe_path(memo.file_path, user_upload_dir):
+                            os.remove(memo.file_path)
+                    db.session.delete(memo)
+                
+                # Delete associated vault photo shares
+                vault_photos = VaultPhoto.query.filter_by(photo_id=photo.id).all()
+                for vault_photo in vault_photos:
+                    db.session.delete(vault_photo)
+                
+                # Delete associated photo-person tags
+                photo_people = PhotoPerson.query.filter_by(photo_id=photo.id).all()
+                for photo_person in photo_people:
+                    db.session.delete(photo_person)
+                
+                # Delete associated story photo attachments
+                story_photos = StoryPhoto.query.filter_by(photo_id=photo.id).all()
+                for story_photo in story_photos:
+                    db.session.delete(story_photo)
+                
+                # Delete the photo record
+                db.session.delete(photo)
+                deleted_count += 1
+                
+            except Exception as e:
+                logger.error(f"Error deleting photo {photo.id}: {str(e)}")
+                errors.append(f"Photo {photo.id}: {str(e)}")
+                continue
+        
+        # Commit all deletions
+        db.session.commit()
+        
+        logger.info(f"Successfully bulk deleted {deleted_count} photos for user {current_user.id}")
+        
+        response_data = {
+            'success': True,
+            'deleted_count': deleted_count,
+            'message': f'Successfully deleted {deleted_count} photo{"s" if deleted_count != 1 else ""}'
+        }
+        
+        if errors:
+            response_data['warnings'] = errors
+            response_data['message'] += f' ({len(errors)} photos had errors)'
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        logger.error(f"Error in bulk delete photos: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to delete photos'
+        }), 500
+
 # Voice Memo API Endpoints
 
 @photo_bp.route('/api/photos/<int:photo_id>/voice-memos', methods=['POST'])
