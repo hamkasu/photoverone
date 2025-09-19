@@ -131,40 +131,42 @@ CALMIC SDN BHD - "Committed to Excellence"
                     <div class="photo-grid">
                         {% for photo in photos %}
                         <div class="photo-item">
-                            <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
-                                 alt="{{ photo.original_name }}" 
-                                 class="img-fluid">
-                            <div class="photo-overlay">
-                                <h6>{{ photo.original_name }}</h6>
-                                <small>{{ photo.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
-                                <div class="photo-badges mt-1">
-                                    {% if photo.edited_filename %}
-                                    <span class="badge bg-success">Edited</span>
-                                    {% endif %}
-                                    {% if photo.voice_memo_count and photo.voice_memo_count > 0 %}
-                                    <span class="badge bg-info">
-                                        <i class="bi bi-mic-fill"></i> {{ photo.voice_memo_count }}
-                                    </span>
-                                    {% endif %}
+                            <div class="photo-media position-relative">
+                                <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                                     alt="{{ photo.original_name }}" 
+                                     class="img-fluid">
+                                <div class="photo-overlay">
+                                    <h6>{{ photo.original_name }}</h6>
+                                    <small>{{ photo.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    <div class="photo-badges mt-1">
+                                        {% if photo.edited_filename %}
+                                        <span class="badge bg-success">Edited</span>
+                                        {% endif %}
+                                        {% if photo.voice_memo_count and photo.voice_memo_count > 0 %}
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-mic-fill"></i> {{ photo.voice_memo_count }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
                                 </div>
-                                <div class="photo-actions mt-1">
-                                    <a href="/gallery" 
-                                       class="btn btn-outline-light btn-sm" title="View photo">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <button onclick="openVoiceMemo({{ photo.id }})" 
-                                            class="btn btn-outline-light btn-sm" title="Voice memo">
-                                        <i class="bi bi-mic"></i>
-                                    </button>
-                                    <a href="#" onclick="editPhoto({{ photo.id }})" 
-                                       class="btn btn-outline-light btn-sm" title="Edit photo">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <button onclick="deletePhoto({{ photo.id }})" 
-                                            class="btn btn-outline-light btn-sm" title="Delete photo">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
+                            </div>
+                            <div class="photo-actions-bottom mt-2 p-2 text-center">
+                                <a href="/gallery" 
+                                   class="btn btn-outline-primary btn-sm me-1" title="View photo">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <button onclick="openVoiceMemo({{ photo.id }})" 
+                                        class="btn btn-outline-info btn-sm me-1" title="Voice memo">
+                                    <i class="bi bi-mic"></i>
+                                </button>
+                                <a href="#" onclick="editPhoto({{ photo.id }})" 
+                                   class="btn btn-outline-secondary btn-sm me-1" title="Edit photo">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button onclick="deletePhoto({{ photo.id }})" 
+                                        class="btn btn-outline-danger btn-sm" title="Delete photo">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </div>
                         </div>
                         {% endfor %}

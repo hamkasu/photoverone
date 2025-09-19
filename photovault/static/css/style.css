@@ -358,6 +358,22 @@ body {
     margin-bottom: 0.25rem;
 }
 
+.photo-media {
+    position: relative;
+}
+
+.photo-actions-bottom {
+    background-color: var(--lighter-bg);
+    border-top: 1px solid var(--border-color);
+    margin-top: 0 !important;
+    position: relative;
+    z-index: 2;
+}
+
+.photo-actions-bottom .btn {
+    transition: all 0.2s ease;
+}
+
 /* Forms - Very Clean and Professional */
 .form-control {
     border-radius: 3px;
