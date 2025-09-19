@@ -184,8 +184,20 @@ def uploaded_file(user_id, filename):
     # Verify the file exists and belongs to the user
     try:
         from photovault.models import Photo
+        
+        # Handle thumbnail files by checking for original file
+        original_filename = filename
+        if filename.endswith('_thumb.jpg') or filename.endswith('_thumb.png') or filename.endswith('_thumb.jpeg'):
+            # Extract original filename by removing _thumb suffix
+            base_name = filename.rsplit('_thumb.', 1)[0]
+            # Find the original extension
+            for ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']:
+                if os.path.exists(os.path.join(current_app.config.get('UPLOAD_FOLDER', 'photovault/uploads'), str(user_id), base_name + ext)):
+                    original_filename = base_name + ext
+                    break
+        
         photo = Photo.query.filter_by(user_id=user_id).filter(
-            (Photo.filename == filename) | (Photo.edited_filename == filename)
+            (Photo.filename == original_filename) | (Photo.edited_filename == original_filename)
         ).first()
         
         if not photo:
