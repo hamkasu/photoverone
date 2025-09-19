@@ -336,6 +336,11 @@ def edit_person(person_id):
         flash('Error updating person. Please try again.', 'error')
         return redirect(url_for('main.people'))
 
+@main_bp.route('/api', methods=['GET', 'HEAD'])
+def api_health():
+    """API health check endpoint"""
+    return jsonify({'status': 'ok', 'service': 'PhotoVault'})
+
 @main_bp.route('/api/person/delete/<int:person_id>', methods=['DELETE'])
 @login_required
 def delete_person(person_id):
