@@ -2,6 +2,16 @@
 
 PhotoVault is a professional photo management platform by Calmic Sdn Bhd, focusing on secure storage, advanced editing, and comprehensive organization of photographs. Leveraging Flask, it provides enterprise-grade security, role-based access control, and robust features for managing photo collections, including user management and administrative tools. The platform's goal is to offer a secure and efficient solution for personal and professional photo archiving with business vision, market potential, and project ambitions.
 
+# Recent Changes
+
+## September 19, 2025 - Replit Environment Setup
+- Successfully imported GitHub repository to Replit environment
+- Configured Python 3.11 with all required dependencies
+- Set up PostgreSQL database with existing migration stamps
+- Configured Flask development server on port 5000 with 0.0.0.0 host binding
+- Set up production deployment configuration with Gunicorn and autoscale
+- All components verified working: database connections, web server, static files, and routing
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -40,9 +50,9 @@ Preferred communication style: Simple, everyday language.
 -   **Flask-WTF**: Form handling and CSRF protection.
 
 ## Database
--   **SQLite**: Primary database for the Replit environment.
--   **PostgreSQL**: Supported for production deployments (via psycopg2-binary).
+-   **PostgreSQL**: Primary database for the Replit environment (configured with native Replit PostgreSQL integration).
 -   **SQLAlchemy**: Database abstraction layer.
+-   **Flask-Migrate**: Database migration management with Alembic.
 
 ## Image Processing
 -   **Pillow**: Image manipulation and validation.
