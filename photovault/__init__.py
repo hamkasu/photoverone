@@ -100,14 +100,7 @@ def create_app(config_class=None):
     app.register_blueprint(gallery_bp)
     app.register_blueprint(family_bp)
     
-    # Add route to serve uploaded images
-    @app.route('/uploads/<path:filename>')
-    def uploaded_file(filename):
-        """Serve uploaded files from the uploads directory"""
-        from flask import send_from_directory
-        import os
-        uploads_dir = app.config.get('UPLOAD_FOLDER')
-        return send_from_directory(uploads_dir, filename)
+    # Note: Upload file serving is handled securely via gallery.uploaded_file route with authentication
     
     # Initialize database
     with app.app_context():

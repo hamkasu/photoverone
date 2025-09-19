@@ -149,7 +149,7 @@ CALMIC SDN BHD - "Committed to Excellence"
                 <div class="col-md-3 col-sm-4 col-6 mb-3">
                     <div class="card h-100">
                         {% set display_filename = photo.edited_filename if photo.edited_filename else photo.filename %}
-                        <img src="{{ url_for('static', filename='uploads/' + display_filename) }}" 
+                        <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=display_filename) }}" 
                              class="card-img-top" 
                              alt="{{ photo.original_filename }}"
                              style="height: 150px; object-fit: cover;">

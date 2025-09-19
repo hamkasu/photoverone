@@ -311,12 +311,12 @@ CALMIC SDN BHD - "Committed to Excellence"
             <a href="{{ url_for('main.edit_photo', photo_id=photo.id) }}" class="btn btn-warning">
                 <i class="bi bi-pencil"></i> Continue Editing
             </a>
-            <a href="{{ url_for('static', filename='uploads/' + photo.filename) }}" 
+            <a href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
                download="{{ photo.original_name }}" class="btn btn-secondary">
                 <i class="bi bi-download"></i> Download Original
             </a>
             {% if photo.edited_filename %}
-            <a href="{{ url_for('static', filename='uploads/' + photo.edited_filename) }}" 
+            <a href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
                download="{{ photo.original_name.split('.')[0] }}_edited.{{ photo.edited_filename.split('.')[-1] }}" 
                class="btn btn-success">
                 <i class="bi bi-download"></i> Download Edited

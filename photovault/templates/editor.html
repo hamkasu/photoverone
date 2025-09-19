@@ -26,7 +26,7 @@ CALMIC SDN BHD - "Committed to Excellence"
         <div class="col-md-8">
             <canvas id="canvas"></canvas>
             <!-- Load the ORIGINAL image as the source for editing -->
-            <img id="sourceImage" src="{{ url_for('static', filename='uploads/' + photo.user_id|string + '/' + photo.filename) }}" style="display: none;">
+            <img id="sourceImage" src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" style="display: none;">
         </div>
         <div class="col-md-4">
             <div class="card">

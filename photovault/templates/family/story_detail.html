@@ -35,7 +35,7 @@
                         {% for story_photo in story_photos %}
                         <div class="col-md-6 col-lg-4 mb-3">
                             <div class="card">
-                                <img src="{{ url_for('static', filename='uploads/' + story_photo.photo.user_id|string + '/' + story_photo.photo.filename) }}" 
+                                <img src="{{ url_for('gallery.uploaded_file', user_id=story_photo.photo.user_id, filename=story_photo.photo.filename) }}" 
                                      class="card-img-top" alt="Story photo" style="height: 200px; object-fit: cover;">
                                 {% if story_photo.caption %}
                                 <div class="card-body p-2">

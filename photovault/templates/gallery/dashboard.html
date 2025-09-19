@@ -114,7 +114,7 @@
                             <div class="card">
                                 <div class="card-body text-center">
                                     {% if photo.filename %}
-                                        <img src="{{ url_for('static', filename='uploads/' + photo.user_id|string + '/' + photo.filename) }}" 
+                                        <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
                                              class="img-fluid rounded mb-2" 
                                              alt="{{ photo.original_name }}"
                                              style="height: 200px; width: 100%; object-fit: cover;">
