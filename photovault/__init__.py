@@ -111,9 +111,13 @@ def create_app(config_class=None):
     
     # Initialize database
     with app.app_context():
-        # Only create tables in development/testing; production should use migrations
-        if app.debug or app.testing:
-            db.create_all()
+        # Create tables if they don't exist
+        # For SQLite in production or development/testing environments
+        if app.debug or app.testing or 'sqlite' in app.config.get('SQLALCHEMY_DATABASE_URI', ''):
+            try:
+                db.create_all()
+            except Exception as e:
+                app.logger.warning(f"Table creation warning (may already exist): {str(e)}")
         
         # Bootstrap superuser account if environment variables are set
         _create_superuser_if_needed(app)
