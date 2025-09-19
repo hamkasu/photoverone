@@ -2,7 +2,7 @@
 PhotoVault Gallery Routes
 Simple gallery blueprint for photo management
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, abort, current_app
 from flask_login import login_required, current_user
 import os
 
