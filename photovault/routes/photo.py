@@ -142,18 +142,17 @@ def process_uploaded_file(file, upload_source='file'):
         
         # Save to database  
         from photovault.models import Photo
-        photo = Photo(
-            user_id=current_user.id if current_user.is_authenticated else None,
-            filename=safe_filename,
-            original_name=original_name,
-            file_path=file_path,
-            thumbnail_path=thumbnail_path if thumbnail_created else None,
-            file_size=image_info['size_bytes'],
-            width=image_info['width'],
-            height=image_info['height'],
-            mime_type=mimetypes.guess_type(file_path)[0],
-            upload_source=upload_source
-        )
+        photo = Photo()
+        photo.user_id = current_user.id if current_user.is_authenticated else None
+        photo.filename = safe_filename
+        photo.original_name = original_name
+        photo.file_path = file_path
+        photo.thumbnail_path = thumbnail_path if thumbnail_created else None
+        photo.file_size = image_info['size_bytes']
+        photo.width = image_info['width']
+        photo.height = image_info['height']
+        photo.mime_type = mimetypes.guess_type(file_path)[0]
+        photo.upload_source = upload_source
         db.session.add(photo)
         db.session.commit()
         
@@ -162,11 +161,15 @@ def process_uploaded_file(file, upload_source='file'):
         
     except Exception as e:
         logger.error(f"Failed to process uploaded file: {str(e)}")
+        # Rollback database session
+        db.session.rollback()
         # Clean up partial files
+        file_path = locals().get('file_path')
+        thumbnail_path = locals().get('thumbnail_path')
         try:
-            if 'file_path' in locals() and os.path.exists(file_path):
+            if file_path and os.path.exists(file_path):
                 os.remove(file_path)
-            if 'thumbnail_path' in locals() and os.path.exists(thumbnail_path):
+            if thumbnail_path and os.path.exists(thumbnail_path):
                 os.remove(thumbnail_path)
         except:
             pass
@@ -777,18 +780,17 @@ def upload_voice_memo(photo_id):
                 title = f"Voice memo for {photo_name[:20]} at {time_str}"
         
         # Create voice memo record
-        voice_memo = VoiceMemo(
-            photo_id=photo_id,
-            user_id=current_user.id,
-            filename=filename,
-            original_name=secure_filename(audio_file.filename),
-            file_path=file_path,
-            file_size=file_size,
-            mime_type=audio_file.content_type,
-            duration=duration,
-            title=title if title else None,
-            transcript=transcript if transcript else None
-        )
+        voice_memo = VoiceMemo()
+        voice_memo.photo_id = photo_id
+        voice_memo.user_id = current_user.id
+        voice_memo.filename = filename
+        voice_memo.original_name = secure_filename(audio_file.filename)
+        voice_memo.file_path = file_path
+        voice_memo.file_size = file_size
+        voice_memo.mime_type = audio_file.content_type
+        voice_memo.duration = duration
+        voice_memo.title = title if title else None
+        voice_memo.transcript = transcript if transcript else None
         
         db.session.add(voice_memo)
         db.session.commit()
