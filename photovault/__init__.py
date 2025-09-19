@@ -101,7 +101,7 @@ def create_app(config_class=None):
     app.register_blueprint(family_bp)
     
     # Add route to serve uploaded images
-    @app.route('/static/uploads/<path:filename>')
+    @app.route('/uploads/<path:filename>')
     def uploaded_file(filename):
         """Serve uploaded files from the uploads directory"""
         from flask import send_from_directory

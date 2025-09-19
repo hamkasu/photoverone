@@ -91,27 +91,27 @@ CALMIC SDN BHD - "Committed to Excellence"
                 <div class="navbar-nav me-auto">
                     <a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}" 
                        href="{{ url_for('main.dashboard') }}" aria-current="{% if request.endpoint == 'main.dashboard' %}page{% endif %}">
-                        <i class="bi bi-house" aria-hidden="true"></i> Dashboard
+                        Dashboard
                     </a>
-                    <a class="nav-link {{ 'active' if request.endpoint == 'photo.upload_photo' }}" 
-                       href="/upload" aria-current="{% if request.endpoint == 'photo.upload_photo' %}page{% endif %}">
-                        <i class="bi bi-cloud-upload" aria-hidden="true"></i> Upload
+                    <a class="nav-link {{ 'active' if request.endpoint and (request.endpoint == 'upload.upload_photo' or request.endpoint.startswith('upload.')) }}" 
+                       href="{{ url_for('upload.upload_photo') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('upload.') %}page{% endif %}">
+                        Upload
                     </a>
-                    <a class="nav-link" 
-                       href="/gallery" aria-current="page">
-                        <i class="bi bi-file-image" aria-hidden="true"></i> Gallery
+                    <a class="nav-link {{ 'active' if request.endpoint and (request.endpoint == 'gallery.photos' or request.endpoint.startswith('gallery.')) }}" 
+                       href="{{ url_for('gallery.photos') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('gallery.') %}page{% endif %}">
+                        Gallery
                     </a>
                     <a class="nav-link {{ 'active' if request.endpoint == 'main.people' }}" 
                        href="{{ url_for('main.people') }}" aria-current="{% if request.endpoint == 'main.people' %}page{% endif %}">
-                        <i class="bi bi-people" aria-hidden="true"></i> People
+                        People
                     </a>
                     <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('family.') }}" 
                        href="{{ url_for('family.index') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('family.') %}page{% endif %}">
-                        <i class="bi bi-house-heart" aria-hidden="true"></i> Family
+                        Family
                     </a>
                     <a class="nav-link {{ 'active' if request.endpoint == 'main.about' }}" 
                        href="{{ url_for('main.about') }}" aria-current="{% if request.endpoint == 'main.about' %}page{% endif %}">
-                        <i class="bi bi-info-circle" aria-hidden="true"></i> About
+                        About
                     </a>
                 </div>
                 
@@ -163,10 +163,10 @@ CALMIC SDN BHD - "Committed to Excellence"
                             <li><a class="dropdown-item" href="{{ url_for('main.dashboard') }}">
                                 <i class="bi bi-house" aria-hidden="true"></i> Dashboard
                             </a></li>
-                            <li><a class="dropdown-item" href="/gallery">
+                            <li><a class="dropdown-item" href="{{ url_for('gallery.photos') }}">
                                 <i class="bi bi-file-image" aria-hidden="true"></i> Original Photos
                             </a></li>
-                            <li><a class="dropdown-item" href="/profile">
+                            <li><a class="dropdown-item" href="{{ url_for('main.profile') }}">
                                 <i class="bi bi-person" aria-hidden="true"></i> Profile
                             </a></li>
                             <li><hr class="dropdown-divider"></li>

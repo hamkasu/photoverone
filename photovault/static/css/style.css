@@ -70,30 +70,51 @@ body {
     letter-spacing: 0.2px;
 }
 
-/* Navigation - Subtle and Professional */
+/* Navigation - Clean Professional Design */
 .navbar-dark {
-    background-color: var(--primary-color) !important;
-    border-bottom: 1px solid #dee2e6;
+    background-color: #2c2c2c !important;
+    border-bottom: 1px solid #3a3a3a;
     box-shadow: none;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
 }
 
 .navbar-dark .navbar-nav .nav-link {
-    color: rgba(255,255,255,0.85) !important;
+    color: rgba(255,255,255,0.9) !important;
     font-weight: 400;
-    padding: 0.5rem 0.875rem;
-    border-radius: 3px;
-    margin: 0 1px;
-    transition: all 0.15s ease;
+    font-size: 0.95rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0;
+    margin: 0;
+    transition: all 0.2s ease;
+    border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Remove border from last navigation item */
+.navbar-dark .navbar-nav .nav-link:last-child {
+    border-right: none;
+}
+
+/* Remove borders in mobile collapsed menu */
+@media (max-width: 991.98px) {
+    .navbar-dark .navbar-nav .nav-link {
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding: 0.75rem 1rem;
+    }
+    .navbar-dark .navbar-nav .nav-link:last-child {
+        border-bottom: none;
+    }
 }
 
 .navbar-dark .navbar-nav .nav-link:hover {
     color: #ffffff !important;
-    background-color: rgba(255,255,255,0.08);
+    background-color: rgba(255,255,255,0.1);
 }
 
 .navbar-dark .navbar-nav .nav-link.active {
     color: #ffffff !important;
-    background-color: rgba(255,255,255,0.12);
+    background-color: rgba(255,255,255,0.15);
 }
 
 /* Dropdown Menus - Very Subtle */

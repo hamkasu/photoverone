@@ -8,7 +8,7 @@ import mimetypes
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
-from flask import Blueprint, request, jsonify, current_app, session
+from flask import Blueprint, request, jsonify, current_app, session, url_for
 from flask_login import login_required, current_user
 from flask_wtf.csrf import validate_csrf, CSRFError
 from photovault.extensions import csrf
@@ -404,8 +404,8 @@ def annotate_photo(photo_id):
             'success': True,
             'message': 'Annotated photo saved successfully',
             'edited_filename': edited_filename,
-            'thumbnail_url': f'/static/uploads/{current_user.id}/{thumbnail_filename}',
-            'edited_url': f'/static/uploads/{current_user.id}/{edited_filename}'
+            'thumbnail_url': url_for('uploaded_file', filename=f'{current_user.id}/{thumbnail_filename}'),
+            'edited_url': url_for('uploaded_file', filename=f'{current_user.id}/{edited_filename}')
         })
         
     except Exception as e:
