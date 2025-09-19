@@ -439,8 +439,11 @@ def delete_photo(photo_id):
             if os.path.exists(edited_path):
                 os.remove(edited_path)
         
+        # Delete all associated records that reference this photo
+        # Import all models that have foreign keys to Photo
+        from photovault.models import VoiceMemo, VaultPhoto, PhotoPerson, StoryPhoto
+        
         # Delete associated voice memos first
-        from photovault.models import VoiceMemo
         voice_memos = VoiceMemo.query.filter_by(photo_id=photo.id).all()
         for memo in voice_memos:
             # Delete voice memo file if it exists
@@ -448,6 +451,21 @@ def delete_photo(photo_id):
                 os.remove(memo.file_path)
             # Delete memo from database
             db.session.delete(memo)
+        
+        # Delete associated vault photo shares
+        vault_photos = VaultPhoto.query.filter_by(photo_id=photo.id).all()
+        for vault_photo in vault_photos:
+            db.session.delete(vault_photo)
+        
+        # Delete associated photo-person tags
+        photo_people = PhotoPerson.query.filter_by(photo_id=photo.id).all()
+        for photo_person in photo_people:
+            db.session.delete(photo_person)
+        
+        # Delete associated story photo attachments
+        story_photos = StoryPhoto.query.filter_by(photo_id=photo.id).all()
+        for story_photo in story_photos:
+            db.session.delete(story_photo)
         
         # Delete from database
         db.session.delete(photo)
