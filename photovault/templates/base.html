@@ -93,8 +93,8 @@ CALMIC SDN BHD - "Committed to Excellence"
                        href="{{ url_for('main.dashboard') }}" aria-current="{% if request.endpoint == 'main.dashboard' %}page{% endif %}">
                         Dashboard
                     </a>
-                    <a class="nav-link {{ 'active' if request.endpoint and (request.endpoint == 'upload.upload_photo' or request.endpoint.startswith('upload.')) }}" 
-                       href="{{ url_for('upload.upload_photo') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('upload.') %}page{% endif %}">
+                    <a class="nav-link {{ 'active' if request.endpoint and (request.endpoint == 'upload.upload_page' or request.endpoint.startswith('upload.')) }}" 
+                       href="{{ url_for('upload.upload_page') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('upload.') %}page{% endif %}">
                         Upload
                     </a>
                     <a class="nav-link {{ 'active' if request.endpoint and (request.endpoint == 'gallery.photos' or request.endpoint.startswith('gallery.')) }}" 
