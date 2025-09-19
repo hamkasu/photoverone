@@ -6,6 +6,27 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
+    @staticmethod
+    def get_engine_options(database_uri):
+        """Get SQLAlchemy engine options based on database type"""
+        base_options = {
+            'pool_pre_ping': True,  # Validates connections before use
+            'pool_recycle': 300,    # Recycle connections every 5 minutes
+            'pool_timeout': 20,     # Timeout for connection checkout
+            'pool_size': 5,         # Connection pool size
+            'max_overflow': 10,     # Allow some overflow connections
+        }
+        
+        if database_uri and 'postgresql' in database_uri:
+            # PostgreSQL-specific settings
+            base_options['connect_args'] = {
+                'connect_timeout': 10,
+                'sslmode': 'require',
+                'options': '-c statement_timeout=30s'
+            }
+        
+        return base_options
+    
     # File upload settings
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER') or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
@@ -47,10 +68,18 @@ class DevelopmentConfig(Config):
     # Relaxed security for development
     SESSION_COOKIE_SECURE = False
     WTF_CSRF_SSL_STRICT = False
+    
+    def __init__(self):
+        super().__init__()
+        self.SQLALCHEMY_ENGINE_OPTIONS = self.get_engine_options(self.SQLALCHEMY_DATABASE_URI)
 
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
+    
+    def __init__(self):
+        super().__init__()
+        self.SQLALCHEMY_ENGINE_OPTIONS = self.get_engine_options(getattr(self, 'SQLALCHEMY_DATABASE_URI', None))
     
     # Production SECRET_KEY - generate random if not provided but log critical warning
     _secret_key = os.environ.get('SECRET_KEY') or os.environ.get('RAILWAY_SECRET_KEY')

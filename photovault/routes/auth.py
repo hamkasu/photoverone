@@ -15,6 +15,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from photovault.models import User, PasswordResetToken, db
+from photovault.utils import safe_db_query, retry_db_operation, TransientDBError
 import re
 
 auth_bp = Blueprint('auth', __name__)
@@ -51,10 +52,17 @@ def login():
             flash('Please enter both username and password.', 'error')
             return render_template('login.html')
         
-        # Try to find user by username or email
-        user = User.query.filter(
-            (User.username == username) | (User.email == username)
-        ).first()
+        # Try to find user by username or email with retry logic
+        def find_user():
+            return User.query.filter(
+                (User.username == username) | (User.email == username)
+            ).first()
+        
+        try:
+            user = safe_db_query(find_user, operation_name="user lookup")
+        except TransientDBError:
+            flash('Temporary database issue. Please try again in a moment.', 'error')
+            return render_template('login.html')
         
         if user and check_password_hash(user.password_hash, password):
             login_user(user, remember=remember)
@@ -113,10 +121,17 @@ def register():
             flash('Passwords do not match.', 'error')
             return render_template('register.html')
         
-        # Check if user already exists
-        existing_user = User.query.filter(
-            (User.username == username) | (User.email == email)
-        ).first()
+        # Check if user already exists with retry logic
+        def check_existing_user():
+            return User.query.filter(
+                (User.username == username) | (User.email == email)
+            ).first()
+        
+        try:
+            existing_user = safe_db_query(check_existing_user, operation_name="existing user check")
+        except TransientDBError:
+            flash('Temporary database issue. Please try again in a moment.', 'error')
+            return render_template('register.html')
         
         if existing_user:
             if existing_user.username == username:
@@ -125,23 +140,33 @@ def register():
                 flash('Email already registered. Please use a different email.', 'error')
             return render_template('register.html')
         
-        try:
-            # Create new user
+        @retry_db_operation(max_retries=3)
+        def create_user():
             user = User(
                 username=username,
                 email=email,
                 password_hash=generate_password_hash(password)
             )
-            
             db.session.add(user)
             db.session.commit()
-            
+            return user
+        
+        try:
+            create_user()
             flash('Registration successful! You can now log in.', 'success')
             return redirect(url_for('auth.login'))
             
+        except TransientDBError:
+            flash('Temporary database issue. Please try again in a moment.', 'error')
+            return render_template('register.html')
         except Exception as e:
             db.session.rollback()
-            flash('An error occurred during registration. Please try again.', 'error')
+            current_app.logger.error(f'Registration error: {e}')
+            # Check if it's a duplicate user error
+            if 'unique constraint' in str(e).lower() or 'already exists' in str(e).lower():
+                flash('Username or email already exists. Please try different values.', 'error')
+            else:
+                flash('An error occurred during registration. Please try again.', 'error')
             return render_template('register.html')
     
     return render_template('register.html')
