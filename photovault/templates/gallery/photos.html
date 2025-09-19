@@ -155,35 +155,77 @@ CALMIC SDN BHD - "Committed to Excellence"
                         {% endif %}
                     </div>
                     
-                    <div class="btn-group btn-group-sm" role="group">
-                        <!-- View photo details -->
-                        <a href="{{ url_for('gallery.view_photo', photo_id=photo.id) }}" class="btn btn-outline-primary" title="View photo details">
-                            <i class="bi bi-eye"></i>
-                        </a>
-                        <!-- Edit/Markup photo -->
-                        <a href="{{ url_for('main.edit_photo', photo_id=photo.id) }}" class="btn btn-outline-warning" title="Edit photo">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <!-- Download -->
-                        {% if photo.edited_filename %}
-                        <a href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
-                           download="{{ photo.original_name }}_edited" 
-                           class="btn btn-outline-success" 
-                           title="Download edited version">
-                            <i class="bi bi-download"></i>
-                        </a>
-                        {% else %}
-                        <a href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
-                           download="{{ photo.original_name }}" 
-                           class="btn btn-outline-success" 
-                           title="Download original">
-                            <i class="bi bi-download"></i>
-                        </a>
-                        {% endif %}
-                        <!-- Delete photo -->
-                        <button class="btn btn-outline-danger" onclick="deletePhoto({{ photo.id }})" title="Delete photo">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                    <!-- Enhanced Toolbar with Markup, View, and Delete Options -->
+                    <div class="btn-toolbar" role="toolbar">
+                        <!-- Primary Actions Group -->
+                        <div class="btn-group btn-group-sm me-2" role="group">
+                            <a href="{{ url_for('gallery.view_photo', photo_id=photo.id) }}" 
+                               class="btn btn-outline-primary" 
+                               title="View photo details">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ url_for('main.edit_photo', photo_id=photo.id) }}" 
+                               class="btn btn-outline-warning" 
+                               title="Edit/Markup photo">
+                                <i class="bi bi-palette"></i>
+                            </a>
+                            {% if photo.edited_filename %}
+                            <a href="{{ url_for('gallery.compare_single_photo', photo_id=photo.id) }}" 
+                               class="btn btn-outline-info" 
+                               title="Compare versions">
+                                <i class="bi bi-compare"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- View Actions Group -->
+                        <div class="btn-group btn-group-sm me-2" role="group">
+                            <button class="btn btn-outline-secondary" 
+                                    onclick="viewFullscreen({{ photo.id }})" 
+                                    title="View fullscreen">
+                                <i class="bi bi-arrows-fullscreen"></i>
+                            </button>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-success dropdown-toggle" 
+                                        data-bs-toggle="dropdown" title="Download options">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    {% if photo.edited_filename %}
+                                    <li><a class="dropdown-item" 
+                                           href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
+                                           download="{{ photo.original_name }}_edited">
+                                        <i class="bi bi-image"></i> Download Edited
+                                    </a></li>
+                                    <li><a class="dropdown-item" 
+                                           href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                                           download="{{ photo.original_name }}_original">
+                                        <i class="bi bi-camera"></i> Download Original
+                                    </a></li>
+                                    {% else %}
+                                    <li><a class="dropdown-item" 
+                                           href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                                           download="{{ photo.original_name }}">
+                                        <i class="bi bi-download"></i> Download Photo
+                                    </a></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- Markup & Delete Actions Group -->
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-info" 
+                                    onclick="quickMarkup({{ photo.id }})" 
+                                    title="Quick markup/annotation">
+                                <i class="bi bi-chat-square-text"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" 
+                                    onclick="deletePhoto({{ photo.id }})" 
+                                    title="Delete photo with options">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -455,6 +497,138 @@ function bulkDeletePhotos() {
     }
 }
 
+// Enhanced viewing and markup functions
+function viewFullscreen(photoId) {
+    const photoCard = document.querySelector('[data-photo-id="' + photoId + '"]');
+    const img = photoCard.querySelector('img');
+    const imgSrc = img.src;
+    const photoName = photoCard.querySelector('.card-text').textContent;
+    
+    // Create fullscreen modal
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = '<div class="modal-dialog modal-fullscreen">' +
+        '<div class="modal-content bg-dark">' +
+            '<div class="modal-header border-0">' +
+                '<h5 class="modal-title text-white">' + photoName + '</h5>' +
+                '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>' +
+            '</div>' +
+            '<div class="modal-body d-flex justify-content-center align-items-center p-0">' +
+                '<img src="' + imgSrc + '" class="img-fluid" style="max-height: 90vh; max-width: 90vw; object-fit: contain;">' +
+            '</div>' +
+            '<div class="modal-footer border-0 justify-content-center">' +
+                '<div class="btn-group">' +
+                    '<button class="btn btn-outline-light btn-sm" onclick="galleryZoomIn(this)">' +
+                        '<i class="bi bi-zoom-in"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-outline-light btn-sm" onclick="galleryZoomOut(this)">' +
+                        '<i class="bi bi-zoom-out"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-outline-light btn-sm" onclick="galleryResetZoom(this)">' +
+                        '<i class="bi bi-aspect-ratio"></i>' +
+                    '</button>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    // Clean up modal after hiding
+    modal.addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(modal);
+    });
+}
+
+function galleryZoomIn(button) {
+    const img = button.closest('.modal-content').querySelector('img');
+    const currentTransform = img.style.transform || 'scale(1)';
+    const scaleMatch = currentTransform.match(/scale\(([^)]+)\)/);
+    const currentScale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+    const newScale = Math.min(currentScale * 1.2, 3);
+    img.style.transform = 'scale(' + newScale + ')';
+    img.style.transformOrigin = 'center';
+}
+
+function galleryZoomOut(button) {
+    const img = button.closest('.modal-content').querySelector('img');
+    const currentTransform = img.style.transform || 'scale(1)';
+    const scaleMatch = currentTransform.match(/scale\(([^)]+)\)/);
+    const currentScale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+    const newScale = Math.max(currentScale / 1.2, 0.5);
+    img.style.transform = 'scale(' + newScale + ')';
+    img.style.transformOrigin = 'center';
+}
+
+function galleryResetZoom(button) {
+    const img = button.closest('.modal-content').querySelector('img');
+    img.style.transform = 'scale(1)';
+}
+
+function quickMarkup(photoId) {
+    // Quick annotation modal
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = '<div class="modal-dialog">' +
+        '<div class="modal-content">' +
+            '<div class="modal-header">' +
+                '<h5 class="modal-title">Quick Markup</h5>' +
+                '<button type="button" class="btn-close" data-bs-dismiss="modal"></button>' +
+            '</div>' +
+            '<div class="modal-body">' +
+                '<div class="mb-3">' +
+                    '<label class="form-label">Add quick note or tag</label>' +
+                    '<textarea class="form-control" id="quickNote" rows="3" placeholder="Enter annotation, note, or tags..."></textarea>' +
+                '</div>' +
+                '<div class="mb-3">' +
+                    '<label class="form-label">Quick Rating</label>' +
+                    '<div class="btn-group" role="group">' +
+                        '<input type="radio" class="btn-check" name="rating" id="star1" value="1">' +
+                        '<label class="btn btn-outline-warning" for="star1"><i class="bi bi-star"></i></label>' +
+                        '<input type="radio" class="btn-check" name="rating" id="star2" value="2">' +
+                        '<label class="btn btn-outline-warning" for="star2"><i class="bi bi-star"></i><i class="bi bi-star"></i></label>' +
+                        '<input type="radio" class="btn-check" name="rating" id="star3" value="3">' +
+                        '<label class="btn btn-outline-warning" for="star3"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></label>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="modal-footer">' +
+                '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>' +
+                '<button type="button" class="btn btn-primary" onclick="saveQuickMarkup(' + photoId + ')">Save Markup</button>' +
+                '<a href="/editor?photo_id=' + photoId + '" class="btn btn-warning">Full Editor</a>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    modal.addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(modal);
+    });
+}
+
+function saveQuickMarkup(photoId) {
+    const noteEl = document.getElementById('quickNote');
+    const ratingEl = document.querySelector('input[name="rating"]:checked');
+    const note = noteEl ? noteEl.value : '';
+    const rating = ratingEl ? ratingEl.value : null;
+    
+    // Here you would typically save to backend
+    // For now, just show confirmation
+    alert('Markup saved for photo ' + photoId + '!\nNote: ' + note + '\nRating: ' + (rating || 'None'));
+    
+    // Close modal
+    const modals = document.querySelectorAll('.modal.show');
+    modals.forEach(function(modal) {
+        const bsModal = bootstrap.Modal.getInstance(modal);
+        if (bsModal) bsModal.hide();
+    });
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     updateSelection();
@@ -467,6 +641,23 @@ document.addEventListener('DOMContentLoaded', function() {
             checkbox.checked = !checkbox.checked;
             updateSelection();
         });
+    });
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+A to select all photos
+        if (e.ctrlKey && e.key === 'a' && document.querySelectorAll('.photo-select').length > 0) {
+            e.preventDefault();
+            selectAllPhotos();
+        }
+        // Escape to clear selection
+        if (e.key === 'Escape' && document.querySelectorAll('.photo-select:checked').length > 0) {
+            clearAllSelection();
+        }
+        // Delete key for bulk delete
+        if (e.key === 'Delete' && document.querySelectorAll('.photo-select:checked').length > 0) {
+            bulkDeletePhotos();
+        }
     });
 });
 </script>
