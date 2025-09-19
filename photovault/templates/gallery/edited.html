@@ -48,7 +48,7 @@ CALMIC SDN BHD - "Committed to Excellence"
     <div class="row" id="photoGrid">
         {% for photo in photos.items %}
         <div class="col-md-3 mb-4">
-            <div class="card h-100" data-photo-id="{{ photo.id }}" data-has-edited="true" data-photo-name="{{ photo.original_name }}">
+            <div class="card h-100" data-photo-id="{{ photo.id }}" data-has-edited="{% if photo.edited_filename %}true{% else %}false{% endif %}" data-photo-name="{{ photo.original_name }}">
                 <!-- Display the edited image if it exists, fallback to original -->
                 {% if photo.edited_filename %}
                     <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
@@ -204,16 +204,27 @@ let currentPhotoIdToDelete = null;
 function deletePhoto(photoId) {
     currentPhotoIdToDelete = photoId;
     
-    // Find the photo element to get its name
+    // Find the photo element to get its name and check if it has edited version
     const photoCard = document.querySelector(`[data-photo-id="${photoId}"]`);
     const photoName = photoCard ? photoCard.getAttribute('data-photo-name') : 'this photo';
+    const hasEdited = photoCard ? photoCard.getAttribute('data-has-edited') === 'true' : false;
     
     // Set photo name in modal
     document.getElementById('photoNameToDelete').textContent = photoName;
     
-    // For edited photos view, all photos have edited versions so show all options
-    document.getElementById('deleteOriginalOption').style.display = 'block';
-    document.getElementById('deleteEditedOption').style.display = 'block';
+    // Show/hide options based on whether photo has edited version
+    const deleteOriginalOption = document.getElementById('deleteOriginalOption');
+    const deleteEditedOption = document.getElementById('deleteEditedOption');
+    
+    if (hasEdited) {
+        deleteOriginalOption.style.display = 'block';
+        deleteEditedOption.style.display = 'block';
+    } else {
+        deleteOriginalOption.style.display = 'none';
+        deleteEditedOption.style.display = 'none';
+        // Reset to 'both' option for photos without edited versions
+        document.getElementById('deleteBoth').checked = true;
+    }
     
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('deletePhotoModal'));
