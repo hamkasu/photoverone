@@ -7,7 +7,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # File upload settings
-    UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER') or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
     
     # Camera-specific settings
@@ -52,26 +52,65 @@ class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
     
-    # Production requires these environment variables - will be validated in init_app
-    SECRET_KEY = os.environ.get('SECRET_KEY') or None
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or None
+    # Production SECRET_KEY - generate random if not provided but log critical warning
+    _secret_key = os.environ.get('SECRET_KEY') or os.environ.get('RAILWAY_SECRET_KEY')
+    if not _secret_key:
+        import secrets
+        _secret_key = secrets.token_urlsafe(32)
+        # This will be logged as a critical error in init_app
+    SECRET_KEY = _secret_key
     
-    # Strict security for production
-    SESSION_COOKIE_SECURE = True
-    WTF_CSRF_SSL_STRICT = True
+    # Handle Railway's DATABASE_URL format (postgresql:// vs postgres://)
+    database_url = os.environ.get('DATABASE_URL') or os.environ.get('RAILWAY_DATABASE_URL')
+    if database_url and database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    
+    # Require explicit confirmation for SQLite in production
+    if not database_url:
+        if os.environ.get('ALLOW_SQLITE_IN_PROD') == '1':
+            database_url = 'sqlite:///photovault_production.db'
+        else:
+            # Set to None to trigger fail-fast in init_app
+            database_url = None
+    
+    SQLALCHEMY_DATABASE_URI = database_url
+    
+    # Railway-compatible security settings
+    SESSION_COOKIE_SECURE = os.environ.get('HTTPS', 'true').lower() == 'true'
+    WTF_CSRF_SSL_STRICT = os.environ.get('HTTPS', 'true').lower() == 'true'
     
     # Production logging
-    LOG_TO_STDOUT = os.environ.get('LOG_TO_STDOUT')
+    LOG_TO_STDOUT = os.environ.get('LOG_TO_STDOUT', '1')
     
     @staticmethod
     def init_app(app):
         Config.init_app(app)
         
-        # Validate required production environment variables
-        if not app.config.get('SECRET_KEY'):
-            raise RuntimeError('SECRET_KEY environment variable must be set for production')
+        # Critical security checks
+        if not (os.environ.get('SECRET_KEY') or os.environ.get('RAILWAY_SECRET_KEY')):
+            app.logger.critical('SECURITY RISK: SECRET_KEY not provided! Generated random key for this session only. '
+                              'Set SECRET_KEY environment variable immediately! User sessions will not persist across restarts.')
+        
+        # Fail-fast if no database configured in production
         if not app.config.get('SQLALCHEMY_DATABASE_URI'):
+            app.logger.critical('DATABASE_URL environment variable must be set for production. '
+                              'Set DATABASE_URL or ALLOW_SQLITE_IN_PROD=1 to use SQLite (data loss risk).')
             raise RuntimeError('DATABASE_URL environment variable must be set for production')
+        
+        if 'sqlite' in app.config.get('SQLALCHEMY_DATABASE_URI', ''):
+            app.logger.warning('SQLite enabled in production via ALLOW_SQLITE_IN_PROD=1 - data may be lost on restarts')
+        
+        # Log configuration for debugging (without exposing credentials)
+        db_uri = app.config.get('SQLALCHEMY_DATABASE_URI', 'Not set')
+        if db_uri != 'Not set':
+            if 'sqlite' in db_uri:
+                app.logger.info("Database: SQLite")
+            elif 'postgresql' in db_uri:
+                app.logger.info("Database: PostgreSQL")
+            else:
+                app.logger.info("Database: Configured")
+        else:
+            app.logger.info("Database: Not set")
         
         # Configure logging for production
         import logging
