@@ -25,7 +25,7 @@ body {
 
 /* Ultra Conservative Color Palette */
 :root {
-    --primary-color: #495057;           /* Muted dark gray */
+    --primary-color: #2c2c2c;           /* Dark professional gray */
     --secondary-color: #868e96;         /* Light gray */
     --success-color: #51a351;           /* Muted green */
     --info-color: #5bc0de;              /* Muted blue */
