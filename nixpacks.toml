@@ -4,13 +4,14 @@ providers = ["python"]
 nixPkgs = ["pkgs.python311", "pkgs.libGL", "pkgs.glib", "pkgs.pkg-config"]
 
 [phases.build]
-cmds = ["pip install -r requirements.txt"]
+cmds = ["pip install -r requirements.txt", "FLASK_APP=main.py flask db upgrade"]
 
 [start]
 cmd = "gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --graceful-timeout 30 --threads 2 wsgi:app"
 
 [variables]
 PYTHONPATH = "/app"
+FLASK_APP = "main.py"
 FLASK_ENV = "production"
 LOG_TO_STDOUT = "1"
 QT_QPA_PLATFORM = "offscreen"
