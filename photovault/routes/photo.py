@@ -419,63 +419,142 @@ def annotate_photo(photo_id):
 @photo_bp.route('/api/photos/<int:photo_id>/delete', methods=['DELETE'])
 @login_required
 def delete_photo(photo_id):
-    """Delete a photo and its files"""
+    """Delete a photo and its files with selective deletion options"""
     try:
         # Get the photo and verify ownership
         photo = Photo.query.get_or_404(photo_id)
         if photo.user_id != current_user.id:
             return jsonify({'success': False, 'error': 'Access denied'}), 403
         
-        # Delete physical files
-        if photo.file_path and os.path.exists(photo.file_path):
-            os.remove(photo.file_path)
+        # Get deletion type from request body or default to 'both'
+        data = request.get_json() or {}
+        deletion_type = data.get('deletion_type', 'both')  # 'original', 'edited', 'both'
         
-        if photo.thumbnail_path and os.path.exists(photo.thumbnail_path):
-            os.remove(photo.thumbnail_path)
+        # Validate deletion type
+        if deletion_type not in ['original', 'edited', 'both']:
+            return jsonify({'success': False, 'error': 'Invalid deletion type'}), 400
+        
+        # Check if photo has edited version for validation
+        has_edited = bool(photo.edited_filename)
+        
+        if deletion_type == 'edited' and not has_edited:
+            return jsonify({'success': False, 'error': 'No edited version to delete'}), 400
+        
+        if deletion_type == 'original' and not has_edited:
+            return jsonify({'success': False, 'error': 'Cannot delete original when no edited version exists'}), 400
+        
+        files_deleted = []
+        
+        # Handle selective file deletion
+        if deletion_type in ['original', 'both']:
+            # Delete original file
+            if photo.file_path and os.path.exists(photo.file_path):
+                os.remove(photo.file_path)
+                files_deleted.append('original')
             
-        # Delete edited version if it exists
-        if photo.edited_filename:
-            edited_path = os.path.join(current_app.config['UPLOAD_FOLDER'], str(photo.user_id), photo.edited_filename)
-            if os.path.exists(edited_path):
-                os.remove(edited_path)
+            # Delete thumbnail (always tied to original)
+            if photo.thumbnail_path and os.path.exists(photo.thumbnail_path):
+                os.remove(photo.thumbnail_path)
         
-        # Delete all associated records that reference this photo
-        # Import all models that have foreign keys to Photo
+        if deletion_type in ['edited', 'both']:
+            # Delete edited version if it exists
+            if photo.edited_filename:
+                edited_path = os.path.join(current_app.config['UPLOAD_FOLDER'], str(photo.user_id), photo.edited_filename)
+                if os.path.exists(edited_path):
+                    os.remove(edited_path)
+                    files_deleted.append('edited')
+        
+        # Handle database updates and associations based on deletion type
         from photovault.models import VoiceMemo, VaultPhoto, PhotoPerson, StoryPhoto
         
-        # Delete associated voice memos first
-        voice_memos = VoiceMemo.query.filter_by(photo_id=photo.id).all()
-        for memo in voice_memos:
-            # Delete voice memo file if it exists
-            if memo.file_path and os.path.exists(memo.file_path):
-                os.remove(memo.file_path)
-            # Delete memo from database
-            db.session.delete(memo)
+        if deletion_type == 'both':
+            # Delete entire photo record and all associations
+            
+            # Delete associated voice memos
+            voice_memos = VoiceMemo.query.filter_by(photo_id=photo.id).all()
+            for memo in voice_memos:
+                if memo.file_path and os.path.exists(memo.file_path):
+                    os.remove(memo.file_path)
+                db.session.delete(memo)
+            
+            # Delete associated vault photo shares
+            vault_photos = VaultPhoto.query.filter_by(photo_id=photo.id).all()
+            for vault_photo in vault_photos:
+                db.session.delete(vault_photo)
+            
+            # Delete associated photo-person tags
+            photo_people = PhotoPerson.query.filter_by(photo_id=photo.id).all()
+            for photo_person in photo_people:
+                db.session.delete(photo_person)
+            
+            # Delete associated story photo attachments
+            story_photos = StoryPhoto.query.filter_by(photo_id=photo.id).all()
+            for story_photo in story_photos:
+                db.session.delete(story_photo)
+            
+            # Delete the photo record
+            db.session.delete(photo)
+            
+        elif deletion_type == 'edited':
+            # Keep original, remove edited version info from database
+            photo.edited_filename = None
+            photo.edited_path = None
+            # Reset thumbnail_path to ensure it points to original thumbnail
+            if photo.thumbnail_path:
+                # Check if thumbnail exists, if not regenerate from original
+                if not os.path.exists(photo.thumbnail_path):
+                    try:
+                        # Regenerate thumbnail from original
+                        from PIL import Image
+                        original_image = Image.open(photo.file_path)
+                        original_image.thumbnail(THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
+                        
+                        # Save thumbnail
+                        thumbnail_filename = f"{os.path.splitext(photo.filename)[0]}_thumb.jpg"
+                        thumbnail_path = os.path.join(current_app.config['UPLOAD_FOLDER'], str(photo.user_id), thumbnail_filename)
+                        original_image.save(thumbnail_path, 'JPEG', quality=85)
+                        photo.thumbnail_path = thumbnail_path
+                    except Exception as e:
+                        logger.warning(f"Failed to regenerate thumbnail for photo {photo.id}: {str(e)}")
+                        photo.thumbnail_path = None
+            photo.updated_at = datetime.utcnow()
+            
+        elif deletion_type == 'original':
+            # Promote edited version to be the new original
+            if photo.edited_filename and photo.edited_path:
+                # Update database to use edited version as the main photo
+                photo.filename = photo.edited_filename
+                photo.file_path = photo.edited_path
+                
+                # Generate new thumbnail from the edited version
+                try:
+                    from PIL import Image
+                    edited_image = Image.open(photo.edited_path)
+                    edited_image.thumbnail(THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
+                    
+                    # Save new thumbnail
+                    thumbnail_filename = f"{os.path.splitext(photo.edited_filename)[0]}_thumb.jpg"
+                    new_thumbnail_path = os.path.join(current_app.config['UPLOAD_FOLDER'], str(photo.user_id), thumbnail_filename)
+                    edited_image.save(new_thumbnail_path, 'JPEG', quality=85)
+                    photo.thumbnail_path = new_thumbnail_path
+                except Exception as e:
+                    logger.warning(f"Failed to generate thumbnail from edited version for photo {photo.id}: {str(e)}")
+                    photo.thumbnail_path = None
+                
+                # Clear edited fields since it's now the original
+                photo.edited_filename = None
+                photo.edited_path = None
+                photo.updated_at = datetime.utcnow()
         
-        # Delete associated vault photo shares
-        vault_photos = VaultPhoto.query.filter_by(photo_id=photo.id).all()
-        for vault_photo in vault_photos:
-            db.session.delete(vault_photo)
-        
-        # Delete associated photo-person tags
-        photo_people = PhotoPerson.query.filter_by(photo_id=photo.id).all()
-        for photo_person in photo_people:
-            db.session.delete(photo_person)
-        
-        # Delete associated story photo attachments
-        story_photos = StoryPhoto.query.filter_by(photo_id=photo.id).all()
-        for story_photo in story_photos:
-            db.session.delete(story_photo)
-        
-        # Delete from database
-        db.session.delete(photo)
         db.session.commit()
         
-        logger.info(f"Successfully deleted photo {photo_id} for user {current_user.id}")
+        logger.info(f"Successfully deleted {deletion_type} version(s) of photo {photo_id} for user {current_user.id}")
         
         return jsonify({
             'success': True,
-            'message': 'Photo deleted successfully'
+            'message': f'Successfully deleted {deletion_type} version(s)',
+            'files_deleted': files_deleted,
+            'deletion_type': deletion_type
         })
         
     except Exception as e:

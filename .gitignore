@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Environment Variables
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+photovault_dev.db
+photovault.db
+instance/*.db
+
+# Log Files
+logs/
+*.log
+photovault.log
+
+# Flask Session Files
+flask_session/
+
+# Photo Uploads (keep folder structure but not content)
+photovault/uploads/*/*
+!photovault/uploads/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets and Config
+secret_key.txt
+config_local.py
+
+# Replit specific
+.replit
+replit.nix
+
+# Temporary files
+*.tmp
+*.temp
