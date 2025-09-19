@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["python311", "pip", "libGL", "mesa", "libglvnd", "pkg-config", "glib"]
+nixPkgs = ["python311", "libGL", "glib", "pkg-config"]
 
 [phases.install]
 cmds = ["pip install -r requirements.txt"]
@@ -9,6 +9,7 @@ cmd = "gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --graceful-timeou
 
 [variables]
 PYTHONPATH = "/app"
-LD_LIBRARY_PATH = "/nix/store"
 FLASK_ENV = "production"
 LOG_TO_STDOUT = "1"
+QT_QPA_PLATFORM = "offscreen"
+OPENCV_IO_ENABLE_OPENEXR = "1"
