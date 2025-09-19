@@ -57,4 +57,4 @@ outputType = "webview"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["gunicorn", "--bind=0.0.0.0:5000", "--workers=2", "--worker-class=gthread", "--threads=4", "--timeout=30", "--max-requests=1000", "--max-requests-jitter=100", "--preload", "--access-logfile=-", "--error-logfile=-", "main:app"]
+run = ["gunicorn", "--bind=0.0.0.0:5000", "--workers", "2", "--timeout", "120", "--graceful-timeout", "30", "--threads", "2", "wsgi:app"]
