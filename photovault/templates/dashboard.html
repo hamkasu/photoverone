@@ -36,6 +36,9 @@ CALMIC SDN BHD - "Committed to Excellence"
                     <a href="/camera/" class="btn btn-success">
                         <i class="bi bi-camera"></i> Camera
                     </a>
+                    <a href="{{ url_for('main.advanced_enhancement') }}" class="btn btn-info">
+                        <i class="bi bi-magic"></i> Enhance
+                    </a>
                 </div>
             </div>
         </div>
@@ -115,6 +118,59 @@ CALMIC SDN BHD - "Committed to Excellence"
         </div>
     </div>
     {% endif %}
+
+    <!-- Advanced Features Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-magic"></i> Professional Image Enhancement
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6 class="fw-bold text-primary">OpenCV-Powered Processing</h6>
+                            <p class="mb-2">Transform your photos with professional-grade image enhancement:</p>
+                            <div class="row text-center mb-3">
+                                <div class="col-6 col-lg-3 mb-2">
+                                    <div class="p-2">
+                                        <i class="bi bi-eye text-primary" style="font-size: 1.5rem;"></i>
+                                        <br><small><strong>CLAHE</strong><br>Contrast Enhancement</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-lg-3 mb-2">
+                                    <div class="p-2">
+                                        <i class="bi bi-funnel text-success" style="font-size: 1.5rem;"></i>
+                                        <br><small><strong>Bilateral</strong><br>Noise Reduction</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-lg-3 mb-2">
+                                    <div class="p-2">
+                                        <i class="bi bi-graph-up text-info" style="font-size: 1.5rem;"></i>
+                                        <br><small><strong>Auto-Levels</strong><br>Histogram Stretch</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-lg-3 mb-2">
+                                    <div class="p-2">
+                                        <i class="bi bi-brush text-warning" style="font-size: 1.5rem;"></i>
+                                        <br><small><strong>Canvas</strong><br>Manual Editing</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="{{ url_for('main.advanced_enhancement') }}" class="btn btn-primary btn-lg mb-2">
+                                <i class="bi bi-magic"></i> Advanced Enhancement
+                            </a>
+                            <br><small class="text-muted">Restore old photos & enhance images</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Recent Photos Section -->
     <div class="row">

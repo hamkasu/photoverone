@@ -1187,6 +1187,91 @@ def assign_face_to_person(face_id):
             'error': 'Failed to assign face'
         }), 500
 
+@photo_bp.route('/api/photos/<int:photo_id>/enhance', methods=['POST'])
+@login_required
+def enhance_photo_api(photo_id):
+    """
+    API endpoint to apply OpenCV-powered image enhancement
+    """
+    try:
+        from photovault.models import Photo
+        from photovault.utils.image_enhancement import enhancer
+        # Use local create_thumbnail function for consistency
+        import uuid
+        from datetime import datetime
+        import os
+        
+        # Get the photo and verify ownership
+        photo = Photo.query.get_or_404(photo_id)
+        if photo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        # Check image size to prevent blocking on large files
+        if os.path.exists(photo.file_path):
+            file_size = os.path.getsize(photo.file_path)
+            # Limit enhancement to files under 10MB for performance
+            if file_size > 10 * 1024 * 1024:  # 10MB
+                return jsonify({
+                    'success': False, 
+                    'error': 'Image too large for enhancement. Please use smaller images (under 10MB).'
+                }), 400
+        
+        # Get enhancement settings from request
+        data = request.get_json()
+        enhancement_settings = data.get('settings', {})
+        
+        # Generate filename for enhanced version
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_id = str(uuid.uuid4())[:8]
+        base_name = os.path.splitext(photo.filename)[0]
+        enhanced_filename = f"{base_name}_enhanced_{timestamp}_{unique_id}.jpg"
+        
+        # Create user upload directory
+        user_upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(current_user.id))
+        os.makedirs(user_upload_dir, exist_ok=True)
+        
+        # Enhanced image path
+        enhanced_filepath = os.path.join(user_upload_dir, enhanced_filename)
+        
+        # Apply enhancements using the backend OpenCV system
+        output_path, applied_settings = enhancer.auto_enhance_photo(
+            photo.file_path, 
+            enhanced_filepath, 
+            enhancement_settings
+        )
+        
+        # Create thumbnail for enhanced version
+        thumbnail_filename = f"{base_name}_enhanced_{timestamp}_{unique_id}_thumb.jpg"
+        thumbnail_path = os.path.join(user_upload_dir, thumbnail_filename)
+        create_thumbnail(enhanced_filepath, thumbnail_path)
+        
+        # Update photo record with enhanced version info
+        photo.edited_filename = enhanced_filename
+        photo.edited_path = enhanced_filepath
+        photo.thumbnail_path = thumbnail_path
+        photo.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        logger.info(f"Successfully enhanced photo for user {current_user.id}, photo {photo_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Photo enhanced successfully',
+            'enhanced_filename': enhanced_filename,
+            'thumbnail_url': url_for('gallery.uploaded_file', user_id=current_user.id, filename=thumbnail_filename),
+            'enhanced_url': url_for('gallery.uploaded_file', user_id=current_user.id, filename=enhanced_filename),
+            'applied_settings': applied_settings
+        })
+        
+    except Exception as e:
+        logger.error(f"Error enhancing photo {photo_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to enhance photo'
+        }), 500
+
 @photo_bp.route('/api/photos/batch-detect-faces', methods=['POST'])
 @login_required
 def batch_detect_faces():

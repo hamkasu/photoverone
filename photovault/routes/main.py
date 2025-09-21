@@ -221,6 +221,45 @@ def edit_photo(photo_id):
         print(f"Edit photo error: {str(e)}")
         return redirect(url_for('main.dashboard'))
 
+@main_bp.route('/advanced-enhancement')
+@login_required
+def advanced_enhancement():
+    """Advanced Image Enhancement page"""
+    try:
+        from photovault.models import Photo
+        from photovault.utils.image_enhancement import OPENCV_AVAILABLE
+        
+        # Get user's photos for selection
+        photos = Photo.query.filter_by(user_id=current_user.id).order_by(Photo.created_at.desc()).limit(20).all()
+        
+        return render_template('advanced_enhancement.html', 
+                             photos=photos,
+                             opencv_available=OPENCV_AVAILABLE)
+    except Exception as e:
+        print(f"Advanced enhancement error: {str(e)}")
+        flash('Error accessing advanced enhancement features.', 'error')
+        return redirect(url_for('main.dashboard'))
+
+@main_bp.route('/photos/<int:photo_id>/enhance')
+@login_required
+def enhance_photo(photo_id):
+    """Advanced Image Enhancement page for specific photo"""
+    try:
+        from photovault.models import Photo
+        from photovault.utils.image_enhancement import OPENCV_AVAILABLE
+        
+        # Get the photo and verify ownership
+        photo = Photo.query.get_or_404(photo_id)
+        if photo.user_id != current_user.id:
+            return redirect(url_for('main.dashboard'))
+            
+        return render_template('advanced_enhancement.html', 
+                             photo=photo,
+                             opencv_available=OPENCV_AVAILABLE)
+    except Exception as e:
+        print(f"Enhanced photo error: {str(e)}")
+        return redirect(url_for('main.dashboard'))
+
 @main_bp.route('/people')
 @login_required
 def people():
