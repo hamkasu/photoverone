@@ -100,10 +100,12 @@ def upload_image():
             prefix_parts.append('camera')
         
         prefix = "_".join(prefix_parts)
+        # Force JPEG format for camera uploads to ensure format/extension alignment
         filename = generate_secure_filename(
             file.filename, 
             username=current_user.username, 
-            prefix=prefix
+            prefix=prefix,
+            force_format='jpg'  # Camera always saves as JPEG
         )
         
         # Create secure file path
@@ -310,6 +312,7 @@ def process_and_save_image(file, file_path):
             logger.warning(f"EXIF processing failed, continuing without rotation: {exif_error}")
         
         # Convert to RGB with proper handling of transparency
+        # CRITICAL: Strip EXIF metadata to prevent privacy leaks (GPS, device info)
         if image.mode in ('RGBA', 'LA', 'P'):
             # Create white background for transparency
             background = Image.new('RGB', image.size, (255, 255, 255))
@@ -325,6 +328,11 @@ def process_and_save_image(file, file_path):
                 background.paste(image)
             
             image = background
+        else:
+            # For RGB/L images, create new image without EXIF data
+            image_without_exif = Image.new(image.mode, image.size)
+            image_without_exif.putdata(list(image.getdata()))
+            image = image_without_exif
         
         # Smart resizing based on camera quality settings
         camera_max_size = current_app.config.get('CAMERA_MAX_DIMENSION', 2048)

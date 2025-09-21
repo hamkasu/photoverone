@@ -35,7 +35,10 @@ RATE_LIMIT_WINDOW = 300  # 5 minutes in seconds
 MAX_UPLOADS_PER_WINDOW = 20
 MAX_UPLOADS_PER_HOUR = 100
 
-# In-memory rate limiting storage (in production, use Redis or database)
+# PRODUCTION WARNING: In-memory rate limiting storage
+# This will NOT work correctly in production with multiple processes/instances
+# TODO: Replace with Redis or database-backed rate limiting for production deployment
+# Recommended: Use Flask-Limiter with Redis backend for production
 _rate_limit_storage = defaultdict(list)
 _rate_limit_cleanup_last = time.time()
 
@@ -74,7 +77,7 @@ def sanitize_input(value: str, max_length: int = 255) -> str:
     # Truncate to max length
     return sanitized[:max_length].strip()
 
-def generate_secure_filename(original_filename: str, username: str = None, prefix: str = "") -> str:
+def generate_secure_filename(original_filename: str, username: str = None, prefix: str = "", force_format: str = None) -> str:
     """
     Generate a secure, unique filename with proper sanitization
     
@@ -82,6 +85,7 @@ def generate_secure_filename(original_filename: str, username: str = None, prefi
         original_filename: Original filename from upload
         username: Username for file organization (will be sanitized)
         prefix: Optional prefix (e.g., 'camera', 'quad')
+        force_format: Force specific extension (e.g., 'jpg' for camera uploads)
         
     Returns:
         Secure filename
@@ -92,8 +96,12 @@ def generate_secure_filename(original_filename: str, username: str = None, prefi
     if prefix:
         prefix = sanitize_input(prefix, 20)
     
-    # Get secure file extension
-    if original_filename and '.' in original_filename:
+    # Get secure file extension - force specific format if specified
+    if force_format:
+        ext = force_format.lower()
+        if ext not in ALLOWED_EXTENSIONS:
+            ext = 'jpg'  # Fallback to safe extension
+    elif original_filename and '.' in original_filename:
         ext = secure_filename(original_filename).rsplit('.', 1)[1].lower()
         if ext not in ALLOWED_EXTENSIONS:
             ext = 'jpg'  # Default safe extension
