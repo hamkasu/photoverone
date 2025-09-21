@@ -16,6 +16,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from photovault.models import User, PasswordResetToken, db
 from photovault.utils import safe_db_query, retry_db_operation, TransientDBError
+from photovault.extensions import csrf
 import re
 
 auth_bp = Blueprint('auth', __name__)
@@ -260,6 +261,7 @@ def logout():
         return redirect(url_for('auth.login'))
 
 @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+@csrf.exempt
 def forgot_password():
     """Request password reset"""
     if current_user.is_authenticated:
