@@ -13,16 +13,16 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 33747
-externalPort = 5173
-
-[[ports]]
 localPort = 38157
 externalPort = 6000
 
 [[ports]]
 localPort = 39287
 externalPort = 5000
+
+[[ports]]
+localPort = 41131
+externalPort = 5173
 
 [[ports]]
 localPort = 41659
@@ -53,7 +53,29 @@ localPort = 45421
 externalPort = 4200
 
 [workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "PhotoVault Server"
+
+[[workflows.workflow]]
+name = "PhotoVault Server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 main.py"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["gunicorn", "--bind=0.0.0.0:5000", "--reuse-port", "main:app"]
+run = ["gunicorn", "--bind=0.0.0.0:5000", "--reuse-port", "--workers=4", "main:app"]
