@@ -148,45 +148,24 @@ def upload_photos():
                     db.session.add(photo)
                     db.session.commit()
                     
-                    # Automatic face detection on newly uploaded photo
-                    faces_detected = 0
+                    # Intelligent face detection and recognition
+                    face_processing_result = {}
                     try:
-                        faces = detect_faces_in_photo(file_path)
-                        if faces:
-                            from photovault.models import PhotoPerson
-                            for face in faces:
-                                try:
-                                    # Try to recognize the face
-                                    recognition_result = face_recognizer.recognize_face(file_path, face)
-                                    
-                                    # Create PhotoPerson record
-                                    photo_person = PhotoPerson(
-                                        photo_id=photo.id,
-                                        person_id=recognition_result['person_id'] if recognition_result else None,
-                                        confidence=recognition_result['confidence'] if recognition_result else face['confidence'],
-                                        face_box_x=face['x'],
-                                        face_box_y=face['y'],
-                                        face_box_width=face['width'],
-                                        face_box_height=face['height'],
-                                        manually_tagged=False,
-                                        verified=bool(recognition_result)
-                                    )
-                                    
-                                    db.session.add(photo_person)
-                                    faces_detected += 1
-                                    
-                                except Exception as face_error:
-                                    logger.warning(f"Error storing face detection for {file.filename}: {face_error}")
-                                    continue
-                            
-                            # Commit face detections
-                            if faces_detected > 0:
-                                db.session.commit()
-                                logger.info(f"Detected and stored {faces_detected} faces in {file.filename}")
+                        from photovault.services.face_detection_service import face_detection_service
+                        
+                        # Process faces with our intelligent service
+                        face_processing_result = face_detection_service.process_and_tag_photo(photo, auto_tag=True)
+                        
+                        if face_processing_result.get('faces_detected', 0) > 0:
+                            logger.info(f"Face processing completed for {file.filename}: "
+                                       f"{face_processing_result['faces_detected']} faces detected, "
+                                       f"{face_processing_result['faces_recognized']} recognized, "
+                                       f"{face_processing_result['tags_created']} auto-tagged")
                     
                     except Exception as face_detection_error:
-                        logger.warning(f"Face detection failed for {file.filename}: {face_detection_error}")
+                        logger.warning(f"Face processing failed for {file.filename}: {face_detection_error}")
                         # Don't fail the upload if face detection fails
+                        face_processing_result = {'error': str(face_detection_error)}
                     
                     uploaded_files.append({
                         'id': photo.id,
@@ -197,8 +176,10 @@ def upload_photos():
                         'upload_source': upload_source,
                         'thumbnail_url': f"/api/thumbnail/{photo.id}" if thumbnail_path else None,
                         'auto_enhanced': photo_metadata.get('auto_enhanced', False),
-                        'has_metadata': bool(photo_metadata.get('date_taken')),
-                        'faces_detected': faces_detected
+                        'faces_detected': face_processing_result.get('faces_detected', 0),
+                        'faces_recognized': face_processing_result.get('faces_recognized', 0),
+                        'tags_created': face_processing_result.get('tags_created', 0),
+                        'has_metadata': bool(photo_metadata.get('date_taken'))
                     })
                     
                 except Exception as db_error:
