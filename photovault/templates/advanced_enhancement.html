@@ -203,14 +203,14 @@ CALMIC SDN BHD - "Committed to Excellence"
                     <!-- OpenCV Processing Tools -->
                     {% if opencv_available %}
                     <div class="tool-section">
-                        <h6 class="text-white mb-3">
+                        <h6 class="text-dark mb-3">
                             <i class="bi bi-cpu"></i> OpenCV Processing
                         </h6>
                         
                         <div class="mb-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="enableCLAHE" checked>
-                                <label class="form-check-label text-white" for="enableCLAHE">
+                                <label class="form-check-label text-dark" for="enableCLAHE">
                                     <strong>CLAHE Enhancement</strong><br>
                                     <small>Contrast Limited Adaptive Histogram Equalization</small>
                                 </label>
@@ -220,7 +220,7 @@ CALMIC SDN BHD - "Committed to Excellence"
                         <div class="mb-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="enableDenoising" checked>
-                                <label class="form-check-label text-white" for="enableDenoising">
+                                <label class="form-check-label text-dark" for="enableDenoising">
                                     <strong>Bilateral Filtering</strong><br>
                                     <small>Noise reduction while preserving edges</small>
                                 </label>
@@ -230,7 +230,7 @@ CALMIC SDN BHD - "Committed to Excellence"
                         <div class="mb-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="enableAutoLevels" checked>
-                                <label class="form-check-label text-white" for="enableAutoLevels">
+                                <label class="form-check-label text-dark" for="enableAutoLevels">
                                     <strong>Auto-Levels</strong><br>
                                     <small>Automatic histogram stretching</small>
                                 </label>
@@ -245,27 +245,27 @@ CALMIC SDN BHD - "Committed to Excellence"
 
                     <!-- Manual Adjustments -->
                     <div class="tool-section">
-                        <h6 class="text-white mb-3">
+                        <h6 class="text-dark mb-3">
                             <i class="bi bi-sliders"></i> Manual Adjustments
                         </h6>
                         
                         <div class="mb-3">
-                            <label class="form-label text-white">Brightness: <span id="brightnessValue">1.0</span></label>
+                            <label class="form-label text-dark">Brightness: <span id="brightnessValue">1.0</span></label>
                             <input type="range" class="form-range" id="brightness" min="0.1" max="2.0" step="0.1" value="1.0">
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label text-white">Contrast: <span id="contrastValue">1.0</span></label>
+                            <label class="form-label text-dark">Contrast: <span id="contrastValue">1.0</span></label>
                             <input type="range" class="form-range" id="contrast" min="0.1" max="3.0" step="0.1" value="1.0">
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label text-white">Color/Saturation: <span id="colorValue">1.0</span></label>
+                            <label class="form-label text-dark">Color/Saturation: <span id="colorValue">1.0</span></label>
                             <input type="range" class="form-range" id="color" min="0.0" max="2.0" step="0.1" value="1.0">
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label text-white">Sharpness: <span id="sharpnessValue">1.0</span></label>
+                            <label class="form-label text-dark">Sharpness: <span id="sharpnessValue">1.0</span></label>
                             <input type="range" class="form-range" id="sharpness" min="0.1" max="2.5" step="0.1" value="1.0">
                         </div>
 
@@ -276,35 +276,35 @@ CALMIC SDN BHD - "Committed to Excellence"
 
                     <!-- Canvas Editor Tools -->
                     <div class="tool-section">
-                        <h6 class="text-white mb-3">
+                        <h6 class="text-dark mb-3">
                             <i class="bi bi-brush"></i> Canvas Editor
                         </h6>
                         
                         <div class="row g-2 mb-3">
                             <div class="col-4">
-                                <button class="btn btn-outline-light btn-sm w-100" onclick="setCanvasTool('pen')" title="Pen">
+                                <button class="btn btn-outline-dark btn-sm w-100" onclick="setCanvasTool('pen')" title="Pen">
                                     <i class="bi bi-pen"></i>
                                 </button>
                             </div>
                             <div class="col-4">
-                                <button class="btn btn-outline-light btn-sm w-100" onclick="setCanvasTool('highlight')" title="Highlight">
+                                <button class="btn btn-outline-dark btn-sm w-100" onclick="setCanvasTool('highlight')" title="Highlight">
                                     <i class="bi bi-highlighter"></i>
                                 </button>
                             </div>
                             <div class="col-4">
-                                <button class="btn btn-outline-light btn-sm w-100" onclick="setCanvasTool('text')" title="Text">
+                                <button class="btn btn-outline-dark btn-sm w-100" onclick="setCanvasTool('text')" title="Text">
                                     <i class="bi bi-fonts"></i>
                                 </button>
                             </div>
                         </div>
 
                         <div class="mb-2">
-                            <label class="form-label text-white">Color</label>
+                            <label class="form-label text-dark">Color</label>
                             <input type="color" class="form-control form-control-color" id="canvasColor" value="#ff0000">
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label text-white">Line Width: <span id="lineWidthValue">3</span>px</label>
+                            <label class="form-label text-dark">Line Width: <span id="lineWidthValue">3</span>px</label>
                             <input type="range" class="form-range" id="lineWidth" min="1" max="20" value="3">
                         </div>
                     </div>
@@ -317,7 +317,7 @@ CALMIC SDN BHD - "Committed to Excellence"
                         <button class="btn btn-warning" onclick="resetImage()">
                             <i class="bi bi-arrow-clockwise"></i> Reset to Original
                         </button>
-                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-light">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-dark">
                             <i class="bi bi-arrow-left"></i> Back to Dashboard
                         </a>
                     </div>
