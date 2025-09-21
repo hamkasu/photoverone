@@ -278,6 +278,19 @@ def people():
         print(f"People page error: {str(e)}")
         return render_template('people.html', people=None)
 
+@main_bp.route('/montage')
+@login_required
+def montage():
+    """Photo montage creation page"""
+    try:
+        from photovault.models import Photo
+        # Get user's photos for montage creation
+        photos = Photo.query.filter_by(user_id=current_user.id).all()
+        return render_template('montage.html', photos=photos)
+    except Exception as e:
+        flash('Error loading montage page.', 'error')
+        return redirect(url_for('main.dashboard'))
+
 @main_bp.route('/people/add', methods=['POST'])
 @login_required
 def add_person():
