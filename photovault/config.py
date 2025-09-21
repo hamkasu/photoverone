@@ -18,10 +18,14 @@ class Config:
         }
         
         if database_uri and 'postgresql' in database_uri:
-            # PostgreSQL-specific settings
+            # PostgreSQL-specific settings optimized for Replit environment
             base_options['connect_args'] = {
                 'connect_timeout': 10,
-                'sslmode': 'require',
+                'sslmode': 'prefer',  # More flexible than 'require' - allows fallback
+                'sslcert': None,      # Don't require client cert
+                'sslkey': None,       # Don't require client key
+                'sslrootcert': None,  # Don't require root cert
+                'application_name': 'PhotoVault',
                 'options': '-c statement_timeout=30s'
             }
         
