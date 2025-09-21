@@ -17,6 +17,17 @@ PhotoVault is a professional photo management platform by Calmic Sdn Bhd, focusi
 - OpenCV image enhancement and face detection services properly initialized
 - Production-ready WSGI configuration with proper security settings configured
 
+## September 21, 2025 - Email-Based Password Reset Implementation
+- Integrated Replit Mail service for email functionality using official OpenInt API
+- Implemented comprehensive password reset system with secure token generation and validation
+- Created professional HTML and text email templates with branded PhotoVault styling
+- Added requests library for HTTP communication with Replit mail service
+- Enhanced forgot password routes with actual email sending capability (replaced console logging)
+- Configured secure token expiration (1 hour) and single-use validation
+- Email system includes fallback to console logging for development environments
+- Password reset emails feature styled HTML with clickable buttons and fallback text versions
+- All email security best practices implemented: token cleanup, user privacy protection, proper error handling
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.

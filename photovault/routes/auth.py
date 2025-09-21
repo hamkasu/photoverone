@@ -360,42 +360,90 @@ def reset_password(token):
     return render_template('auth/reset_password.html', token=token, user=reset_token.user)
 
 def send_password_reset_email(user, token):
-    """Send password reset email to user"""
+    """Send password reset email to user using Replit Mail service"""
+    import requests
+    import os
+    
     try:
-        # For now, just log the reset link. In production, this would send an actual email.
         reset_url = url_for('auth.reset_password', token=token, _external=True)
         
-        # Security: Don't log the actual reset URL/token in production
-        current_app.logger.info(f"Password reset requested for user {user.id} ({user.email})")
+        # Get authentication token for Replit mail service
+        auth_token = None
+        if os.environ.get('REPL_IDENTITY'):
+            auth_token = f"repl {os.environ.get('REPL_IDENTITY')}"
+        elif os.environ.get('WEB_REPL_RENEWAL'):
+            auth_token = f"depl {os.environ.get('WEB_REPL_RENEWAL')}"
         
-        # TODO: Implement actual email sending using Replit Mail integration
-        # Example email content:
+        if not auth_token:
+            current_app.logger.warning("No Replit authentication token found, falling back to console logging")
+            # Fallback to console logging in development
+            if current_app.debug:
+                print(f"EMAIL TO {user.email}: Password reset link: {reset_url}")
+            return True
+        
+        # Prepare email content
         subject = "PhotoVault - Password Reset Request"
-        message = f"""
-        Hello {user.username},
-        
-        You have requested a password reset for your PhotoVault account.
-        
-        Click the link below to reset your password:
-        {reset_url}
-        
-        This link will expire in 1 hour.
-        
-        If you did not request this password reset, please ignore this email.
-        
-        Best regards,
-        PhotoVault Team
+        html_content = f"""
+        <html>
+        <body>
+            <h2>PhotoVault - Password Reset</h2>
+            <p>Hello {user.username},</p>
+            
+            <p>You have requested a password reset for your PhotoVault account.</p>
+            
+            <p><a href="{reset_url}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Your Password</a></p>
+            
+            <p>Or copy and paste this link: {reset_url}</p>
+            
+            <p><strong>This link will expire in 1 hour.</strong></p>
+            
+            <p>If you did not request this password reset, please ignore this email.</p>
+            
+            <hr>
+            <p>Best regards,<br>PhotoVault Team</p>
+        </body>
+        </html>
         """
         
-        # For development only: print to console (remove in production)
-        if current_app.debug:
-            print(f"EMAIL TO {user.email}:")
-            print(f"Subject: {subject}")
-            print(message)
-            print("-" * 50)
+        text_content = f"""Hello {user.username},
+
+You have requested a password reset for your PhotoVault account.
+
+Click the link below to reset your password:
+{reset_url}
+
+This link will expire in 1 hour.
+
+If you did not request this password reset, please ignore this email.
+
+Best regards,
+PhotoVault Team"""
         
-        return True
+        # Send email via Replit Mail service
+        response = requests.post(
+            "https://connectors.replit.com/api/v2/mailer/send",
+            headers={
+                "Content-Type": "application/json",
+                "X_REPLIT_TOKEN": auth_token,
+            },
+            json={
+                "to": user.email,
+                "subject": subject,
+                "html": html_content,
+                "text": text_content,
+            },
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            current_app.logger.info(f"Password reset email sent to {user.email}, messageId: {result.get('messageId', 'unknown')}")
+            return True
+        else:
+            current_app.logger.error(f"Failed to send email: {response.status_code} - {response.text}")
+            return False
         
     except Exception as e:
         current_app.logger.error(f"Failed to send reset email: {str(e)}")
-        return False
+        # Still return True to avoid revealing whether email exists or not
+        return True

@@ -6,6 +6,7 @@ packages = ["freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp
 
 [agent]
 expertMode = true
+integrations = ["replitmail:1.0.0"]
 
 [[ports]]
 localPort = 5000
@@ -24,10 +25,6 @@ localPort = 39287
 externalPort = 5000
 
 [[ports]]
-localPort = 40249
-externalPort = 4200
-
-[[ports]]
 localPort = 41659
 externalPort = 3001
 
@@ -42,6 +39,10 @@ externalPort = 3003
 [[ports]]
 localPort = 43543
 externalPort = 8000
+
+[[ports]]
+localPort = 44459
+externalPort = 4200
 
 [[ports]]
 localPort = 44603
