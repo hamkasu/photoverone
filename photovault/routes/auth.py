@@ -92,10 +92,16 @@ def register():
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
+        accept_terms = request.form.get('accept_terms')
         
         # Basic validation
         if not all([username, email, password, confirm_password]):
             flash('All fields are required.', 'error')
+            return render_template('register.html')
+            
+        # Terms and conditions validation
+        if not accept_terms:
+            flash('You must accept the Terms and Conditions to create an account.', 'error')
             return render_template('register.html')
         
         # Username validation
@@ -143,10 +149,12 @@ def register():
         
         @retry_db_operation(max_retries=3)
         def create_user():
+            from datetime import datetime
             user = User(
                 username=username,
                 email=email,
-                password_hash=generate_password_hash(password)
+                password_hash=generate_password_hash(password),
+                terms_accepted_at=datetime.utcnow()
             )
             db.session.add(user)
             db.session.commit()

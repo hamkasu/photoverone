@@ -17,6 +17,9 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
     
+    # Terms and conditions acceptance
+    terms_accepted_at = db.Column(db.DateTime, nullable=True)
+    
     # Admin and superuser fields
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     is_superuser = db.Column(db.Boolean, default=False, nullable=False)
