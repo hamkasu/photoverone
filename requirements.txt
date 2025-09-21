@@ -20,6 +20,7 @@ alembic==1.13.1
 # Image Processing
 Pillow==11.0.0
 opencv-python-headless==4.8.0.76
+opencv-contrib-python-headless==4.8.0.76
 numpy==1.24.4
 scikit-image==0.21.0
 
@@ -39,3 +40,4 @@ exifread
 
 # Production Server
 gunicorn==21.2.0
+opencv-contrib-python-headless==4.8.0.76

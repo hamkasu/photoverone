@@ -16,8 +16,12 @@ from PIL import Image
 import logging
 
 # Import your models
-from photovault.models import Photo, Album, User
+from photovault.models import Photo, Album, User, Person, PhotoPerson
 from photovault.extensions import db
+
+# Import face detection utilities
+from photovault.utils.face_detection import detect_faces_in_photo
+from photovault.utils.face_recognition import face_recognizer
 
 # Create blueprint
 photo_bp = Blueprint('photo', __name__)
@@ -984,3 +988,291 @@ def internal_error(e):
         'success': False,
         'error': 'Internal server error'
     }), 500
+
+# Face Detection API Endpoints
+
+@photo_bp.route('/api/photos/<int:photo_id>/detect-faces', methods=['POST'])
+@login_required
+def detect_faces_in_photo_api(photo_id):
+    """
+    API endpoint to detect faces in a specific photo
+    """
+    try:
+        # Get the photo and verify ownership
+        photo = Photo.query.get_or_404(photo_id)
+        if photo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        # Detect faces in the photo
+        faces = detect_faces_in_photo(photo.file_path)
+        
+        if not faces:
+            return jsonify({
+                'success': True,
+                'message': 'No faces detected in this photo',
+                'faces': []
+            })
+        
+        # Store detected faces in database
+        stored_faces = []
+        for face in faces:
+            try:
+                # Try to recognize the face
+                recognition_result = face_recognizer.recognize_face(photo.file_path, face)
+                
+                if recognition_result:
+                    # Face recognized - link to existing person
+                    person_id = recognition_result['person_id']
+                    confidence = recognition_result['confidence']
+                    manually_tagged = False
+                else:
+                    # Face not recognized - create unassigned detection
+                    person_id = None
+                    confidence = face['confidence']
+                    manually_tagged = False
+                
+                # Check if this face detection already exists
+                existing_detection = PhotoPerson.query.filter_by(
+                    photo_id=photo_id,
+                    face_box_x=face['x'],
+                    face_box_y=face['y'],
+                    face_box_width=face['width'],
+                    face_box_height=face['height']
+                ).first()
+                
+                if not existing_detection:
+                    # Create new PhotoPerson record
+                    photo_person = PhotoPerson(
+                        photo_id=photo_id,
+                        person_id=person_id,
+                        confidence=confidence,
+                        face_box_x=face['x'],
+                        face_box_y=face['y'],
+                        face_box_width=face['width'],
+                        face_box_height=face['height'],
+                        manually_tagged=manually_tagged,
+                        verified=False
+                    )
+                    
+                    db.session.add(photo_person)
+                    
+                    stored_faces.append({
+                        'x': face['x'],
+                        'y': face['y'],
+                        'width': face['width'],
+                        'height': face['height'],
+                        'confidence': confidence,
+                        'person_id': person_id,
+                        'person_name': recognition_result['person_name'] if recognition_result else None,
+                        'method': face['method']
+                    })
+            
+            except Exception as e:
+                logger.error(f"Error storing face detection: {e}")
+                continue
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Detected and stored {len(stored_faces)} faces',
+            'faces': stored_faces
+        })
+        
+    except Exception as e:
+        logger.error(f"Error detecting faces in photo {photo_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to detect faces'
+        }), 500
+
+@photo_bp.route('/api/photos/<int:photo_id>/faces', methods=['GET'])
+@login_required
+def get_photo_faces(photo_id):
+    """
+    Get all detected faces for a photo
+    """
+    try:
+        # Get the photo and verify ownership
+        photo = Photo.query.get_or_404(photo_id)
+        if photo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        # Get all face detections for this photo
+        photo_people = PhotoPerson.query.filter_by(photo_id=photo_id).all()
+        
+        faces = []
+        for pp in photo_people:
+            face_data = {
+                'id': pp.id,
+                'x': pp.face_box_x,
+                'y': pp.face_box_y,
+                'width': pp.face_box_width,
+                'height': pp.face_box_height,
+                'confidence': pp.confidence,
+                'manually_tagged': pp.manually_tagged,
+                'verified': pp.verified,
+                'person_id': pp.person_id,
+                'person_name': pp.person.name if pp.person else None,
+                'notes': pp.notes
+            }
+            faces.append(face_data)
+        
+        return jsonify({
+            'success': True,
+            'faces': faces
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting faces for photo {photo_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to get photo faces'
+        }), 500
+
+@photo_bp.route('/api/faces/<int:face_id>/assign', methods=['POST'])
+@login_required
+def assign_face_to_person(face_id):
+    """
+    Assign a detected face to a specific person
+    """
+    try:
+        data = request.get_json()
+        person_id = data.get('person_id')
+        
+        if not person_id:
+            return jsonify({'success': False, 'error': 'Person ID is required'}), 400
+        
+        # Get the face detection record
+        photo_person = PhotoPerson.query.get_or_404(face_id)
+        
+        # Verify ownership through photo
+        photo = Photo.query.get_or_404(photo_person.photo_id)
+        if photo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        # Verify person belongs to user
+        person = Person.query.get_or_404(person_id)
+        if person.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Person not found'}), 404
+        
+        # Update the assignment
+        photo_person.person_id = person_id
+        photo_person.manually_tagged = True
+        photo_person.verified = True
+        
+        # Add this face to the recognition system
+        face_box = {
+            'x': photo_person.face_box_x,
+            'y': photo_person.face_box_y,
+            'width': photo_person.face_box_width,
+            'height': photo_person.face_box_height
+        }
+        face_recognizer.add_person_encoding(person_id, person.name, photo.file_path, face_box)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Face assigned to {person.name}',
+            'person_name': person.name
+        })
+        
+    except Exception as e:
+        logger.error(f"Error assigning face {face_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to assign face'
+        }), 500
+
+@photo_bp.route('/api/photos/batch-detect-faces', methods=['POST'])
+@login_required
+def batch_detect_faces():
+    """
+    Run face detection on multiple photos (background processing)
+    """
+    try:
+        data = request.get_json()
+        photo_ids = data.get('photo_ids', [])
+        
+        if not photo_ids:
+            # If no specific photos, detect faces in all user's photos without face detection
+            photos = Photo.query.filter_by(user_id=current_user.id).all()
+            photos_to_process = []
+            
+            for photo in photos:
+                # Check if photo already has face detections
+                existing_detections = PhotoPerson.query.filter_by(photo_id=photo.id).count()
+                if existing_detections == 0:
+                    photos_to_process.append(photo)
+        else:
+            # Process specific photos
+            photos_to_process = Photo.query.filter(
+                Photo.id.in_(photo_ids),
+                Photo.user_id == current_user.id
+            ).all()
+        
+        results = {
+            'processed': 0,
+            'faces_found': 0,
+            'errors': []
+        }
+        
+        for photo in photos_to_process:
+            try:
+                # Detect faces
+                faces = detect_faces_in_photo(photo.file_path)
+                
+                faces_stored = 0
+                for face in faces:
+                    try:
+                        # Try to recognize the face
+                        recognition_result = face_recognizer.recognize_face(photo.file_path, face)
+                        
+                        # Store detection
+                        photo_person = PhotoPerson(
+                            photo_id=photo.id,
+                            person_id=recognition_result['person_id'] if recognition_result else None,
+                            confidence=recognition_result['confidence'] if recognition_result else face['confidence'],
+                            face_box_x=face['x'],
+                            face_box_y=face['y'],
+                            face_box_width=face['width'],
+                            face_box_height=face['height'],
+                            manually_tagged=False,
+                            verified=bool(recognition_result)
+                        )
+                        
+                        db.session.add(photo_person)
+                        faces_stored += 1
+                        
+                    except Exception as e:
+                        logger.error(f"Error storing face for photo {photo.id}: {e}")
+                        continue
+                
+                results['processed'] += 1
+                results['faces_found'] += faces_stored
+                
+                # Commit after each photo to avoid losing progress
+                db.session.commit()
+                
+            except Exception as e:
+                logger.error(f"Error processing photo {photo.id}: {e}")
+                results['errors'].append(f"Photo {photo.id}: {str(e)}")
+                db.session.rollback()
+                continue
+        
+        return jsonify({
+            'success': True,
+            'message': f'Processed {results["processed"]} photos, found {results["faces_found"]} faces',
+            'results': results
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in batch face detection: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to process batch face detection'
+        }), 500
