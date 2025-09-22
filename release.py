@@ -7,14 +7,19 @@ import os
 import sys
 import logging
 
-# Try to import Flask dependencies, handle case where they're not available
+# Gracefully handle missing dependencies
+DEPENDENCIES_AVAILABLE = False
 try:
     from flask import Flask
     from flask_migrate import upgrade
     DEPENDENCIES_AVAILABLE = True
+    print("PhotoVault Release: Flask dependencies loaded successfully")
 except ImportError as e:
     print(f"PhotoVault Release: Dependencies not available: {e}")
-    DEPENDENCIES_AVAILABLE = False
+    print("PhotoVault Release: This is normal during build phase")
+except Exception as e:
+    print(f"PhotoVault Release: Unexpected error loading dependencies: {e}")
+    print("PhotoVault Release: Will skip migrations")
 
 # Add the project root to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

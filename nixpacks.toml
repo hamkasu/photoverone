@@ -8,7 +8,7 @@ cmds = ["pip install -r requirements.txt"]
 
 # Release phase for Railway deployment - run after build
 [phases.release]
-cmds = ["pip install -r requirements.txt", "python release.py"]
+cmds = ["python release.py"]
 
 [start]
 cmd = "gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --graceful-timeout 30 --threads 2 wsgi:app"
