@@ -77,64 +77,148 @@ def run_migrations():
             print(f"PhotoVault Release: Database connection failed: {str(e)}")
             return False
         
-        # Check if tables already exist
+        # Check if tables and required columns exist
         try:
             inspector = db.inspect(db.engine)
             existing_tables = inspector.get_table_names()
             required_tables = ['user', 'photo', 'album']
             missing_tables = [table for table in required_tables if table not in existing_tables]
             
-            if not missing_tables:
-                print("PhotoVault Release: All required tables already exist, skipping migration")
-                return True
-            else:
+            if missing_tables:
                 print(f"PhotoVault Release: Missing tables: {missing_tables}")
+            else:
+                # Check if user table has required columns (this is the critical fix)
+                if 'user' in existing_tables:
+                    user_columns = [col['name'] for col in inspector.get_columns('user')]
+                    required_user_columns = ['is_active', 'is_admin', 'is_superuser', 'terms_accepted_at']
+                    missing_columns = [col for col in required_user_columns if col not in user_columns]
+                    
+                    if missing_columns:
+                        print(f"PhotoVault Release: User table missing required columns: {missing_columns}")
+                        print("PhotoVault Release: Will run migration to add missing columns")
+                    else:
+                        print("PhotoVault Release: All required tables and columns exist, skipping migration")
+                        return True
+                else:
+                    print("PhotoVault Release: User table missing")
         except Exception as e:
-            print(f"PhotoVault Release: Could not check existing tables: {str(e)}")
+            print(f"PhotoVault Release: Could not check existing tables/columns: {str(e)}")
         
         # Try migrations first
+        migration_success = False
         try:
             print("PhotoVault Release: Attempting Flask-Migrate upgrade...")
             upgrade()
             print("PhotoVault Release: Database migrations completed successfully")
-            return True
+            migration_success = True
         except Exception as e:
             print(f"PhotoVault Release: Migration failed: {str(e)}")
-            print("PhotoVault Release: Attempting fallback table creation...")
+            migration_success = False
+        
+        # Always check for missing columns regardless of migration success
+        try:
+            inspector = db.inspect(db.engine)
+            existing_tables = inspector.get_table_names()
             
-            # Fallback: Create tables directly
-            try:
-                print("PhotoVault Release: Creating tables with db.create_all()...")
-                db.create_all()
-                print("PhotoVault Release: Fallback table creation successful")
+            if 'user' in existing_tables:
+                user_columns = [col['name'] for col in inspector.get_columns('user')]
                 
-                # Verify tables were created
-                inspector = db.inspect(db.engine)
-                created_tables = inspector.get_table_names()
-                required_tables = ['user', 'photo', 'album']
-                still_missing = [table for table in required_tables if table not in created_tables]
+                # Add missing columns with direct SQL (safer than recreating table)
+                missing_fixes = []
+                if 'is_active' not in user_columns:
+                    missing_fixes.append("ALTER TABLE \"user\" ADD COLUMN is_active BOOLEAN DEFAULT TRUE")
+                if 'is_admin' not in user_columns:
+                    missing_fixes.append("ALTER TABLE \"user\" ADD COLUMN is_admin BOOLEAN DEFAULT FALSE")
+                if 'is_superuser' not in user_columns:
+                    missing_fixes.append("ALTER TABLE \"user\" ADD COLUMN is_superuser BOOLEAN DEFAULT FALSE")
+                if 'terms_accepted_at' not in user_columns:
+                    missing_fixes.append("ALTER TABLE \"user\" ADD COLUMN terms_accepted_at TIMESTAMP")
                 
-                if still_missing:
-                    print(f"PhotoVault Release: ERROR - Tables still missing after creation: {still_missing}")
-                    return False
+                if missing_fixes:
+                    print(f"PhotoVault Release: Adding {len(missing_fixes)} missing columns to user table...")
+                    for sql in missing_fixes:
+                        print(f"PhotoVault Release: Executing: {sql}")
+                        db.session.execute(text(sql))
+                    db.session.commit()
+                    print("PhotoVault Release: Missing columns added successfully!")
+                    
+                    # Set NOT NULL constraints to match the model (after backfill)
+                    constraint_updates = []
+                    columns_added = [fix.split()[-4] for fix in missing_fixes]  # Extract column names correctly
+                    
+                    if 'is_admin' in columns_added:
+                        constraint_updates.append({
+                            'column': 'is_admin',
+                            'backfill': "UPDATE \"user\" SET is_admin = FALSE WHERE is_admin IS NULL",
+                            'constraint': "ALTER TABLE \"user\" ALTER COLUMN is_admin SET NOT NULL"
+                        })
+                    if 'is_superuser' in columns_added:
+                        constraint_updates.append({
+                            'column': 'is_superuser',
+                            'backfill': "UPDATE \"user\" SET is_superuser = FALSE WHERE is_superuser IS NULL",
+                            'constraint': "ALTER TABLE \"user\" ALTER COLUMN is_superuser SET NOT NULL"
+                        })
+                    
+                    if constraint_updates:
+                        print("PhotoVault Release: Backfilling NULL values and setting NOT NULL constraints...")
+                        for update in constraint_updates:
+                            print(f"PhotoVault Release: Backfilling {update['column']}: {update['backfill']}")
+                            db.session.execute(text(update['backfill']))
+                            print(f"PhotoVault Release: Setting constraint: {update['constraint']}")
+                            db.session.execute(text(update['constraint']))
+                        db.session.commit()
+                        print("PhotoVault Release: Constraints updated successfully!")
                 else:
-                    print(f"PhotoVault Release: Confirmed all tables created: {created_tables}")
-                
-                # Stamp Alembic migration state to sync with actual schema
-                try:
-                    from flask import current_app
-                    from alembic import command
-                    config = current_app.extensions['migrate'].config
-                    command.stamp(config, 'head')
-                    print("PhotoVault Release: Alembic migration state stamped successfully")
-                except Exception as stamp_error:
-                    print(f"PhotoVault Release: Warning - Could not stamp migration state: {str(stamp_error)}")
-                    print("PhotoVault Release: This may cause issues with future migrations")
-                
+                    print("PhotoVault Release: All required user columns already exist")
+            
+            # Create any missing tables
+            print("PhotoVault Release: Ensuring all tables exist with db.create_all()...")
+            db.create_all()
+            print("PhotoVault Release: Table creation/column addition completed successfully")
+            
+            if migration_success:
                 return True
-            except Exception as fallback_error:
-                print(f"PhotoVault Release: Fallback table creation also failed: {str(fallback_error)}")
+        except Exception as fallback_error:
+            print(f"PhotoVault Release: Column addition failed: {str(fallback_error)}")
+            # Rollback any failed transaction to clear session state
+            try:
+                db.session.rollback()
+                print("PhotoVault Release: Database session rolled back")
+            except Exception:
+                pass
+            
+            if migration_success:
+                print("PhotoVault Release: Migration succeeded but column addition failed - may still work")
+                return True
+        
+        # Final verification that all required tables exist
+        try:
+            inspector = db.inspect(db.engine)
+            created_tables = inspector.get_table_names()
+            required_tables = ['user', 'photo', 'album']
+            still_missing = [table for table in required_tables if table not in created_tables]
+            
+            if still_missing:
+                print(f"PhotoVault Release: ERROR - Tables still missing after all attempts: {still_missing}")
                 return False
+            else:
+                print(f"PhotoVault Release: Confirmed all required tables exist: {required_tables}")
+            
+            # Stamp Alembic migration state to sync with actual schema
+            try:
+                from flask import current_app
+                from alembic import command
+                config = current_app.extensions['migrate'].config
+                command.stamp(config, 'head')
+                print("PhotoVault Release: Alembic migration state stamped successfully")
+            except Exception as stamp_error:
+                print(f"PhotoVault Release: Warning - Could not stamp migration state: {str(stamp_error)}")
+                print("PhotoVault Release: This may cause issues with future migrations")
+            
+            return True
+        except Exception as final_error:
+            print(f"PhotoVault Release: Final verification failed: {str(final_error)}")
+            return False
 
 def verify_environment():
     """Verify critical environment variables are set"""
