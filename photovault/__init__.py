@@ -135,23 +135,57 @@ def create_app(config_class=None):
                 db.session.commit()  # Ensure write access works
                 app.logger.info("Database connection verified - read/write access confirmed")
                 
-                # Verify critical tables exist
-                inspector = db.inspect(db.engine)
+                # Verify critical tables exist - use dialect-aware approach
                 required_tables = ['user', 'photo', 'album']
-                existing_tables = inspector.get_table_names()
-                missing_tables = [table for table in required_tables if table not in existing_tables]
+                missing_tables = []
+                allow_schema_mismatch = os.environ.get('PHOTOVAULT_ALLOW_SCHEMA_MISMATCH', '0') == '1'
+                
+                try:
+                    # Use dialect-aware table detection
+                    if db.engine.dialect.name == 'postgresql':
+                        # PostgreSQL-specific query using current schema and search path
+                        for table in required_tables:
+                            result = db.session.execute(text(
+                                "SELECT 1 FROM pg_catalog.pg_tables WHERE tablename = :table_name AND schemaname = ANY(current_schemas(false))"
+                            ), {"table_name": table})
+                            if not result.fetchone():
+                                missing_tables.append(table)
+                    else:
+                        # Fall back to SQLAlchemy inspector for other databases
+                        inspector = db.inspect(db.engine)
+                        existing_tables = inspector.get_table_names()
+                        missing_tables = [table for table in required_tables if table not in existing_tables]
+                    
+                    # Also verify migration state if using Alembic
+                    try:
+                        migration_result = db.session.execute(text("SELECT version_num FROM alembic_version LIMIT 1"))
+                        current_version = migration_result.scalar()
+                        if current_version:
+                            app.logger.info(f"Database migration version: {current_version}")
+                        else:
+                            app.logger.warning("No migration version found in alembic_version table")
+                    except Exception as migration_check_error:
+                        app.logger.warning(f"Could not verify migration state: {str(migration_check_error)}")
+                    
+                except Exception as validation_error:
+                    app.logger.error(f"Database validation error: {str(validation_error)}")
+                    if not allow_schema_mismatch:
+                        raise RuntimeError(f"Database validation failed: {str(validation_error)}")
                 
                 if missing_tables:
                     # Check if we're specifically in release phase (not runtime)
                     import sys
                     is_release_phase = 'release.py' in ' '.join(sys.argv) or os.environ.get('PHOTOVAULT_RELEASE_PHASE') == '1'
+                    
                     if is_release_phase:
                         app.logger.warning(f"Missing database tables during release phase: {missing_tables}. Release script should create them.")
+                    elif allow_schema_mismatch:
+                        app.logger.warning(f"Missing tables detected but PHOTOVAULT_ALLOW_SCHEMA_MISMATCH=1: {missing_tables}")
                     else:
-                        app.logger.critical(f"Missing required database tables: {missing_tables}. Run migrations: flask db upgrade")
-                        raise RuntimeError(f"Database schema incomplete - missing tables: {missing_tables}")
-                    
-                app.logger.info("Database schema validation completed")
+                        app.logger.critical(f"Missing required database tables: {missing_tables}. Run 'flask db upgrade' to apply migrations.")
+                        raise RuntimeError(f"Database schema incomplete - missing tables: {missing_tables}. Run migrations to fix.")
+                
+                app.logger.info("Database schema validation completed successfully")
                 
             except Exception as e:
                 app.logger.critical(f"Database connection/schema validation failed: {str(e)}")
