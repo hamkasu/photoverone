@@ -527,10 +527,10 @@ footer .text-muted {
     border: 1px solid var(--border-color);
 }
 
-/* Responsive Design */
+/* Enhanced Mobile Responsive Design */
 @media (max-width: 768px) {
     body {
-        font-size: 13px;
+        font-size: 14px;
     }
     
     .brand-name {
@@ -545,21 +545,141 @@ footer .text-muted {
         height: 32px !important;
     }
     
+    /* Better mobile photo grid */
     .photo-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 0.625rem;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.75rem;
+    }
+    
+    .photo-item img {
+        height: 140px;
+    }
+    
+    /* Enhanced button groups for touch */
+    .btn-group .btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+        min-width: 38px;
+        min-height: 38px;
+    }
+    
+    /* Better touch targets */
+    .photo-actions .btn {
+        min-width: 42px;
+        min-height: 42px;
+        margin: 0.15rem;
+    }
+    
+    .photo-actions-bottom .btn {
+        min-width: 38px;
+        min-height: 38px;
+    }
+    
+    /* Improved upload area */
+    .upload-area {
+        padding: 2rem 1rem;
+        border-width: 3px;
+    }
+    
+    .hero-section {
+        padding: 1.5rem 1rem !important;
+    }
+    
+    /* Better mobile navigation */
+    .navbar-nav .nav-link {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+    }
+    
+    /* Enhanced statistics cards for mobile */
+    .stats-card {
+        margin-bottom: 1rem;
+    }
+    
+    .stats-number {
+        font-size: 2rem;
+    }
+    
+    .stats-label {
+        font-size: 0.9rem;
+    }
+    
+    /* Better spacing for mobile */
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    /* Enhanced form controls */
+    .form-control {
+        padding: 0.75rem;
+        font-size: 1rem;
+    }
+    
+    /* Better modal sizing */
+    .modal-dialog {
+        margin: 1rem;
+    }
+    
+    /* Improved card spacing */
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+/* Extra small devices optimization */
+@media (max-width: 576px) {
+    .photo-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.5rem;
     }
     
     .photo-item img {
         height: 120px;
     }
     
-    .upload-area {
-        padding: 1.5rem 1rem;
+    /* Stack action buttons vertically on very small screens */
+    .btn-toolbar {
+        flex-direction: column;
+        gap: 0.5rem;
     }
     
-    .hero-section {
-        padding: 1.5rem 1rem !important;
+    .btn-group {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Better mobile dashboard layout */
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .btn-group[role="group"] {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    /* Enhanced mobile typography */
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.6rem; }
+    h3 { font-size: 1.4rem; }
+    h4 { font-size: 1.2rem; }
+    h5 { font-size: 1.1rem; }
+    
+    /* Better spacing */
+    .container {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
     }
 }
 
@@ -614,7 +734,82 @@ footer .text-muted {
 .text-info { color: var(--info-color) !important; }
 .text-warning { color: var(--warning-color) !important; }
 .text-danger { color: var(--danger-color) !important; }
-.text-muted { color: var(--text-muted) !important; }/* Fix for Statistics Page Visibility Issues */
+.text-muted { color: var(--text-muted) !important; }
+
+/* Mobile-First Touch Optimizations */
+@media (hover: none) and (pointer: coarse) {
+    /* Enhance touch targets for mobile devices */
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 0.75rem 1rem;
+    }
+    
+    .btn-sm {
+        min-height: 38px;
+        min-width: 38px;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    /* Better hover states for touch */
+    .card:hover {
+        transform: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .photo-item:hover {
+        transform: none;
+    }
+    
+    .photo-item img:hover {
+        transform: none;
+        filter: none;
+    }
+    
+    /* Remove hover effects that don't work well on touch */
+    .navbar-dark .navbar-nav .nav-link:hover {
+        background-color: transparent;
+    }
+    
+    /* Enhanced tap highlights */
+    .btn, .nav-link, .card {
+        -webkit-tap-highlight-color: rgba(0, 123, 255, 0.2);
+        tap-highlight-color: rgba(0, 123, 255, 0.2);
+    }
+}
+
+/* Improved Mobile Gestures and Interactions */
+.photo-item {
+    touch-action: manipulation;
+}
+
+.photo-grid {
+    touch-action: auto;
+}
+
+/* Better mobile scrolling */
+.file-preview {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+}
+
+/* Mobile-specific input optimizations */
+@media (max-width: 768px) {
+    input[type="file"] {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    .form-control {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    /* Better mobile modal presentation */
+    .modal-fullscreen .modal-body img {
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+    }
+}/* Fix for Statistics Page Visibility Issues */
 
 /* Ensure statistics cards have proper contrast */
 .card.bg-gradient h3,
