@@ -31,8 +31,11 @@ class Config:
         
         return base_options
     
-    # File upload settings
+    # File upload settings - prefer environment variable for persistent storage
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER') or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+    
+    # Warning: Default upload folder is inside app directory and will be lost on redeploy
+    # Set UPLOAD_FOLDER environment variable to point to persistent storage (Railway Volume or S3)
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
     
     # Camera-specific settings
@@ -98,13 +101,10 @@ class ProductionConfig(Config):
     if database_url and database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
     
-    # Require explicit confirmation for SQLite in production
+    # Fail-fast if no database configured - prevents data loss on ephemeral filesystems
     if not database_url:
-        if os.environ.get('ALLOW_SQLITE_IN_PROD') == '1':
-            database_url = 'sqlite:///photovault_production.db'
-        else:
-            # Set to None to trigger fail-fast in init_app
-            database_url = None
+        # No SQLite fallback in production to prevent data loss
+        database_url = None
     
     SQLALCHEMY_DATABASE_URI = database_url
     
@@ -127,11 +127,12 @@ class ProductionConfig(Config):
         # Fail-fast if no database configured in production
         if not app.config.get('SQLALCHEMY_DATABASE_URI'):
             app.logger.critical('DATABASE_URL environment variable must be set for production. '
-                              'Set DATABASE_URL or ALLOW_SQLITE_IN_PROD=1 to use SQLite (data loss risk).')
+                              'PostgreSQL is required to prevent data loss on Railway deployment.')
             raise RuntimeError('DATABASE_URL environment variable must be set for production')
         
         if 'sqlite' in app.config.get('SQLALCHEMY_DATABASE_URI', ''):
-            app.logger.warning('SQLite enabled in production via ALLOW_SQLITE_IN_PROD=1 - data may be lost on restarts')
+            app.logger.critical('CRITICAL: SQLite detected in production! Data WILL be lost on redeploy/restart. Use PostgreSQL with DATABASE_URL environment variable.')
+            raise RuntimeError('SQLite is not supported in production - use PostgreSQL to prevent data loss')
         
         # Log configuration for debugging (without exposing credentials)
         db_uri = app.config.get('SQLALCHEMY_DATABASE_URI', 'Not set')

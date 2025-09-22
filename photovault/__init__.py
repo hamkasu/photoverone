@@ -123,13 +123,29 @@ def create_app(config_class=None):
             # Production mode - use migrations instead of db.create_all() to preserve data
             app.logger.info("Production mode: Using migrations to manage schema, preserving existing data")
             
-            # Verify database connectivity
+            # Verify database connectivity and fail-fast if issues
             try:
                 from sqlalchemy import text
-                db.session.execute(text('SELECT 1'))
-                app.logger.info("Database connection verified")
+                result = db.session.execute(text('SELECT 1'))
+                db.session.commit()  # Ensure write access works
+                app.logger.info("Database connection verified - read/write access confirmed")
+                
+                # Verify critical tables exist
+                inspector = db.inspect(db.engine)
+                required_tables = ['user', 'photo', 'album']
+                existing_tables = inspector.get_table_names()
+                missing_tables = [table for table in required_tables if table not in existing_tables]
+                
+                if missing_tables:
+                    app.logger.critical(f"Missing required database tables: {missing_tables}. Run migrations: flask db upgrade")
+                    raise RuntimeError(f"Database schema incomplete - missing tables: {missing_tables}")
+                    
+                app.logger.info("Database schema validation completed")
+                
             except Exception as e:
-                app.logger.error(f"Database connection failed: {str(e)}")
+                app.logger.critical(f"Database connection/schema validation failed: {str(e)}")
+                app.logger.critical("Ensure DATABASE_URL is set and database is accessible")
+                raise RuntimeError(f"Database connection failed: {str(e)}")
         
         # Bootstrap superuser account if environment variables are set
         _create_superuser_if_needed(app)
