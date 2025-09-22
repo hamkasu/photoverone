@@ -17,7 +17,9 @@ from photovault import create_app
 from config import ProductionConfig
 
 # Create the application using the production configuration
-app = create_app(ProductionConfig)
+# Use config factory to handle environment-based configuration
+from config import get_config
+app = create_app(get_config())
 
 if __name__ == "__main__":
     # This will only run in development mode

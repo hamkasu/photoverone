@@ -17,8 +17,9 @@ cmd = "gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --graceful-timeou
 PYTHONPATH = "/app"
 FLASK_APP = "main.py"
 FLASK_ENV = "production"
+FLASK_CONFIG = "production"
 LOG_TO_STDOUT = "1"
 QT_QPA_PLATFORM = "offscreen"
 OPENCV_IO_ENABLE_OPENEXR = "1"
 # ALLOW_SQLITE_IN_PROD removed to prevent data loss on ephemeral filesystems
-# SECRET_KEY removed from config - must be set via Railway environment variables
+# SECRET_KEY and DATABASE_URL must be set via Railway environment variables
