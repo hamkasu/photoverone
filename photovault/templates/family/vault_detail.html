@@ -146,8 +146,9 @@
 
 <script>
 function viewPhoto(vaultPhotoId) {
-    const baseUrl = "{{ url_for('family.view_vault_photo', vault_id=vault.id, vault_photo_id=1) }}";
-    const photoUrl = baseUrl.replace('/1', '/' + vaultPhotoId);
+    // Build URL manually to avoid template rendering issues
+    const vaultId = {{ vault.id }};
+    const photoUrl = `/family/vault/${vaultId}/photo/${vaultPhotoId}`;
     window.location.href = photoUrl;
 }
 </script>
