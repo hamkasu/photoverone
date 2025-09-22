@@ -28,7 +28,8 @@ def run_migrations():
     """Run database migrations"""
     print("PhotoVault Release: Starting database migrations...")
     
-    # Set release phase flag for the app
+    # CRITICAL: Force production config for Railway deployment
+    os.environ['FLASK_CONFIG'] = 'production'
     os.environ['PHOTOVAULT_RELEASE_PHASE'] = '1'
     
     if not DEPENDENCIES_AVAILABLE:
@@ -43,6 +44,21 @@ def run_migrations():
         config_class = get_config()
         app = create_app(config_class)
         print(f"PhotoVault Release: App created successfully with config: {config_class.__name__}")
+        
+        # CRITICAL: Validate we're using PostgreSQL, not SQLite
+        database_uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+        if not database_uri or 'postgresql' not in database_uri:
+            print(f"PhotoVault Release: ERROR - Not using PostgreSQL in release phase. URI: {database_uri}")
+            print("PhotoVault Release: This would create tables in wrong database - aborting")
+            return False
+        
+        # Log database target (safely, without credentials)
+        try:
+            db_url = db.engine.url
+            print(f"PhotoVault Release: Target database - Driver: {db_url.drivername}, Host: {db_url.host}, Database: {db_url.database}")
+        except Exception as log_error:
+            print(f"PhotoVault Release: Could not log database details: {log_error}")
+            
     except ImportError as e:
         print(f"PhotoVault Release: Cannot import application modules: {e}")
         return True  # Don't fail the deployment
