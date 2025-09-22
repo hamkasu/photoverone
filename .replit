@@ -94,4 +94,4 @@ outputType = "webview"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["gunicorn", "--bind=0.0.0.0:5000", "--reuse-port", "wsgi:app"]
+run = ["gunicorn", "--bind=0.0.0.0:5000", "--workers=2", "--worker-class=sync", "--worker-connections=1000", "--timeout=30", "--preload", "--access-logfile=-", "--error-logfile=-", "main:app"]
