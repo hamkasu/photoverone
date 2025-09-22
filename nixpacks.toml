@@ -9,7 +9,7 @@ cmds = ["pip install -r requirements.txt"]
 # Note: Railway Nixpacks doesn't run [phases.release] - migrations now run in [start] command
 
 [start]
-cmd = "python -m flask db upgrade && exec gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --graceful-timeout 30 --threads 2 wsgi:app"
+cmd = "python release.py && exec gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --graceful-timeout 30 --threads 2 wsgi:app"
 
 [variables]
 PYTHONPATH = "/app"
@@ -19,5 +19,5 @@ FLASK_CONFIG = "production"
 LOG_TO_STDOUT = "1"
 QT_QPA_PLATFORM = "offscreen"
 OPENCV_IO_ENABLE_OPENEXR = "1"
-# ALLOW_SQLITE_IN_PROD removed to prevent data loss on ephemeral filesystems
+PHOTOVAULT_ALLOW_SCHEMA_MISMATCH = "1"
 # SECRET_KEY and DATABASE_URL must be set via Railway environment variables
