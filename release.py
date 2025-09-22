@@ -37,17 +37,48 @@ def run_migrations():
     
     try:
         from photovault import create_app, get_config
+        from photovault.extensions import db
         
         # Create app with production config
         config_class = get_config()
         app = create_app(config_class)
+        print(f"PhotoVault Release: App created successfully with config: {config_class.__name__}")
     except ImportError as e:
         print(f"PhotoVault Release: Cannot import application modules: {e}")
         return True  # Don't fail the deployment
+    except Exception as e:
+        print(f"PhotoVault Release: Failed to create app: {str(e)}")
+        return False
     
     with app.app_context():
+        # First, test database connectivity
         try:
-            # Run migrations
+            from sqlalchemy import text
+            db.session.execute(text('SELECT 1'))
+            db.session.commit()
+            print("PhotoVault Release: Database connectivity verified")
+        except Exception as e:
+            print(f"PhotoVault Release: Database connection failed: {str(e)}")
+            return False
+        
+        # Check if tables already exist
+        try:
+            inspector = db.inspect(db.engine)
+            existing_tables = inspector.get_table_names()
+            required_tables = ['user', 'photo', 'album']
+            missing_tables = [table for table in required_tables if table not in existing_tables]
+            
+            if not missing_tables:
+                print("PhotoVault Release: All required tables already exist, skipping migration")
+                return True
+            else:
+                print(f"PhotoVault Release: Missing tables: {missing_tables}")
+        except Exception as e:
+            print(f"PhotoVault Release: Could not check existing tables: {str(e)}")
+        
+        # Try migrations first
+        try:
+            print("PhotoVault Release: Attempting Flask-Migrate upgrade...")
             upgrade()
             print("PhotoVault Release: Database migrations completed successfully")
             return True
@@ -57,9 +88,21 @@ def run_migrations():
             
             # Fallback: Create tables directly
             try:
-                from photovault.models import db
+                print("PhotoVault Release: Creating tables with db.create_all()...")
                 db.create_all()
                 print("PhotoVault Release: Fallback table creation successful")
+                
+                # Verify tables were created
+                inspector = db.inspect(db.engine)
+                created_tables = inspector.get_table_names()
+                required_tables = ['user', 'photo', 'album']
+                still_missing = [table for table in required_tables if table not in created_tables]
+                
+                if still_missing:
+                    print(f"PhotoVault Release: ERROR - Tables still missing after creation: {still_missing}")
+                    return False
+                else:
+                    print(f"PhotoVault Release: Confirmed all tables created: {created_tables}")
                 
                 # Stamp Alembic migration state to sync with actual schema
                 try:
