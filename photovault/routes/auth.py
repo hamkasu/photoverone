@@ -68,6 +68,12 @@ def login():
         if user and check_password_hash(user.password_hash, password):
             login_user(user, remember=remember)
             
+            # Check for pending invitation first
+            pending_invitation = session.pop('pending_invitation', None)
+            if pending_invitation:
+                flash(f'Welcome back, {user.username}! Processing your invitation...', 'success')
+                return redirect(url_for('family.accept_invitation', token=pending_invitation))
+            
             # Get next page from URL parameter
             next_page = request.args.get('next')
             if next_page and next_page.startswith('/'):
@@ -161,9 +167,19 @@ def register():
             return user
         
         try:
-            create_user()
-            flash('Registration successful! You can now log in.', 'success')
-            return redirect(url_for('auth.login'))
+            user = create_user()
+            
+            # Auto-login the new user
+            login_user(user)
+            
+            # Check for pending invitation
+            pending_invitation = session.pop('pending_invitation', None)
+            if pending_invitation:
+                flash(f'Welcome to PhotoVault, {user.username}! Processing your invitation...', 'success')
+                return redirect(url_for('family.accept_invitation', token=pending_invitation))
+            
+            flash(f'Welcome to PhotoVault, {user.username}!', 'success')
+            return redirect(url_for('main.dashboard'))
             
         except TransientDBError:
             flash('Temporary database issue. Please try again in a moment.', 'error')

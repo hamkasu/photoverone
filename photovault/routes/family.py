@@ -1,6 +1,8 @@
 # photovault/routes/family.py
 
 import logging
+import os
+import requests
 from datetime import datetime
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, current_app
 from flask_login import login_required, current_user
@@ -187,14 +189,121 @@ def invite_member(vault_id):
         try:
             db.session.add(invitation)
             db.session.commit()
-            flash(f'Invitation sent to {email}', 'success')
+            
+            # Send invitation email
+            email_sent = send_invitation_email(invitation, vault, current_user)
+            if email_sent:
+                flash(f'Invitation sent to {email}', 'success')
+            else:
+                flash(f'Invitation created but email could not be sent to {email}', 'warning')
             return redirect(url_for('family.view_vault', vault_id=vault_id))
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Failed to send invitation: {str(e)}")
-            flash('Failed to send invitation. Please try again.', 'error')
+            logger.error(f"Failed to create invitation: {str(e)}")
+            flash('Failed to create invitation. Please try again.', 'error')
     
     return render_template('family/invite_member.html', vault=vault)
+
+def send_invitation_email(invitation, vault, inviter):
+    """Send vault invitation email using Replit Mail service"""
+    try:
+        invitation_url = url_for('family.accept_invitation', token=invitation.invitation_token, _external=True)
+        
+        # Get authentication token for Replit mail service
+        auth_token = None
+        if os.environ.get('REPL_IDENTITY'):
+            auth_token = f"repl {os.environ.get('REPL_IDENTITY')}"
+        elif os.environ.get('WEB_REPL_RENEWAL'):
+            auth_token = f"depl {os.environ.get('WEB_REPL_RENEWAL')}"
+        
+        if not auth_token:
+            current_app.logger.warning("No Replit authentication token found, falling back to console logging")
+            # Fallback to console logging in development
+            if current_app.debug:
+                print(f"INVITATION EMAIL TO {invitation.email}: Join vault link: {invitation_url}")
+                return True
+            else:
+                # In production, return False if we can't send emails
+                current_app.logger.error("Cannot send invitation email - no authentication token available")
+                return False
+        
+        # Prepare email content
+        subject = f"PhotoVault - You're invited to join '{vault.name}'"
+        html_content = f"""
+        <html>
+        <body>
+            <h2>PhotoVault - Family Vault Invitation</h2>
+            <p>Hello,</p>
+            
+            <p><strong>{inviter.username}</strong> has invited you to join the family vault <strong>"{vault.name}"</strong> on PhotoVault.</p>
+            
+            {f'<p><em>{vault.description}</em></p>' if vault.description else ''}
+            
+            <p>You will be added as a <strong>{invitation.role}</strong> to this vault.</p>
+            
+            <p><a href="{invitation_url}" style="background-color: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block;">Accept Invitation</a></p>
+            
+            <p>Or copy and paste this link: {invitation_url}</p>
+            
+            <p><strong>This invitation will expire on {invitation.expires_at.strftime('%B %d, %Y at %I:%M %p UTC')}.</strong></p>
+            
+            <p>If you don't have a PhotoVault account yet, you'll be able to create one when you accept the invitation.</p>
+            
+            <p><small>If you didn't expect this invitation, please ignore this email.</small></p>
+            
+            <hr>
+            <p>Best regards,<br>PhotoVault Team</p>
+        </body>
+        </html>
+        """
+        
+        text_content = f"""Hello,
+
+{inviter.username} has invited you to join the family vault "{vault.name}" on PhotoVault.
+
+{vault.description if vault.description else ''}
+
+You will be added as a {invitation.role} to this vault.
+
+Click the link below to accept the invitation:
+{invitation_url}
+
+This invitation will expire on {invitation.expires_at.strftime('%B %d, %Y at %I:%M %p UTC')}.
+
+If you don't have a PhotoVault account yet, you'll be able to create one when you accept the invitation.
+
+If you didn't expect this invitation, please ignore this email.
+
+Best regards,
+PhotoVault Team"""
+        
+        # Send email via Replit Mail service
+        response = requests.post(
+            "https://connectors.replit.com/api/v2/mailer/send",
+            headers={
+                "Content-Type": "application/json",
+                "X-REPLIT-TOKEN": auth_token,
+            },
+            json={
+                "to": invitation.email,
+                "subject": subject,
+                "html": html_content,
+                "text": text_content,
+            },
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            current_app.logger.info(f"Invitation email sent to {invitation.email}, messageId: {result.get('messageId', 'unknown')}")
+            return True
+        else:
+            current_app.logger.error(f"Failed to send invitation email: {response.status_code} - {response.text}")
+            return False
+        
+    except Exception as e:
+        current_app.logger.error(f"Failed to send invitation email: {str(e)}")
+        return False
 
 @family_bp.route('/invitation/<token>')
 def accept_invitation(token):
