@@ -146,7 +146,9 @@
 
 <script>
 function viewPhoto(vaultPhotoId) {
-    window.location.href = "{{ url_for('family.view_vault_photo', vault_id=vault.id, vault_photo_id='__PHOTO_ID__') }}".replace('__PHOTO_ID__', vaultPhotoId);
+    const baseUrl = "{{ url_for('family.view_vault_photo', vault_id=vault.id, vault_photo_id=1) }}";
+    const photoUrl = baseUrl.replace('/1', '/' + vaultPhotoId);
+    window.location.href = photoUrl;
 }
 </script>
 {% endblock %}
