@@ -6,12 +6,10 @@ nixPkgs = ["pkgs.python311", "pkgs.libGL", "pkgs.glib", "pkgs.pkg-config"]
 [phases.build]
 cmds = ["pip install -r requirements.txt"]
 
-# Release phase for Railway deployment - run after build
-[phases.release]
-cmds = ["FLASK_CONFIG=production python release.py"]
+# Note: Railway Nixpacks doesn't run [phases.release] - migrations now run in [start] command
 
 [start]
-cmd = "gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --graceful-timeout 30 --threads 2 wsgi:app"
+cmd = "python -m flask db upgrade && exec gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --graceful-timeout 30 --threads 2 wsgi:app"
 
 [variables]
 PYTHONPATH = "/app"
