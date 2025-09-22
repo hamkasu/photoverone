@@ -28,13 +28,15 @@ def run_migrations():
     """Run database migrations"""
     print("PhotoVault Release: Starting database migrations...")
     
+    # Set release phase flag for the app
+    os.environ['PHOTOVAULT_RELEASE_PHASE'] = '1'
+    
     if not DEPENDENCIES_AVAILABLE:
         print("PhotoVault Release: Skipping migrations - dependencies not available")
         return True
     
     try:
-        from photovault import create_app
-        from config import get_config
+        from photovault import create_app, get_config
         
         # Create app with production config
         config_class = get_config()
@@ -51,7 +53,29 @@ def run_migrations():
             return True
         except Exception as e:
             print(f"PhotoVault Release: Migration failed: {str(e)}")
-            return False
+            print("PhotoVault Release: Attempting fallback table creation...")
+            
+            # Fallback: Create tables directly
+            try:
+                from photovault.models import db
+                db.create_all()
+                print("PhotoVault Release: Fallback table creation successful")
+                
+                # Stamp Alembic migration state to sync with actual schema
+                try:
+                    from flask import current_app
+                    from alembic import command
+                    config = current_app.extensions['migrate'].config
+                    command.stamp(config, 'head')
+                    print("PhotoVault Release: Alembic migration state stamped successfully")
+                except Exception as stamp_error:
+                    print(f"PhotoVault Release: Warning - Could not stamp migration state: {str(stamp_error)}")
+                    print("PhotoVault Release: This may cause issues with future migrations")
+                
+                return True
+            except Exception as fallback_error:
+                print(f"PhotoVault Release: Fallback table creation also failed: {str(fallback_error)}")
+                return False
 
 def verify_environment():
     """Verify critical environment variables are set"""

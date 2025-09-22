@@ -142,8 +142,14 @@ def create_app(config_class=None):
                 missing_tables = [table for table in required_tables if table not in existing_tables]
                 
                 if missing_tables:
-                    app.logger.critical(f"Missing required database tables: {missing_tables}. Run migrations: flask db upgrade")
-                    raise RuntimeError(f"Database schema incomplete - missing tables: {missing_tables}")
+                    # Check if we're specifically in release phase (not runtime)
+                    import sys
+                    is_release_phase = 'release.py' in ' '.join(sys.argv) or os.environ.get('PHOTOVAULT_RELEASE_PHASE') == '1'
+                    if is_release_phase:
+                        app.logger.warning(f"Missing database tables during release phase: {missing_tables}. Release script should create them.")
+                    else:
+                        app.logger.critical(f"Missing required database tables: {missing_tables}. Run migrations: flask db upgrade")
+                        raise RuntimeError(f"Database schema incomplete - missing tables: {missing_tables}")
                     
                 app.logger.info("Database schema validation completed")
                 
