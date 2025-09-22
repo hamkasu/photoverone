@@ -17,10 +17,6 @@ localPort = 32849
 externalPort = 8008
 
 [[ports]]
-localPort = 34563
-externalPort = 8099
-
-[[ports]]
 localPort = 36499
 externalPort = 8081
 
@@ -94,4 +90,4 @@ outputType = "webview"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["gunicorn", "--bind=0.0.0.0:5000", "--workers=2", "--worker-class=sync", "--worker-connections=1000", "--timeout=30", "--preload", "--access-logfile=-", "--error-logfile=-", "main:app"]
+run = ["bash", "-c", "export FLASK_CONFIG=production FLASK_ENV=production FLASK_DEBUG=false && flask db upgrade && gunicorn --bind=0.0.0.0:5000 --workers=2 --worker-class=sync --worker-connections=1000 --timeout=30 --preload --access-logfile=- --error-logfile=- main:app"]

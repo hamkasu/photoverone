@@ -9,8 +9,13 @@ def _create_superuser_if_needed(app):
     """Create superuser account from environment variables if no superuser exists"""
     from photovault.models import User
     
-    # Check if any superuser already exists
-    if User.query.filter_by(is_superuser=True).first():
+    try:
+        # Check if any superuser already exists
+        if User.query.filter_by(is_superuser=True).first():
+            return
+    except Exception as e:
+        # Tables don't exist yet - skip superuser creation
+        app.logger.info(f"Skipping superuser creation - tables not ready: {str(e)}")
         return
         
     # Get superuser credentials from environment variables
@@ -106,13 +111,25 @@ def create_app(config_class=None):
     
     # Initialize database
     with app.app_context():
-        # Create tables if they don't exist
-        # For SQLite in production or development/testing environments
+        # Only create tables in development/testing or SQLite environments
+        # NEVER run db.create_all() in production with PostgreSQL to prevent data loss
         if app.debug or app.testing or 'sqlite' in app.config.get('SQLALCHEMY_DATABASE_URI', ''):
             try:
                 db.create_all()
+                app.logger.info("Created database tables (development/testing mode)")
             except Exception as e:
                 app.logger.warning(f"Table creation warning (may already exist): {str(e)}")
+        else:
+            # Production mode - use migrations instead of db.create_all() to preserve data
+            app.logger.info("Production mode: Using migrations to manage schema, preserving existing data")
+            
+            # Verify database connectivity
+            try:
+                from sqlalchemy import text
+                db.session.execute(text('SELECT 1'))
+                app.logger.info("Database connection verified")
+            except Exception as e:
+                app.logger.error(f"Database connection failed: {str(e)}")
         
         # Bootstrap superuser account if environment variables are set
         _create_superuser_if_needed(app)
