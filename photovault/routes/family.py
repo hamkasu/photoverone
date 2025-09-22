@@ -154,17 +154,20 @@ def invite_member(vault_id):
         
         if not valid_email:
             flash(email_msg, 'error')
-            return render_template('family/invite_member.html', vault=vault)
+            pending_invitations = VaultInvitation.query.filter_by(vault_id=vault_id, status='pending').order_by(VaultInvitation.created_at.desc()).all()
+            return render_template('family/invite_member.html', vault=vault, pending_invitations=pending_invitations)
         
         if not valid_role:
             flash(role_msg, 'error')
-            return render_template('family/invite_member.html', vault=vault)
+            pending_invitations = VaultInvitation.query.filter_by(vault_id=vault_id, status='pending').order_by(VaultInvitation.created_at.desc()).all()
+            return render_template('family/invite_member.html', vault=vault, pending_invitations=pending_invitations)
         
         # Check if user is already a member
         existing_member = FamilyMember.query.filter_by(vault_id=vault_id, status='active').join(User, FamilyMember.user_id == User.id).filter(User.email == email).first()
         if existing_member:
             flash('This user is already a member of the vault.', 'warning')
-            return render_template('family/invite_member.html', vault=vault)
+            pending_invitations = VaultInvitation.query.filter_by(vault_id=vault_id, status='pending').order_by(VaultInvitation.created_at.desc()).all()
+            return render_template('family/invite_member.html', vault=vault, pending_invitations=pending_invitations)
         
         # Check if invitation already exists
         existing_invitation = VaultInvitation.query.filter_by(
@@ -174,7 +177,8 @@ def invite_member(vault_id):
         ).first()
         if existing_invitation:
             flash('An invitation has already been sent to this email.', 'warning')
-            return render_template('family/invite_member.html', vault=vault)
+            pending_invitations = VaultInvitation.query.filter_by(vault_id=vault_id, status='pending').order_by(VaultInvitation.created_at.desc()).all()
+            return render_template('family/invite_member.html', vault=vault, pending_invitations=pending_invitations)
         
         # Create invitation
         invitation = VaultInvitation(
@@ -202,7 +206,13 @@ def invite_member(vault_id):
             logger.error(f"Failed to create invitation: {str(e)}")
             flash('Failed to create invitation. Please try again.', 'error')
     
-    return render_template('family/invite_member.html', vault=vault)
+    # Get pending invitations for this vault
+    pending_invitations = VaultInvitation.query.filter_by(
+        vault_id=vault_id,
+        status='pending'
+    ).order_by(VaultInvitation.created_at.desc()).all()
+    
+    return render_template('family/invite_member.html', vault=vault, pending_invitations=pending_invitations)
 
 def send_invitation_email(invitation, vault, inviter):
     """Send vault invitation email using Replit Mail service"""
@@ -509,6 +519,81 @@ def join_vault():
             flash('Failed to join vault. Please try again.', 'error')
     
     return render_template('family/join_vault.html')
+
+@family_bp.route('/vault/<int:vault_id>/photo/<int:vault_photo_id>')
+@login_required
+def view_vault_photo(vault_id, vault_photo_id):
+    """View individual photo in family vault with larger view"""
+    vault = FamilyVault.query.get_or_404(vault_id)
+    vault_photo = VaultPhoto.query.get_or_404(vault_photo_id)
+    
+    # Check if user has access
+    if not vault.has_member(current_user.id) and vault.created_by != current_user.id:
+        flash('You do not have access to this vault.', 'error')
+        return redirect(url_for('family.index'))
+    
+    # Check if photo belongs to this vault
+    if vault_photo.vault_id != vault_id:
+        flash('Photo not found in this vault.', 'error')
+        return redirect(url_for('family.view_vault', vault_id=vault_id))
+    
+    # Get all photos in vault for navigation
+    all_vault_photos = VaultPhoto.query.filter_by(vault_id=vault_id).order_by(VaultPhoto.shared_at.desc()).all()
+    
+    # Find current photo index for navigation
+    current_index = None
+    for i, vp in enumerate(all_vault_photos):
+        if vp.id == vault_photo_id:
+            current_index = i
+            break
+    
+    # Get previous and next photos
+    prev_photo = all_vault_photos[current_index + 1] if current_index is not None and current_index + 1 < len(all_vault_photos) else None
+    next_photo = all_vault_photos[current_index - 1] if current_index is not None and current_index > 0 else None
+    
+    return render_template('family/photo_view.html',
+                         vault=vault,
+                         vault_photo=vault_photo,
+                         prev_photo=prev_photo,
+                         next_photo=next_photo,
+                         total_photos=len(all_vault_photos),
+                         current_position=current_index + 1 if current_index is not None else 1)
+
+@family_bp.route('/vault/<int:vault_id>/invitation/<int:invitation_id>/resend', methods=['POST'])
+@login_required
+def resend_invitation(vault_id, invitation_id):
+    """Resend a vault invitation"""
+    vault = FamilyVault.query.get_or_404(vault_id)
+    invitation = VaultInvitation.query.get_or_404(invitation_id)
+    
+    # Check if user can manage vault
+    user_role = vault.get_member_role(current_user.id)
+    if user_role not in ['admin'] and vault.created_by != current_user.id:
+        flash('You do not have permission to resend invitations.', 'error')
+        return redirect(url_for('family.view_vault', vault_id=vault_id))
+    
+    # Check if invitation belongs to this vault
+    if invitation.vault_id != vault_id:
+        flash('Invitation not found for this vault.', 'error')
+        return redirect(url_for('family.view_vault', vault_id=vault_id))
+    
+    # Check if invitation is still pending
+    if not invitation.is_pending:
+        flash('Cannot resend invitation - it has already been accepted or has expired.', 'warning')
+        return redirect(url_for('family.invite_member', vault_id=vault_id))
+    
+    # Resend invitation email
+    try:
+        email_sent = send_invitation_email(invitation, vault, current_user)
+        if email_sent:
+            flash(f'Invitation resent to {invitation.email}', 'success')
+        else:
+            flash(f'Failed to resend invitation email to {invitation.email}', 'warning')
+    except Exception as e:
+        logger.error(f"Failed to resend invitation: {str(e)}")
+        flash('Failed to resend invitation. Please try again.', 'error')
+    
+    return redirect(url_for('family.invite_member', vault_id=vault_id))
 
 @family_bp.route('/vault/<int:vault_id>/add-photos', methods=['GET', 'POST'])
 @login_required

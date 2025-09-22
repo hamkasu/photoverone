@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Photo in {{ vault.name }} - PhotoVault{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- Navigation Bar -->
+        <div class="col-12 mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <a href="{{ url_for('family.view_vault', vault_id=vault.id) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Vault
+                    </a>
+                    <span class="ms-3 text-muted">{{ vault.name }} - Photo {{ current_position }} of {{ total_photos }}</span>
+                </div>
+                <div>
+                    {% if prev_photo %}
+                    <a href="{{ url_for('family.view_vault_photo', vault_id=vault.id, vault_photo_id=prev_photo.id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-chevron-left"></i> Previous
+                    </a>
+                    {% endif %}
+                    {% if next_photo %}
+                    <a href="{{ url_for('family.view_vault_photo', vault_id=vault.id, vault_photo_id=next_photo.id) }}" class="btn btn-outline-primary ms-2">
+                        Next <i class="bi bi-chevron-right"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Photo Display -->
+        <div class="col-lg-8 col-md-7">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="text-center">
+                        <img src="{{ url_for('gallery.uploaded_file', user_id=vault_photo.photo.user_id, filename=vault_photo.photo.filename) }}" 
+                             class="img-fluid" 
+                             alt="Vault photo" 
+                             style="max-height: 80vh; width: auto; border-radius: 0.375rem;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Photo Information -->
+        <div class="col-lg-4 col-md-5">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Photo Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Caption -->
+                    {% if vault_photo.caption %}
+                    <div class="mb-3">
+                        <strong>Caption:</strong>
+                        <p class="mt-1">{{ vault_photo.caption }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Shared by -->
+                    <div class="mb-3">
+                        <strong>Shared by:</strong> {{ vault_photo.sharer.username }}
+                        <br>
+                        <small class="text-muted">{{ vault_photo.shared_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                    </div>
+
+                    <!-- Photo info -->
+                    <div class="mb-3">
+                        <strong>Original name:</strong> {{ vault_photo.photo.original_name }}
+                        <br>
+                        {% if vault_photo.photo.dimensions != "Unknown" %}
+                        <strong>Dimensions:</strong> {{ vault_photo.photo.dimensions }}
+                        <br>
+                        {% endif %}
+                        {% if vault_photo.photo.file_size_mb > 0 %}
+                        <strong>File size:</strong> {{ vault_photo.photo.file_size_mb }} MB
+                        {% endif %}
+                    </div>
+
+                    <!-- Photo metadata -->
+                    {% if vault_photo.photo.photo_date or vault_photo.photo.location_text or vault_photo.photo.occasion %}
+                    <div class="mb-3">
+                        <h6>Photo Information</h6>
+                        {% if vault_photo.photo.photo_date %}
+                        <strong>Date:</strong> {{ vault_photo.photo.photo_date.strftime('%B %d, %Y') }}{% if vault_photo.photo.date_circa %} (circa){% endif %}
+                        <br>
+                        {% endif %}
+                        {% if vault_photo.photo.location_text %}
+                        <strong>Location:</strong> {{ vault_photo.photo.location_text }}
+                        <br>
+                        {% endif %}
+                        {% if vault_photo.photo.occasion %}
+                        <strong>Occasion:</strong> {{ vault_photo.photo.occasion }}
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- People tagged -->
+                    {% if vault_photo.photo.people %}
+                    <div class="mb-3">
+                        <strong>People:</strong>
+                        <div class="mt-1">
+                            {% for person in vault_photo.photo.people %}
+                            <span class="badge bg-secondary me-1">{{ person.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Navigation thumbnails -->
+            {% if total_photos > 1 %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Other Photos in Vault</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        {% if prev_photo %}
+                        <div class="col-6">
+                            <a href="{{ url_for('family.view_vault_photo', vault_id=vault.id, vault_photo_id=prev_photo.id) }}">
+                                <img src="{{ url_for('gallery.uploaded_file', user_id=prev_photo.photo.user_id, filename=prev_photo.photo.filename) }}" 
+                                     class="img-thumbnail" style="width: 100%; height: 80px; object-fit: cover;">
+                                <small class="text-muted d-block text-center">Previous</small>
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% if next_photo %}
+                        <div class="col-6">
+                            <a href="{{ url_for('family.view_vault_photo', vault_id=vault.id, vault_photo_id=next_photo.id) }}">
+                                <img src="{{ url_for('gallery.uploaded_file', user_id=next_photo.photo.user_id, filename=next_photo.photo.filename) }}" 
+                                     class="img-thumbnail" style="width: 100%; height: 80px; object-fit: cover;">
+                                <small class="text-muted d-block text-center">Next</small>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.img-fluid {
+    cursor: zoom-in;
+}
+</style>
+
+<script>
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowLeft' && document.querySelector('a[href*="Previous"]')) {
+        window.location.href = document.querySelector('a[href*="Previous"]').href;
+    } else if (e.key === 'ArrowRight' && document.querySelector('a[href*="Next"]')) {
+        window.location.href = document.querySelector('a[href*="Next"]').href;
+    } else if (e.key === 'Escape') {
+        window.location.href = "{{ url_for('family.view_vault', vault_id=vault.id) }}";
+    }
+});
+</script>
+{% endblock %}
