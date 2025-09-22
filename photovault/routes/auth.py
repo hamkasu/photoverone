@@ -186,7 +186,15 @@ def register():
             return render_template('register.html')
         except Exception as e:
             db.session.rollback()
+            import traceback
+            error_details = traceback.format_exc()
             current_app.logger.error(f'Registration error: {e}')
+            current_app.logger.error(f'Full traceback: {error_details}')
+            
+            # Enhanced error logging for production debugging
+            current_app.logger.error(f'Database URI configured: {bool(current_app.config.get("SQLALCHEMY_DATABASE_URI"))}')
+            current_app.logger.error(f'SECRET_KEY configured: {bool(current_app.config.get("SECRET_KEY"))}')
+            
             # Check if it's a duplicate user error
             if 'unique constraint' in str(e).lower() or 'already exists' in str(e).lower():
                 flash('Username or email already exists. Please try different values.', 'error')

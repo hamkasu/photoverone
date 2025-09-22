@@ -393,6 +393,43 @@ def api_health():
     """API health check endpoint"""
     return jsonify({'status': 'ok', 'service': 'PhotoVault'})
 
+@main_bp.route('/api/debug')
+def debug_info():
+    """Debug information for Railway deployment troubleshooting"""
+    from photovault.extensions import db
+    from sqlalchemy import text
+    from flask import current_app
+    import os
+    
+    debug_info = {
+        'status': 'ok',
+        'database_configured': bool(current_app.config.get('SQLALCHEMY_DATABASE_URI')),
+        'secret_key_configured': bool(current_app.config.get('SECRET_KEY')),
+        'flask_env': os.environ.get('FLASK_ENV', 'unknown'),
+        'flask_config': os.environ.get('FLASK_CONFIG', 'unknown'),
+        'railway_environment': bool(os.environ.get('RAILWAY_ENVIRONMENT')),
+        'log_to_stdout': os.environ.get('LOG_TO_STDOUT', 'false'),
+    }
+    
+    # Test database connectivity
+    try:
+        result = db.session.execute(text('SELECT 1')).scalar()
+        debug_info['database_connection'] = 'ok' if result == 1 else 'unexpected_result'
+        
+        # Check if core tables exist
+        tables_check = db.session.execute(text("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'")).fetchall()
+        existing_tables = [row[0] for row in tables_check]
+        required_tables = ['user', 'photo', 'album']
+        debug_info['required_tables_exist'] = all(table in existing_tables for table in required_tables)
+        debug_info['existing_tables'] = existing_tables[:10]  # First 10 tables
+        
+    except Exception as e:
+        debug_info['database_connection'] = f'failed: {str(e)}'
+        debug_info['required_tables_exist'] = False
+        debug_info['existing_tables'] = []
+    
+    return jsonify(debug_info)
+
 @main_bp.route('/api/person/delete/<int:person_id>', methods=['DELETE'])
 @login_required
 def delete_person(person_id):

@@ -98,8 +98,13 @@ class ProductionConfig(Config):
     
     # Handle Railway's DATABASE_URL format (postgresql:// vs postgres://)
     database_url = os.environ.get('DATABASE_URL') or os.environ.get('RAILWAY_DATABASE_URL')
-    if database_url and database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    if database_url:
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        # Ensure SSL mode is set for Railway PostgreSQL
+        if 'sslmode=' not in database_url and 'postgresql://' in database_url:
+            separator = '&' if '?' in database_url else '?'
+            database_url = f"{database_url}{separator}sslmode=require"
     
     # Fail-fast if no database configured - prevents data loss on ephemeral filesystems
     if not database_url:
