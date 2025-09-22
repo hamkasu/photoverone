@@ -213,30 +213,9 @@ class FaceDetectionService:
                             if tag:
                                 results['tags_created'] += 1
                     else:
-                        # Create detection-only tag for unrecognized face
-                        try:
-                            photo_tag = PhotoPerson(
-                                photo_id=photo.id,
-                                person_id=None,  # No person assigned yet
-                                manually_tagged=False,
-                                verified=False,
-                                confidence=face_result['detection_confidence']
-                            )
-                            
-                            # Set face detection bounding box
-                            bbox = face_result['bounding_box']
-                            photo_tag.face_box_x = bbox['x']
-                            photo_tag.face_box_y = bbox['y']
-                            photo_tag.face_box_width = bbox['width']
-                            photo_tag.face_box_height = bbox['height']
-                            
-                            db.session.add(photo_tag)
-                            db.session.commit()
-                            results['tags_created'] += 1
-                            
-                        except Exception as e:
-                            logger.error(f"Error creating detection-only tag: {e}")
-                            db.session.rollback()
+                        # Skip creating PhotoPerson records for unrecognized faces
+                        # since person_id is required and we don't have a person to associate with
+                        logger.debug(f"Face detected but not recognized in photo {photo.id} - skipping PhotoPerson creation")
             
             logger.info(f"Face processing complete for photo {photo.id}: {results['faces_detected']} faces, "
                        f"{results['faces_recognized']} recognized, {results['tags_created']} tagged")
