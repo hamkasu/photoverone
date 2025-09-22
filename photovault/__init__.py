@@ -2,8 +2,13 @@
 
 from flask import Flask
 from photovault.extensions import db, login_manager, migrate, csrf
-from config import config, get_config
+from photovault.config import config, DevelopmentConfig, ProductionConfig, TestingConfig
 import os
+
+def get_config():
+    """Get configuration based on environment"""
+    config_name = os.environ.get('FLASK_CONFIG') or 'development'
+    return config.get(config_name, DevelopmentConfig)
 
 def _create_superuser_if_needed(app):
     """Create superuser account from environment variables if no superuser exists"""

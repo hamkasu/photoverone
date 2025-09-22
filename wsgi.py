@@ -13,12 +13,9 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import the application factory
-from photovault import create_app
-from config import ProductionConfig
+from photovault import create_app, get_config
 
-# Create the application using the production configuration
-# Use config factory to handle environment-based configuration
-from config import get_config
+# Create the application using the configuration factory
 app = create_app(get_config())
 
 if __name__ == "__main__":
