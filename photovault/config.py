@@ -34,7 +34,7 @@ class Config:
     # Camera-specific settings
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
     CAMERA_QUALITY = 0.85  # JPEG quality for camera captures
-    MAX_IMAGE_DIMENSION = 2048  # Maximum width/height for saved images
+    MAX_IMAGE_DIMENSION = 3600  # Maximum width/height for saved images (hardcopy photo size)
     
     # Session configuration
     PERMANENT_SESSION_LIFETIME = timedelta(hours=24)

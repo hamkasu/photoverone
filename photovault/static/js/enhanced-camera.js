@@ -25,8 +25,8 @@ class PhotoVaultEnhancedCamera {
         this.config = {
             maxFileSize: 16 * 1024 * 1024, // 16MB
             videoConstraints: {
-                width: { ideal: 1920, max: 3840 },
-                height: { ideal: 1080, max: 2160 },
+                width: { ideal: 1800, max: 3600 },
+                height: { ideal: 1200, max: 2400 },
                 frameRate: { ideal: 30, max: 60 }
             },
             captureQuality: 0.92,
