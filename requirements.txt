@@ -41,3 +41,4 @@ requests
 
 # Production Server
 gunicorn==21.2.0
+sendgrid

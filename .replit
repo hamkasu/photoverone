@@ -6,7 +6,7 @@ packages = ["freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp
 
 [agent]
 expertMode = true
-integrations = ["replitmail:1.0.0"]
+integrations = ["replitmail:1.0.0", "python_sendgrid:1.0.0"]
 
 [[ports]]
 localPort = 5000
