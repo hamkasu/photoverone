@@ -573,118 +573,6 @@
             display: none !important;
         }
 
-        /* Quad Split Overlay Styles */
-        .quad-split-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 50;
-            pointer-events: none;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap: 2px;
-        }
-
-        .quad-section {
-            border: 2px solid rgba(255, 255, 255, 0.6);
-            background: rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: flex-start;
-            justify-content: flex-start;
-            position: relative;
-            backdrop-filter: blur(1px);
-        }
-
-        .quad-section:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.8);
-        }
-
-        .quad-top-left {
-            border-top-left-radius: 0;
-        }
-
-        .quad-top-right {
-            border-top-right-radius: 0;
-        }
-
-        .quad-bottom-left {
-            border-bottom-left-radius: 0;
-        }
-
-        .quad-bottom-right {
-            border-bottom-right-radius: 0;
-        }
-
-        .quad-label {
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 6px 12px;
-            font-size: 14px;
-            font-weight: 600;
-            border-radius: 0 0 8px 0;
-            position: absolute;
-            top: 0;
-            left: 0;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .quad-top-right .quad-label {
-            border-radius: 0 0 0 8px;
-            right: 0;
-            left: auto;
-        }
-
-        .quad-bottom-left .quad-label {
-            border-radius: 0 8px 0 0;
-            bottom: 0;
-            top: auto;
-        }
-
-        .quad-bottom-right .quad-label {
-            border-radius: 8px 0 0 0;
-            bottom: 0;
-            top: auto;
-            right: 0;
-            left: auto;
-        }
-
-        /* Mode Selector Styles */
-        .mode-selector {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 25px;
-            padding: 4px 8px;
-            color: white;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            min-width: 120px;
-            justify-content: center;
-        }
-
-        .mode-selector:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: scale(1.05);
-        }
-
-        .mode-selector.quad-mode {
-            background: rgba(34, 139, 34, 0.8);
-            border-color: rgba(34, 139, 34, 1);
-        }
-
-        .mode-selector.quad-mode:hover {
-            background: rgba(34, 139, 34, 1);
-        }
 
         /* AI Control Buttons */
         .ai-button {
@@ -878,21 +766,6 @@
         <div class="camera-viewport">
             <video id="cameraVideo" autoplay playsinline muted></video>
             
-            <!-- Quad Split Overlay -->
-            <div class="quad-split-overlay hidden" id="quadSplitOverlay">
-                <div class="quad-section quad-top-left">
-                    <div class="quad-label">Top Left</div>
-                </div>
-                <div class="quad-section quad-top-right">
-                    <div class="quad-label">Top Right</div>
-                </div>
-                <div class="quad-section quad-bottom-left">
-                    <div class="quad-label">Bottom Left</div>
-                </div>
-                <div class="quad-section quad-bottom-right">
-                    <div class="quad-label">Bottom Right</div>
-                </div>
-            </div>
             
             <!-- AI Overlay Canvases -->
             <canvas id="faceDetectionCanvas" class="ai-overlay-canvas" style="display: none;"></canvas>
@@ -925,12 +798,6 @@
             </button>
             <button class="control-button ai-button" id="poseDetectionButton" title="Toggle Pose Recognition">
                 <span id="poseDetectionIcon">🤸</span> <span id="poseDetectionText">Poses</span>
-            </button>
-            <button class="control-button multi-photo-button" id="multiPhotoButton" title="Toggle Multi-Photo Mode">
-                <span id="multiPhotoIcon">📷</span> <span id="multiPhotoText">Single</span>
-            </button>
-            <button class="mode-selector" id="modeSelector" title="Toggle between Sequential and Quad Split modes">
-                <span id="modeIcon">📷</span> <span id="modeText">Sequential</span>
             </button>
             <button class="control-button" id="fullscreenButton" title="Toggle Fullscreen Mode">
                 <span id="fullscreenIcon">⛶</span> <span id="fullscreenText">Fullscreen</span>
@@ -975,16 +842,6 @@
             <span id="snapText">📷 SNAP</span>
         </button>
 
-        <!-- Multi-Photo Progress -->
-        <div class="multi-photo-progress hidden" id="multiPhotoProgress">
-            <div class="progress-text">Multi-Photo Mode</div>
-            <div class="progress-counter">
-                <span id="currentPhoto">1</span> / <span id="totalPhotos">4</span>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
-        </div>
 
         <!-- Photo Preview -->
         <div class="photo-preview" id="photoPreview">
