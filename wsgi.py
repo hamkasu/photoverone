@@ -12,12 +12,22 @@ import sys
 # Add the project root to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Force production environment
+os.environ['FLASK_CONFIG'] = 'production'
+os.environ['FLASK_ENV'] = 'production'
+os.environ['FLASK_DEBUG'] = 'False'
+
 # Import the application factory
 from photovault import create_app
 from config import ProductionConfig
 
 # Create the application using the production configuration
 app = create_app(ProductionConfig)
+
+# Log configuration for deployment verification
+print(f"PhotoVault WSGI: Environment = {os.environ.get('FLASK_ENV', 'production')}")
+print(f"PhotoVault WSGI: Debug = {app.debug}")
+print(f"PhotoVault WSGI: Config = {app.config.__class__.__name__}")
 
 if __name__ == "__main__":
     # This will only run in development mode
