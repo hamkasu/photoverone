@@ -17,6 +17,9 @@
     <!-- PhotoVault TensorFlow.js Manager -->
     <script src="{{ url_for('static', filename='js/tensorflow-manager.js') }}"></script>
     
+    <!-- PhotoVault Enhanced Camera -->
+    <script src="{{ url_for('static', filename='js/enhanced-camera.js') }}"></script>
+    
     <style>
         * {
             margin: 0;
@@ -2001,14 +2004,10 @@
 
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', () => {
-            const camera = new PhotoVaultEnhancedAICamera();
+            const camera = new PhotoVaultEnhancedCamera();
             
-            // Override the original capturePhoto method to use AI-enhanced version
-            const originalCapturePhoto = camera.capturePhoto;
-            camera.capturePhoto = camera.capturePhotoWithAI.bind(camera);
-            
-            // Store reference to original method for fallback
-            camera.originalCapturePhoto = originalCapturePhoto;
+            // Camera initialized successfully
+            console.log('📷 PhotoVault Camera initialized successfully');
         });
 
         // Handle visibility changes
