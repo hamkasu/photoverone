@@ -360,88 +360,26 @@ def reset_password(token):
     return render_template('auth/reset_password.html', token=token, user=reset_token.user)
 
 def send_password_reset_email(user, token):
-    """Send password reset email to user using Replit Mail service"""
-    import requests
-    import os
-    
+    """Send password reset email to user using SendGrid service"""
     try:
-        reset_url = url_for('auth.reset_password', token=token, _external=True)
+        # Import SendGrid service
+        from photovault.services.sendgrid_service import send_password_reset_email as sendgrid_reset_email
         
-        # Get authentication token for Replit mail service
-        auth_token = None
-        if os.environ.get('REPL_IDENTITY'):
-            auth_token = f"repl {os.environ.get('REPL_IDENTITY')}"
-        elif os.environ.get('WEB_REPL_RENEWAL'):
-            auth_token = f"depl {os.environ.get('WEB_REPL_RENEWAL')}"
-        
-        if not auth_token:
-            current_app.logger.warning("No Replit authentication token found, falling back to console logging")
-            # Fallback to console logging in development
-            if current_app.debug:
-                print(f"EMAIL TO {user.email}: Password reset link: {reset_url}")
-            return True
-        
-        # Prepare email content
-        subject = "PhotoVault - Password Reset Request"
-        html_content = f"""
-        <html>
-        <body>
-            <h2>PhotoVault - Password Reset</h2>
-            <p>Hello {user.username},</p>
-            
-            <p>You have requested a password reset for your PhotoVault account.</p>
-            
-            <p><a href="{reset_url}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Your Password</a></p>
-            
-            <p>Or copy and paste this link: {reset_url}</p>
-            
-            <p><strong>This link will expire in 1 hour.</strong></p>
-            
-            <p>If you did not request this password reset, please ignore this email.</p>
-            
-            <hr>
-            <p>Best regards,<br>PhotoVault Team</p>
-        </body>
-        </html>
-        """
-        
-        text_content = f"""Hello {user.username},
-
-You have requested a password reset for your PhotoVault account.
-
-Click the link below to reset your password:
-{reset_url}
-
-This link will expire in 1 hour.
-
-If you did not request this password reset, please ignore this email.
-
-Best regards,
-PhotoVault Team"""
-        
-        # Send email via Replit Mail service
-        response = requests.post(
-            "https://connectors.replit.com/api/v2/mailer/send",
-            headers={
-                "Content-Type": "application/json",
-                "X_REPLIT_TOKEN": auth_token,
-            },
-            json={
-                "to": user.email,
-                "subject": subject,
-                "html": html_content,
-                "text": text_content,
-            },
-            timeout=30
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            current_app.logger.info(f"Password reset email sent to {user.email}, messageId: {result.get('messageId', 'unknown')}")
-            return True
+        # Try SendGrid first
+        if sendgrid_reset_email(user, token):
+            current_app.logger.info(f"Password reset email sent successfully to {user.email} via SendGrid")
         else:
-            current_app.logger.error(f"Failed to send email: {response.status_code} - {response.text}")
-            return False
+            # Log failure but proceed with fallback
+            current_app.logger.error(f"SendGrid failed to send password reset email to {user.email}")
+            
+            # Fallback to console logging in development only
+            if current_app.debug:
+                reset_url = url_for('auth.reset_password', token=token, _external=True)
+                print(f"EMAIL TO {user.email}: Password reset link: {reset_url}")
+                current_app.logger.info(f"Used console fallback for password reset to {user.email}")
+        
+        # Always return True to prevent email enumeration attacks
+        return True
         
     except Exception as e:
         current_app.logger.error(f"Failed to send reset email: {str(e)}")
