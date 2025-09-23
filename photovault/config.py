@@ -114,8 +114,11 @@ class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = database_url
     
     # Railway-compatible security settings
-    SESSION_COOKIE_SECURE = os.environ.get('HTTPS', 'true').lower() == 'true'
-    WTF_CSRF_SSL_STRICT = os.environ.get('HTTPS', 'true').lower() == 'true'
+    SESSION_COOKIE_SECURE = True  # Railway uses HTTPS
+    SESSION_COOKIE_HTTPONLY = True  # Prevent XSS
+    SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
+    WTF_CSRF_SSL_STRICT = False  # More flexible for Railway
+    WTF_CSRF_TIME_LIMIT = None  # Disable CSRF timeout
     
     # Production logging
     LOG_TO_STDOUT = os.environ.get('LOG_TO_STDOUT', '1')
