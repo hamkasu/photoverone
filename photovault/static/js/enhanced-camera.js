@@ -158,9 +158,18 @@ class PhotoVaultEnhancedCamera {
             // Auto-start camera in full screen mode immediately
             if (this.availableCameras.length > 0) {
                 console.log('🚀 Auto-starting camera in full screen mode...');
+                // Ensure first camera is selected in dropdowns
+                const firstCameraId = this.availableCameras[0].deviceId;
+                if (this.elements.cameraSelect) {
+                    this.elements.cameraSelect.value = firstCameraId;
+                }
+                if (this.elements.cameraSelectFullscreen) {
+                    this.elements.cameraSelectFullscreen.value = firstCameraId;
+                }
+                
                 setTimeout(() => {
                     this.enterFullScreenCamera();
-                }, 500); // Small delay to ensure UI is ready
+                }, 1000); // Longer delay to ensure dropdowns are populated
             }
             
         } catch (error) {
