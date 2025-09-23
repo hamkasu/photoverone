@@ -39,9 +39,9 @@ PhotoVault is a professional photo management platform by Calmic Sdn Bhd, focusi
 - Email functionality includes 7-day invitation expiry with secure token-based invitation acceptance
 - All email security best practices maintained: no credential logging, secure token generation, proper timeout handling
 
-## September 23, 2025 - Fresh GitHub Import Setup Complete
+## September 23, 2025 - Fresh GitHub Import Setup Complete ✅
 - Successfully imported fresh PhotoVault GitHub repository to Replit environment
-- Installed Python 3.11 with all required dependencies from requirements_clean.txt (Flask, SQLAlchemy, OpenCV, image processing libraries)
+- Installed Python 3.11 with all required dependencies from requirements.txt (Flask, SQLAlchemy, OpenCV, image processing libraries)
 - Created fresh PostgreSQL database with proper Replit environment variables (DATABASE_URL, PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE)
 - Verified complete database schema with all required tables: user, photo, album, person, family_vault, photo_people, vault_invitation, story, voice_memo, password_reset_token, etc.
 - Configured Flask development server on port 5000 with 0.0.0.0 host binding for Replit proxy compatibility
@@ -51,6 +51,8 @@ PhotoVault is a professional photo management platform by Calmic Sdn Bhd, focusi
 - Verified all core PhotoVault features accessible: homepage rendering, user registration/login pages loading correctly
 - Application fully functional and ready for development and production deployment in Replit environment
 - All static assets serving properly including CSS, Calmic logo, favicon, with proper caching headers
+- **Camera functionality verified working** - requires user authentication first (camera route: `/camera/` redirects to login if not authenticated)
+- **Important**: Camera page shows black screen until user creates account and logs in - this is expected behavior for security
 
 # User Preferences
 
