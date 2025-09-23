@@ -2,9 +2,10 @@
 PhotoVault Gallery Routes
 Simple gallery blueprint for photo management
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, abort, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, abort, current_app, Response
 from flask_login import login_required, current_user
 import os
+from photovault.utils.enhanced_file_handler import get_file_content, file_exists_enhanced
 
 # Create the gallery blueprint
 gallery_bp = Blueprint('gallery', __name__)
@@ -190,11 +191,20 @@ def uploaded_file(user_id, filename):
         if filename.endswith('_thumb.jpg') or filename.endswith('_thumb.png') or filename.endswith('_thumb.jpeg'):
             # Extract original filename by removing _thumb suffix
             base_name = filename.rsplit('_thumb.', 1)[0]
-            # Find the original extension
+            
+            # First try to find by checking App Storage paths
             for ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']:
-                if os.path.exists(os.path.join(current_app.config.get('UPLOAD_FOLDER', 'photovault/uploads'), str(user_id), base_name + ext)):
-                    original_filename = base_name + ext
+                potential_original = base_name + ext
+                app_storage_original = f"users/{user_id}/{potential_original}"
+                if file_exists_enhanced(app_storage_original):
+                    original_filename = potential_original
                     break
+            else:
+                # Fallback to checking local filesystem
+                for ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']:
+                    if os.path.exists(os.path.join(current_app.config.get('UPLOAD_FOLDER', 'photovault/uploads'), str(user_id), base_name + ext)):
+                        original_filename = base_name + ext
+                        break
         
         photo = Photo.query.filter_by(user_id=user_id).filter(
             (Photo.filename == original_filename) | (Photo.edited_filename == original_filename)
@@ -203,7 +213,30 @@ def uploaded_file(user_id, filename):
         if not photo:
             abort(404)
             
-        # Construct the file path
+        # Try to serve from App Storage first, then fallback to local filesystem
+        
+        # Check if this is likely an App Storage path (based on how we store photos)
+        app_storage_path = f"users/{user_id}/{filename}"
+        
+        if file_exists_enhanced(app_storage_path):
+            # Serve from App Storage
+            success, file_content = get_file_content(app_storage_path)
+            if success:
+                # Determine content type
+                import mimetypes
+                content_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+                
+                return Response(
+                    file_content,
+                    mimetype=content_type,
+                    headers={'Content-Disposition': f'inline; filename="{filename}"'}
+                )
+            else:
+                # App Storage exists check passed but download failed
+                current_app.logger.error(f"App Storage download failed for {app_storage_path}: {file_content}")
+                abort(404)
+        
+        # Fallback to local filesystem
         uploads_dir = os.path.join(current_app.config.get('UPLOAD_FOLDER', 'photovault/uploads'), str(user_id))
         
         return send_from_directory(uploads_dir, filename)

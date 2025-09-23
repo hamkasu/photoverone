@@ -9,6 +9,7 @@ from werkzeug.utils import secure_filename
 from PIL import Image
 import io
 import logging
+from photovault.services.app_storage_service import app_storage
 
 logger = logging.getLogger(__name__)
 

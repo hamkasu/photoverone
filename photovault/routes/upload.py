@@ -9,8 +9,11 @@ from flask import Blueprint, request, jsonify, current_app, render_template
 from flask_login import login_required, current_user
 from werkzeug.exceptions import RequestEntityTooLarge
 from photovault.utils.file_handler import (
-    validate_image_file, save_uploaded_file, generate_unique_filename,
-    create_thumbnail, get_image_info, delete_file_safely
+    validate_image_file, generate_unique_filename
+)
+from photovault.utils.enhanced_file_handler import (
+    save_uploaded_file_enhanced, create_thumbnail_enhanced, 
+    get_image_info_enhanced, delete_file_enhanced
 )
 from photovault.utils.metadata_extractor import extract_metadata_for_photo
 from photovault.utils.image_enhancement import enhance_for_old_photo
@@ -85,7 +88,7 @@ def upload_photos():
                 )
                 
                 # Save file
-                success, file_path_or_error = save_uploaded_file(
+                success, file_path_or_error = save_uploaded_file_enhanced(
                     file, unique_filename, current_user.id
                 )
                 
@@ -96,9 +99,9 @@ def upload_photos():
                 file_path = file_path_or_error
                 
                 # Get image information
-                image_info = get_image_info(file_path)
+                image_info = get_image_info_enhanced(file_path)
                 if not image_info:
-                    delete_file_safely(file_path)
+                    delete_file_enhanced(file_path)
                     errors.append(f"{file.filename}: Failed to read image information")
                     continue
                 
@@ -115,12 +118,12 @@ def upload_photos():
                 photo_metadata['auto_enhanced'] = False
                 
                 # Re-get image info after enhancement (dimensions may have changed)
-                final_image_info = get_image_info(file_path)
+                final_image_info = get_image_info_enhanced(file_path)
                 if final_image_info:
                     image_info = final_image_info
                 
                 # Create thumbnail (after enhancement)
-                thumb_success, thumb_path_or_error = create_thumbnail(file_path)
+                thumb_success, thumb_path_or_error = create_thumbnail_enhanced(file_path)
                 thumbnail_path = thumb_path_or_error if thumb_success else None
                 
                 # Save to database
@@ -185,9 +188,9 @@ def upload_photos():
                 except Exception as db_error:
                     logger.error(f"Database error for {file.filename}: {str(db_error)}")
                     # Clean up file if database save failed
-                    delete_file_safely(file_path)
+                    delete_file_enhanced(file_path)
                     if thumbnail_path:
-                        delete_file_safely(thumbnail_path)
+                        delete_file_enhanced(thumbnail_path)
                     errors.append(f"{file.filename}: Database save failed")
                     continue
                 
