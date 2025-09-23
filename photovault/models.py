@@ -118,7 +118,7 @@ class PhotoTag(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    photo = db.relationship('Photo', backref='tags')
+    photo = db.relationship('Photo', backref='photo_tags_rel')
     
     def __repr__(self):
         return f'<PhotoTag {self.photo_id}-{self.person_id}>'
