@@ -79,6 +79,9 @@ class Photo(db.Model):
     tags = db.Column(db.String(500))  # Comma-separated tags
     event_name = db.Column(db.String(255))  # Event or occasion name
     estimated_year = db.Column(db.Integer)  # Estimated year if date_taken unavailable
+    
+    # AI-generated metadata
+    ai_metadata = db.Column(db.Text)  # JSON storage for AI-generated tags, poses, composition analysis
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

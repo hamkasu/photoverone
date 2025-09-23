@@ -1361,3 +1361,326 @@ def batch_detect_faces():
             'success': False,
             'error': 'Failed to process batch face detection'
         }), 500
+
+# AI-Enhanced Features API Endpoints
+
+@photo_bp.route('/api/photos/<int:photo_id>/ai-tags', methods=['POST'])
+@login_required
+def save_ai_tags(photo_id):
+    """
+    Save AI-generated object tags from TensorFlow.js COCO-SSD detection
+    """
+    try:
+        import json
+        
+        # Get the photo and verify ownership
+        photo = Photo.query.get_or_404(photo_id)
+        if photo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        data = request.get_json()
+        if not data or 'detectedObjects' not in data:
+            return jsonify({'success': False, 'error': 'No detected objects provided'}), 400
+        
+        detected_objects = data['detectedObjects']
+        
+        # Store AI tags in photo metadata for now (can be moved to separate table later)
+        ai_tags = []
+        for obj in detected_objects:
+            if obj.get('score', 0) > 0.6:  # Only save high-confidence detections
+                ai_tags.append({
+                    'tag_name': obj['class'],
+                    'confidence': obj['score'],
+                    'bbox': obj.get('bbox', []),
+                    'model': 'COCO-SSD',
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+        
+        # Update photo with AI tags
+        ai_metadata = json.loads(photo.ai_metadata) if photo.ai_metadata else {}
+        ai_metadata['ai_tags'] = ai_tags
+        ai_metadata['last_ai_processing'] = datetime.utcnow().isoformat()
+        photo.ai_metadata = json.dumps(ai_metadata)
+        
+        db.session.commit()
+        
+        logger.info(f"Saved {len(ai_tags)} AI tags for photo {photo_id} by user {current_user.id}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Saved {len(ai_tags)} AI-generated tags',
+            'tags': [{'name': tag['tag_name'], 'confidence': tag['confidence']} for tag in ai_tags]
+        })
+        
+    except Exception as e:
+        logger.error(f"Error saving AI tags for photo {photo_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to save AI tags'
+        }), 500
+
+@photo_bp.route('/api/photos/<int:photo_id>/ai-faces', methods=['POST'])
+@login_required
+def save_ai_faces(photo_id):
+    """
+    Save AI-generated face detection results from TensorFlow.js BlazeFace
+    """
+    try:
+        import json
+        
+        # Get the photo and verify ownership
+        photo = Photo.query.get_or_404(photo_id)
+        if photo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        data = request.get_json()
+        if not data or 'detectedFaces' not in data:
+            return jsonify({'success': False, 'error': 'No detected faces provided'}), 400
+        
+        detected_faces = data['detectedFaces']
+        
+        # Save face detections using existing PhotoPerson model
+        saved_faces = []
+        for face in detected_faces:
+            bbox = face.get('bbox', [])
+            if len(bbox) >= 4:
+                x, y, width, height = bbox[:4]
+                
+                # Check if this face detection already exists
+                existing_detection = PhotoPerson.query.filter_by(
+                    photo_id=photo_id,
+                    face_box_x=int(x),
+                    face_box_y=int(y),
+                    face_box_width=int(width),
+                    face_box_height=int(height)
+                ).first()
+                
+                if not existing_detection:
+                    photo_person = PhotoPerson(
+                        photo_id=photo_id,
+                        person_id=None,  # No person assigned yet
+                        confidence=face.get('probability', 0.9),
+                        face_box_x=int(x),
+                        face_box_y=int(y),
+                        face_box_width=int(width),
+                        face_box_height=int(height),
+                        manually_tagged=False,
+                        verified=False
+                    )
+                    
+                    # Store landmarks data if available
+                    if 'landmarks' in face:
+                        # Create AI metadata for landmarks
+                        ai_metadata = json.loads(photo.ai_metadata) if photo.ai_metadata else {}
+                        if 'ai_face_landmarks' not in ai_metadata:
+                            ai_metadata['ai_face_landmarks'] = []
+                        ai_metadata['ai_face_landmarks'].append({
+                            'bbox': bbox,
+                            'landmarks': face['landmarks'],
+                            'model': 'BlazeFace',
+                            'timestamp': datetime.utcnow().isoformat()
+                        })
+                        photo.ai_metadata = json.dumps(ai_metadata)
+                    
+                    db.session.add(photo_person)
+                    saved_faces.append({
+                        'bbox': bbox,
+                        'confidence': face.get('probability', 0.9),
+                        'landmarks_count': len(face.get('landmarks', []))
+                    })
+        
+        db.session.commit()
+        
+        logger.info(f"Saved {len(saved_faces)} AI face detections for photo {photo_id} by user {current_user.id}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Saved {len(saved_faces)} AI-detected faces',
+            'faces': saved_faces
+        })
+        
+    except Exception as e:
+        logger.error(f"Error saving AI faces for photo {photo_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to save AI face detections'
+        }), 500
+
+@photo_bp.route('/api/photos/<int:photo_id>/ai-poses', methods=['POST'])
+@login_required
+def save_ai_poses(photo_id):
+    """
+    Save AI-generated pose detection and activity recognition data
+    """
+    try:
+        import json
+        
+        # Get the photo and verify ownership
+        photo = Photo.query.get_or_404(photo_id)
+        if photo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No pose data provided'}), 400
+        
+        poses = data.get('poses', [])
+        activity = data.get('activity', {})
+        
+        # Store pose data in photo metadata
+        ai_metadata = json.loads(photo.ai_metadata) if photo.ai_metadata else {}
+        ai_metadata['ai_poses'] = {
+            'poses': poses,
+            'activity': activity,
+            'pose_count': len(poses),
+            'detected_activity': activity.get('activity', 'unknown'),
+            'activity_confidence': activity.get('confidence', 0),
+            'model': 'PoseNet',
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        photo.ai_metadata = json.dumps(ai_metadata)
+        
+        db.session.commit()
+        
+        logger.info(f"Saved AI pose data for photo {photo_id}: {len(poses)} poses, activity: {activity.get('activity', 'unknown')}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Saved pose data: {len(poses)} poses detected',
+            'poses_count': len(poses),
+            'activity': activity.get('activity', 'unknown'),
+            'activity_confidence': activity.get('confidence', 0)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error saving AI pose data for photo {photo_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to save AI pose data'
+        }), 500
+
+@photo_bp.route('/api/photos/<int:photo_id>/ai-composition', methods=['POST'])
+@login_required
+def save_ai_composition(photo_id):
+    """
+    Save AI-generated composition analysis and suggestions
+    """
+    try:
+        import json
+        
+        # Get the photo and verify ownership
+        photo = Photo.query.get_or_404(photo_id)
+        if photo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        data = request.get_json()
+        if not data or 'composition' not in data:
+            return jsonify({'success': False, 'error': 'No composition data provided'}), 400
+        
+        composition_data = data['composition']
+        
+        # Store composition analysis in photo metadata
+        ai_metadata = json.loads(photo.ai_metadata) if photo.ai_metadata else {}
+        ai_metadata['ai_composition'] = {
+            'score': composition_data.get('composition', {}).get('score', 0),
+            'feedback': composition_data.get('composition', {}).get('feedback', ''),
+            'suggestions': composition_data.get('suggestions', []),
+            'subjects_count': len(composition_data.get('mainSubjects', [])),
+            'faces_count': composition_data.get('faces', 0),
+            'poses_count': composition_data.get('poses', 0),
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        photo.ai_metadata = json.dumps(ai_metadata)
+        
+        db.session.commit()
+        
+        score = ai_metadata['ai_composition']['score']
+        suggestions_count = len(ai_metadata['ai_composition']['suggestions'])
+        
+        logger.info(f"Saved AI composition analysis for photo {photo_id}: score {score}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Saved composition analysis',
+            'composition_score': score,
+            'suggestions_count': suggestions_count
+        })
+        
+    except Exception as e:
+        logger.error(f"Error saving AI composition data for photo {photo_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to save composition analysis'
+        }), 500
+
+@photo_bp.route('/api/photos/<int:photo_id>/ai-metadata', methods=['GET'])
+@login_required
+def get_ai_metadata(photo_id):
+    """
+    Retrieve all AI-generated metadata for a photo
+    """
+    try:
+        import json
+        
+        # Get the photo and verify ownership
+        photo = Photo.query.get_or_404(photo_id)
+        if photo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        ai_data = {
+            'photo_id': photo_id,
+            'has_ai_data': False,
+            'ai_tags': [],
+            'ai_faces': [],
+            'ai_poses': {},
+            'ai_composition': {},
+            'ai_face_landmarks': [],
+            'generated_at': None
+        }
+        
+        # Get AI metadata from photo
+        if photo.ai_metadata:
+            try:
+                metadata = json.loads(photo.ai_metadata)
+                ai_data.update({
+                    'ai_tags': metadata.get('ai_tags', []),
+                    'ai_poses': metadata.get('ai_poses', {}),
+                    'ai_composition': metadata.get('ai_composition', {}),
+                    'ai_face_landmarks': metadata.get('ai_face_landmarks', []),
+                    'has_ai_data': True,
+                    'generated_at': metadata.get('last_ai_processing', photo.created_at.isoformat())
+                })
+            except json.JSONDecodeError:
+                logger.warning(f"Invalid JSON in ai_metadata for photo {photo_id}")
+        
+        # Get AI face detections from PhotoPerson
+        ai_faces = PhotoPerson.query.filter_by(
+            photo_id=photo_id,
+            manually_tagged=False
+        ).all()
+        
+        ai_data['ai_faces'] = [{
+            'bbox': [face.face_box_x, face.face_box_y, face.face_box_width, face.face_box_height],
+            'confidence': face.confidence,
+            'person_assigned': face.person_id is not None,
+            'verified': face.verified
+        } for face in ai_faces]
+        
+        if ai_faces:
+            ai_data['has_ai_data'] = True
+        
+        return jsonify({
+            'success': True,
+            'ai_data': ai_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error retrieving AI metadata for photo {photo_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to retrieve AI metadata'
+        }), 500
