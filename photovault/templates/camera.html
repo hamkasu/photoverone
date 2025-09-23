@@ -17,8 +17,6 @@
     <!-- PhotoVault TensorFlow.js Manager -->
     <script src="{{ url_for('static', filename='js/tensorflow-manager.js') }}"></script>
     
-    <!-- PhotoVault Enhanced Camera -->
-    <script src="{{ url_for('static', filename='js/enhanced-camera.js') }}"></script>
     
     <style>
         * {
@@ -2004,7 +2002,7 @@
 
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', () => {
-            const camera = new PhotoVaultEnhancedCamera();
+            const camera = new PhotoVaultCamera();
             
             // Camera initialized successfully
             console.log('📷 PhotoVault Camera initialized successfully');
