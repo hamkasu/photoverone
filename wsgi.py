@@ -13,10 +13,11 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import the application factory
-from photovault import create_app, get_config
+from photovault import create_app
+from config import ProductionConfig
 
-# Create the application using the configuration factory
-app = create_app(get_config())
+# Create the application using the production configuration
+app = create_app(ProductionConfig)
 
 if __name__ == "__main__":
     # This will only run in development mode
