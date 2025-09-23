@@ -932,6 +932,9 @@
             <button class="mode-selector" id="modeSelector" title="Toggle between Sequential and Quad Split modes">
                 <span id="modeIcon">📷</span> <span id="modeText">Sequential</span>
             </button>
+            <button class="control-button" id="fullscreenButton" title="Toggle Fullscreen Mode">
+                <span id="fullscreenIcon">⛶</span> <span id="fullscreenText">Fullscreen</span>
+            </button>
             <button class="control-button exit-button" id="exitButton">
                 <span>✕</span> Exit
             </button>
@@ -1143,6 +1146,7 @@
                 // Buttons
                 this.exitButton = document.getElementById('exitButton');
                 this.flashButton = document.getElementById('flashButton');
+                this.fullscreenButton = document.getElementById('fullscreenButton');
                 this.multiPhotoButton = document.getElementById('multiPhotoButton');
                 this.modeSelector = document.getElementById('modeSelector');
                 this.requestPermissionBtn = document.getElementById('requestPermissionBtn');
@@ -1191,6 +1195,7 @@
                 // Control buttons
                 this.exitButton.addEventListener('click', () => this.exitCamera());
                 this.flashButton.addEventListener('click', () => this.toggleFlash());
+                this.fullscreenButton.addEventListener('click', () => this.toggleFullscreen());
                 this.multiPhotoButton.addEventListener('click', () => this.toggleMultiPhotoMode());
                 this.modeSelector.addEventListener('click', () => this.toggleCaptureMode());
                 this.requestPermissionBtn.addEventListener('click', () => this.requestCameraAccess());
@@ -1366,6 +1371,27 @@
                     this.flashButton.innerHTML = '<span>⚡</span> ON';
                 } else {
                     this.flashButton.innerHTML = '<span>⚡</span> Flash';
+                }
+            }
+
+            async toggleFullscreen() {
+                const isCurrentlyFullscreen = !!(document.fullscreenElement || 
+                                              document.webkitFullscreenElement || 
+                                              document.mozFullScreenElement || 
+                                              document.msFullscreenElement);
+                
+                try {
+                    if (isCurrentlyFullscreen) {
+                        await this.exitFullscreen();
+                        this.fullscreenButton.innerHTML = '<span id="fullscreenIcon">⛶</span> <span id="fullscreenText">Fullscreen</span>';
+                        this.fullscreenButton.classList.remove('active');
+                    } else {
+                        await this.tryEnterFullscreen('user_button');
+                        this.fullscreenButton.innerHTML = '<span id="fullscreenIcon">⛶</span> <span id="fullscreenText">Exit FS</span>';
+                        this.fullscreenButton.classList.add('active');
+                    }
+                } catch (error) {
+                    console.error('Error toggling fullscreen:', error);
                 }
             }
 
