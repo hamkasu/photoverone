@@ -18,6 +18,100 @@ from photovault.forms import (
 # Configure logging
 logger = logging.getLogger(__name__)
 
+def send_invitation_email(email, invitation_token, vault_name, inviter_name):
+    """Send family vault invitation email using Replit Mail service"""
+    import requests
+    import os
+    
+    try:
+        invitation_url = url_for('family.accept_invitation', token=invitation_token, _external=True)
+        
+        # Get authentication token for Replit mail service
+        auth_token = None
+        if os.environ.get('REPL_IDENTITY'):
+            auth_token = f"repl {os.environ.get('REPL_IDENTITY')}"
+        elif os.environ.get('WEB_REPL_RENEWAL'):
+            auth_token = f"depl {os.environ.get('WEB_REPL_RENEWAL')}"
+        
+        if not auth_token:
+            current_app.logger.warning("No Replit authentication token found, falling back to console logging")
+            # Fallback to console logging in development
+            if current_app.debug:
+                print(f"EMAIL TO {email}: Family vault invitation link: {invitation_url}")
+                return True
+            else:
+                # In production, return False if no auth token available
+                return False
+        
+        # Prepare email content
+        subject = f"PhotoVault - Invitation to join '{vault_name}' family vault"
+        html_content = f"""
+        <html>
+        <body>
+            <h2>PhotoVault - Family Vault Invitation</h2>
+            <p>Hello!</p>
+            
+            <p>{inviter_name} has invited you to join the family vault "<strong>{vault_name}</strong>" on PhotoVault.</p>
+            
+            <p>Family vaults allow you to share photos and memories with your loved ones in a secure, private space.</p>
+            
+            <p><a href="{invitation_url}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Accept Invitation</a></p>
+            
+            <p>Or copy and paste this link: {invitation_url}</p>
+            
+            <p><strong>This invitation will expire in 7 days.</strong></p>
+            
+            <p>If you don't have a PhotoVault account yet, you'll be able to create one when you click the link above.</p>
+            
+            <hr>
+            <p>Best regards,<br>PhotoVault Team</p>
+        </body>
+        </html>
+        """
+        
+        text_content = f"""Hello!
+
+{inviter_name} has invited you to join the family vault "{vault_name}" on PhotoVault.
+
+Family vaults allow you to share photos and memories with your loved ones in a secure, private space.
+
+Click the link below to accept the invitation:
+{invitation_url}
+
+This invitation will expire in 7 days.
+
+If you don't have a PhotoVault account yet, you'll be able to create one when you click the link above.
+
+Best regards,
+PhotoVault Team"""
+        
+        # Send email via Replit Mail service
+        response = requests.post(
+            "https://connectors.replit.com/api/v2/mailer/send",
+            headers={
+                "Content-Type": "application/json",
+                "X_REPLIT_TOKEN": auth_token,
+            },
+            json={
+                "to": email,
+                "subject": subject,
+                "html": html_content,
+                "text": text_content
+            },
+            timeout=10
+        )
+        
+        if response.ok:  # Accept any 2xx status code
+            logger.info(f"Family vault invitation email sent successfully to {email}")
+            return True
+        else:
+            logger.error(f"Failed to send invitation email to {email}. Status: {response.status_code}, Response: {response.text}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Exception while sending invitation email to {email}: {str(e)}")
+        return False
+
 # Create blueprint
 family_bp = Blueprint('family', __name__, url_prefix='/family')
 
@@ -187,11 +281,25 @@ def invite_member(vault_id):
         try:
             db.session.add(invitation)
             db.session.commit()
-            flash(f'Invitation sent to {email}', 'success')
+            
+            # Send invitation email
+            email_sent = send_invitation_email(
+                email=email,
+                invitation_token=invitation.invitation_token,
+                vault_name=vault.name,
+                inviter_name=current_user.username
+            )
+            
+            if email_sent:
+                flash(f'Invitation sent to {email}', 'success')
+            else:
+                flash(f'Invitation created but email failed to send. You can share the invitation link manually: {url_for("family.accept_invitation", token=invitation.invitation_token, _external=True)}', 'warning')
+                logger.warning(f"Invitation created for {email} but email sending failed")
+            
             return redirect(url_for('family.view_vault', vault_id=vault_id))
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Failed to send invitation: {str(e)}")
+            logger.error(f"Failed to create invitation: {str(e)}")
             flash('Failed to send invitation. Please try again.', 'error')
     
     return render_template('family/invite_member.html', vault=vault)
