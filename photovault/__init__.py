@@ -2,7 +2,8 @@
 
 from flask import Flask
 from photovault.extensions import db, login_manager, migrate, csrf
-from config import config, get_config
+from photovault.config import config
+from config import get_config
 import os
 
 def _create_superuser_if_needed(app):
