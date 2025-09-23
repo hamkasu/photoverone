@@ -155,6 +155,14 @@ class PhotoVaultEnhancedCamera {
             this.enableCameraButton();
             this.hideWarning();
             
+            // Auto-start camera in full screen mode immediately
+            if (this.availableCameras.length > 0) {
+                console.log('🚀 Auto-starting camera in full screen mode...');
+                setTimeout(() => {
+                    this.enterFullScreenCamera();
+                }, 500); // Small delay to ensure UI is ready
+            }
+            
         } catch (error) {
             console.error('❌ Camera initialization failed:', error);
             
