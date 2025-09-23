@@ -1,31 +1,16 @@
 """
 PhotoVault Camera Routes
 Enhanced camera functionality with full screen + landscape support
-Includes comprehensive security validation and rate limiting
 """
 
-from flask import Blueprint, render_template, request, jsonify, current_app
+from flask import Blueprint, render_template, request, jsonify, current_app, flash, redirect, url_for
 from flask_login import login_required, current_user
-from flask_wtf.csrf import CSRFProtect
-from photovault.extensions import csrf
+from werkzeug.utils import secure_filename
 import os
 from datetime import datetime
-import logging
+import uuid
 from PIL import Image
 import io
-
-# Import enhanced security utilities
-from photovault.utils.upload_security import (
-    validate_image_file, 
-    validate_upload_request,
-    generate_secure_filename,
-    create_secure_upload_path,
-    sanitize_form_data,
-    get_safe_error_message,
-    log_security_event,
-    UploadSecurityError,
-    RateLimitExceeded
-)
 
 # Create camera blueprint with URL prefix to avoid conflicts
 camera_bp = Blueprint('camera', __name__, url_prefix='/camera')
@@ -39,203 +24,113 @@ def camera():
                          user=current_user)
 
 @camera_bp.route('/upload', methods=['POST'])
-@csrf.exempt  # CSRF handled manually with enhanced validation
-@login_required
+@login_required  
 def upload_image():
-    """
-    Handle secure image uploads from camera capture
-    Includes comprehensive validation, rate limiting, and error handling
-    """
-    start_time = datetime.now()
-    logger = logging.getLogger(__name__)
-    
+    """Handle image uploads from camera capture"""
     try:
-        # Validate request security and rate limits
-        request_valid, request_error = validate_upload_request(required_csrf=True)
-        if not request_valid:
-            log_security_event(
-                "camera_upload_blocked", 
-                {"reason": request_error, "user_id": current_user.id},
-                "WARNING"
-            )
-            return jsonify({
-                'success': False,
-                'error': request_error
-            }), 400
-        
         # Check if image was sent
         if 'image' not in request.files:
             return jsonify({
-                'success': False,
-                'error': 'No image file provided'
+                'success': False, 
+                'error': 'No image data received'
             }), 400
 
         file = request.files['image']
         
-        # Validate image file with comprehensive security checks
-        is_valid, validation_error, file_metadata = validate_image_file(file, check_dimensions=True)
-        if not is_valid:
-            log_security_event(
-                "camera_upload_validation_failed",
-                {"reason": validation_error, "filename": file.filename},
-                "WARNING"
-            )
+        # Validate file
+        if file.filename == '':
             return jsonify({
-                'success': False,
-                'error': validation_error
+                'success': False, 
+                'error': 'No file selected'
             }), 400
+
+        if not allowed_file(file.filename):
+            return jsonify({
+                'success': False, 
+                'error': 'Invalid file type'
+            }), 400
+
+        # Get capture mode information
+        quadrant = request.form.get('quadrant', '')
+        sequence_number = request.form.get('sequence_number', '')
         
-        # Sanitize form data
-        sanitized_form = sanitize_form_data(request.form.to_dict())
-        quadrant = sanitized_form.get('quadrant', '')
-        sequence_number = sanitized_form.get('sequence_number', '')
+        # Generate secure filename with username and mode info
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_id = str(uuid.uuid4())[:8]
+        file_extension = get_file_extension(file.filename)
         
-        # Generate secure filename with proper sanitization
-        prefix_parts = []
         if quadrant:
-            prefix_parts.extend(['camera', 'quad', quadrant])
+            filename = f"{current_user.username}_camera_quad_{quadrant}_{timestamp}_{unique_id}{file_extension}"
         elif sequence_number:
-            prefix_parts.extend(['camera', 'seq', sequence_number])
+            filename = f"{current_user.username}_camera_seq_{sequence_number}_{timestamp}_{unique_id}{file_extension}"
         else:
-            prefix_parts.append('camera')
+            filename = f"{current_user.username}_camera_{timestamp}_{unique_id}{file_extension}"
         
-        prefix = "_".join(prefix_parts)
-        # Force JPEG format for camera uploads to ensure format/extension alignment
-        filename = generate_secure_filename(
-            file.filename, 
-            username=current_user.username, 
-            prefix=prefix,
-            force_format='jpg'  # Camera always saves as JPEG
-        )
+        # Ensure upload directory exists
+        upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], str(current_user.id))
+        os.makedirs(upload_path, exist_ok=True)
         
-        # Create secure file path
-        file_path = create_secure_upload_path(current_user.id, filename)
+        # Full file path
+        file_path = os.path.join(upload_path, filename)
         
-        # Process and save image with enhanced error handling
-        try:
-            success, process_message = process_and_save_image(file, file_path)
-            if not success:
-                return jsonify({
-                    'success': False,
-                    'error': get_safe_error_message(Exception(process_message), "Image processing failed")
-                }), 500
-                
-        except Exception as process_error:
-            safe_error = get_safe_error_message(process_error, "Image processing failed")
-            logger.error(f"Image processing error for user {current_user.id}: {str(process_error)}")
-            return jsonify({
-                'success': False,
-                'error': safe_error
-            }), 500
+        # Process and save image
+        success, message = process_and_save_image(file, file_path)
         
-        # Save to database with proper error handling
-        try:
-            from photovault.models import Photo, db
-            
-            # Prepare secure original name
-            original_name_parts = [current_user.username]
-            if quadrant:
-                original_name_parts.extend(['quad', quadrant, 'capture'])
-            elif sequence_number:
-                original_name_parts.extend(['seq', sequence_number, 'capture'])
-            else:
-                original_name_parts.append('camera-capture')
-            
-            original_name = "_".join(original_name_parts) + ".jpg"
-            
-            # Get additional metadata from file
-            file_size = os.path.getsize(file_path) if os.path.exists(file_path) else 0
-            
-            photo = Photo(
-                filename=filename,
-                original_name=original_name,
-                user_id=current_user.id,
-                file_path=file_path,
-                file_size=file_size,
-                width=file_metadata.get('width'),
-                height=file_metadata.get('height'),
-                mime_type='image/jpeg',  # Camera always saves as JPEG
-                upload_source='camera',
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow()
-            )
-            
-            db.session.add(photo)
-            db.session.commit()
-            
-            # Log successful upload
-            duration_ms = (datetime.now() - start_time).total_seconds() * 1000
-            log_security_event(
-                "camera_upload_success",
-                {
-                    "photo_id": photo.id,
-                    "filename": filename,
-                    "file_size": file_size,
-                    "dimensions": f"{file_metadata.get('width', 0)}x{file_metadata.get('height', 0)}",
-                    "processing_time_ms": round(duration_ms, 2),
-                    "capture_mode": "quad" if quadrant else ("sequential" if sequence_number else "single")
-                }
-            )
-            
-            return jsonify({
-                'success': True,
-                'message': 'Photo captured and saved successfully',
-                'photo_id': photo.id,
-                'filename': filename,
-                'file_size': file_size,
-                'dimensions': {
-                    'width': file_metadata.get('width'),
-                    'height': file_metadata.get('height')
-                }
-            })
-            
-        except Exception as db_error:
-            # Log database error but don't expose details
-            logger.error(f"Database error for user {current_user.id}: {str(db_error)}")
-            safe_error = get_safe_error_message(db_error, "Failed to save photo information")
-            
-            # Clean up file if database save failed
+        if success:
+            # Save to database (adjust based on your models structure)
             try:
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-            except:
-                pass  # Don't fail if cleanup fails
-            
+                # Import your models - adjust path as needed
+                from photovault.models import Photo, db
+                
+                # Prepare photo metadata
+                original_name = f"{current_user.username}_{file.filename}" if file.filename else f'{current_user.username}_camera-capture.jpg'
+                if quadrant:
+                    original_name = f"{current_user.username}_quad_{quadrant}_capture.jpg"
+                elif sequence_number:
+                    original_name = f"{current_user.username}_sequential_{sequence_number}_capture.jpg"
+                
+                photo = Photo(
+                    filename=filename,
+                    original_name=original_name,
+                    user_id=current_user.id,
+                    file_path=file_path,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                    file_size=os.path.getsize(file_path),
+                    upload_source='camera',  # Mark as camera capture
+                    # Note: quadrant info is preserved in filename and original_name
+                )
+                
+                db.session.add(photo)
+                db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Photo captured and saved successfully!',
+                    'filename': filename,
+                    'photo_id': photo.id
+                })
+                
+            except Exception as db_error:
+                current_app.logger.error(f"Database error: {str(db_error)}")
+                # File was saved but DB failed
+                return jsonify({
+                    'success': True,
+                    'message': 'Photo saved but database error occurred',
+                    'filename': filename,
+                    'warning': 'Database sync issue'
+                })
+        else:
             return jsonify({
                 'success': False,
-                'error': safe_error
+                'error': message
             }), 500
             
-    except RateLimitExceeded as rate_error:
-        log_security_event(
-            "camera_upload_rate_limit",
-            {"user_id": current_user.id, "error": str(rate_error)},
-            "WARNING"
-        )
-        return jsonify({
-            'success': False,
-            'error': str(rate_error)
-        }), 429
-        
-    except UploadSecurityError as security_error:
-        log_security_event(
-            "camera_upload_security_error",
-            {"user_id": current_user.id, "error": str(security_error)},
-            "ERROR"
-        )
-        return jsonify({
-            'success': False,
-            'error': get_safe_error_message(security_error, "Security validation failed")
-        }), 400
-        
     except Exception as e:
-        # Log unexpected errors but don't expose details
-        logger.error(f"Unexpected camera upload error for user {current_user.id}: {str(e)}")
-        safe_error = get_safe_error_message(e, "Upload failed due to server error")
-        
+        current_app.logger.error(f"Upload error: {str(e)}")
         return jsonify({
             'success': False,
-            'error': safe_error
+            'error': 'Server error during upload'
         }), 500
 
 def allowed_file(filename):
@@ -251,140 +146,55 @@ def get_file_extension(filename):
     return '.jpg'  # Default to jpg
 
 def process_and_save_image(file, file_path):
-    """
-    Process and save image with enhanced optimization and dimension limits
-    Includes memory-safe processing for large images
-    """
-    logger = logging.getLogger(__name__)
-    
+    """Process and save image with optimization"""
     try:
-        # Read and validate image data
-        file.seek(0)
+        # Read image data
         image_data = file.read()
-        file.seek(0)  # Reset for subsequent use
+        file.seek(0)  # Reset file pointer
         
-        if len(image_data) == 0:
-            return False, "Empty image file"
+        # Open with PIL for processing
+        image = Image.open(io.BytesIO(image_data))
         
-        # Create PIL image with memory safety
-        try:
-            image = Image.open(io.BytesIO(image_data))
-        except Exception as e:
-            return False, f"Invalid image format: {str(e)[:50]}"
+        # Auto-rotate based on EXIF data
+        if hasattr(image, '_getexif'):
+            exif = image._getexif()
+            if exif is not None:
+                orientation = exif.get(274, 1)  # Orientation tag
+                if orientation == 3:
+                    image = image.rotate(180, expand=True)
+                elif orientation == 6:
+                    image = image.rotate(270, expand=True)
+                elif orientation == 8:
+                    image = image.rotate(90, expand=True)
         
-        # Check image dimensions BEFORE processing to prevent memory issues
-        original_width, original_height = image.size
-        max_dimension = current_app.config.get('MAX_IMAGE_DIMENSION', 4096)
-        
-        if original_width > max_dimension or original_height > max_dimension:
-            return False, f"Image too large: {original_width}x{original_height} (max: {max_dimension}px)"
-        
-        # Memory safety check - prevent decompression bombs
-        max_pixels = max_dimension * max_dimension
-        if original_width * original_height > max_pixels:
-            return False, f"Image has too many pixels (potential security risk)"
-        
-        # Auto-rotate based on EXIF data (with error handling)
-        try:
-            # Use newer method if available
-            if hasattr(image, 'getexif'):
-                exif = image.getexif()
-                if exif:
-                    orientation = exif.get(274, 1)  # Orientation tag
-                    if orientation == 3:
-                        image = image.rotate(180, expand=True)
-                    elif orientation == 6:
-                        image = image.rotate(270, expand=True)
-                    elif orientation == 8:
-                        image = image.rotate(90, expand=True)
-            elif hasattr(image, '_getexif'):
-                # Fallback to older method
-                exif = image._getexif()
-                if exif is not None:
-                    orientation = exif.get(274, 1)
-                    if orientation == 3:
-                        image = image.rotate(180, expand=True)
-                    elif orientation == 6:
-                        image = image.rotate(270, expand=True)
-                    elif orientation == 8:
-                        image = image.rotate(90, expand=True)
-        except Exception as exif_error:
-            logger.warning(f"EXIF processing failed, continuing without rotation: {exif_error}")
-        
-        # Convert to RGB with proper handling of transparency
-        # CRITICAL: Strip EXIF metadata to prevent privacy leaks (GPS, device info)
+        # Convert RGBA to RGB if necessary
         if image.mode in ('RGBA', 'LA', 'P'):
-            # Create white background for transparency
             background = Image.new('RGB', image.size, (255, 255, 255))
-            
             if image.mode == 'P':
-                # Convert palette to RGBA first
                 image = image.convert('RGBA')
-            
-            # Paste image onto background, preserving alpha channel
-            if image.mode in ('RGBA', 'LA'):
-                background.paste(image, mask=image.split()[-1])
-            else:
-                background.paste(image)
-            
+            background.paste(image, mask=image.split()[-1] if image.mode in ('RGBA', 'LA') else None)
             image = background
-        else:
-            # For RGB/L images, create new image without EXIF data
-            image_without_exif = Image.new(image.mode, image.size)
-            image_without_exif.putdata(list(image.getdata()))
-            image = image_without_exif
         
-        # Smart resizing based on camera quality settings
-        camera_max_size = current_app.config.get('CAMERA_MAX_DIMENSION', 2048)
+        # Optimize file size while maintaining quality
+        max_size = (2048, 2048)  # Max dimensions
+        if image.size[0] > max_size[0] or image.size[1] > max_size[1]:
+            image.thumbnail(max_size, Image.Resampling.LANCZOS)
         
-        if image.size[0] > camera_max_size or image.size[1] > camera_max_size:
-            # Calculate new size maintaining aspect ratio
-            original_ratio = image.size[0] / image.size[1]
-            
-            if image.size[0] > image.size[1]:  # Landscape
-                new_width = camera_max_size
-                new_height = int(camera_max_size / original_ratio)
-            else:  # Portrait or square
-                new_height = camera_max_size  
-                new_width = int(camera_max_size * original_ratio)
-            
-            # Use high-quality resampling
-            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            logger.info(f"Resized image from {original_width}x{original_height} to {new_width}x{new_height}")
-        
-        # Save with optimized settings
-        camera_quality = current_app.config.get('CAMERA_QUALITY', 0.85)
+        # Save optimized image
         save_kwargs = {
             'format': 'JPEG',
-            'quality': int(camera_quality * 100),
-            'optimize': True,
-            'progressive': True,  # Better for web viewing
-            'subsampling': 0,     # Keep high color quality
+            'quality': 85,
+            'optimize': True
         }
         
-        # Save to file
         image.save(file_path, **save_kwargs)
         
-        # Verify file was created successfully
-        if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
-            return False, "File save verification failed"
-        
-        final_size = os.path.getsize(file_path)
-        logger.info(f"Image processed and saved: {file_path} ({final_size/1024:.1f}KB)")
-        
+        current_app.logger.info(f"Image saved: {file_path}")
         return True, "Image processed and saved successfully"
         
-    except MemoryError:
-        logger.error("Memory error during image processing - image too large")
-        return False, "Image too large to process"
-        
-    except OSError as os_error:
-        logger.error(f"File system error during image processing: {str(os_error)}")
-        return False, "File system error during processing"
-        
     except Exception as e:
-        logger.error(f"Image processing error: {str(e)}")
-        return False, get_safe_error_message(e, "Image processing failed")
+        current_app.logger.error(f"Image processing error: {str(e)}")
+        return False, f"Image processing failed: {str(e)}"
 
 @camera_bp.route('/camera/settings')
 @login_required

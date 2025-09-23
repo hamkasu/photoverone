@@ -21,7 +21,7 @@ class PhotoVaultEnhancedCamera {
         this.quadrantOrder = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
         this.currentQuadrant = 0;
         
-        // Configuration with performance optimizations
+        // Configuration
         this.config = {
             maxFileSize: 16 * 1024 * 1024, // 16MB
             videoConstraints: {
@@ -30,27 +30,7 @@ class PhotoVaultEnhancedCamera {
                 frameRate: { ideal: 30, max: 60 }
             },
             captureQuality: 0.92,
-            supportedFormats: ['image/jpeg', 'image/png', 'image/webp'],
-            // Client-side compression settings
-            compression: {
-                enabled: true,
-                quality: 0.85,
-                maxWidth: 2048,
-                maxHeight: 2048,
-                format: 'image/jpeg'
-            },
-            // Performance optimizations
-            permissions: {
-                cacheDuration: 300000, // 5 minutes in milliseconds
-                retryDelay: 1000
-            }
-        };
-        
-        // Camera permissions cache
-        this.permissionsCache = {
-            granted: null,
-            timestamp: null,
-            devices: []
+            supportedFormats: ['image/jpeg', 'image/png', 'image/webp']
         };
         
         // Initialize system
@@ -141,117 +121,19 @@ class PhotoVaultEnhancedCamera {
         return true;
     }
 
-    /**
-     * Check cached camera permissions to improve performance
-     * @returns {Promise<boolean>} True if permissions are cached and valid
-     */
-    async checkCachedPermissions() {
-        const cache = this.permissionsCache;
-        const now = Date.now();
-        
-        // Check if cache is valid
-        if (cache.granted !== null && 
-            cache.timestamp !== null && 
-            (now - cache.timestamp) < this.config.permissions.cacheDuration) {
-            
-            console.log('📦 Using cached camera permissions');
-            return cache.granted;
-        }
-        
-        return null; // Cache expired or not available
-    }
-
-    /**
-     * Cache camera permissions for performance
-     * @param {boolean} granted - Whether permissions were granted
-     * @param {Array} devices - Available camera devices
-     */
-    cachePermissions(granted, devices = []) {
-        this.permissionsCache = {
-            granted,
-            timestamp: Date.now(),
-            devices: [...devices]
-        };
-        
-        console.log(`💾 Cached camera permissions: ${granted ? 'granted' : 'denied'}`);
-    }
-
-    /**
-     * Compress image on client-side before upload
-     * @param {File|Blob} file - Image file to compress
-     * @returns {Promise<Blob>} Compressed image blob
-     */
-    async compressImage(file) {
-        if (!this.config.compression.enabled) {
-            return file;
-        }
-        
-        return new Promise((resolve) => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const img = new Image();
-            
-            img.onload = () => {
-                // Calculate new dimensions while maintaining aspect ratio
-                let { width, height } = img;
-                const maxWidth = this.config.compression.maxWidth;
-                const maxHeight = this.config.compression.maxHeight;
-                
-                if (width > maxWidth || height > maxHeight) {
-                    const ratio = Math.min(maxWidth / width, maxHeight / height);
-                    width *= ratio;
-                    height *= ratio;
-                }
-                
-                // Set canvas dimensions
-                canvas.width = width;
-                canvas.height = height;
-                
-                // Draw and compress
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                canvas.toBlob(
-                    resolve,
-                    this.config.compression.format,
-                    this.config.compression.quality
-                );
-            };
-            
-            img.src = URL.createObjectURL(file);
-        });
-    }
-
     async initializeCamera() {
         try {
-            // Check cached permissions first for better performance
-            const cachedPermission = await this.checkCachedPermissions();
-            if (cachedPermission === false) {
-                throw new Error('Camera access denied (cached)');
-            }
             console.log('🔍 Requesting camera permissions...');
             
-            // Request camera permissions first (use cache if available)
-            if (cachedPermission === null) {
-                try {
-                    const tempStream = await navigator.mediaDevices.getUserMedia({ 
-                        video: true, 
-                        audio: false 
-                    });
-                    
-                    // Cache successful permission grant
-                    this.cachePermissions(true);
-                    
-                    if (tempStream) {
-                        tempStream.getTracks().forEach(track => track.stop());
-                    }
-                } catch (error) {
-                    // Cache permission denial
-                    this.cachePermissions(false);
-                    throw error;
-                }
-            }
+            // Request camera permissions first
+            const tempStream = await navigator.mediaDevices.getUserMedia({ 
+                video: true, 
+                audio: false 
+            });
             
-            console.log('✅ Camera permissions granted (cached or fresh)');
+            // Stop temporary stream immediately
+            tempStream.getTracks().forEach(track => track.stop());
+            console.log('✅ Camera permissions granted');
             
             // Enumerate available cameras
             const devices = await navigator.mediaDevices.enumerateDevices();
@@ -795,56 +677,16 @@ class PhotoVaultEnhancedCamera {
                 }
                 
                 if (statusDiv) {
-                    statusDiv.textContent = `Processing ${file.name}... (${i + 1}/${totalFiles})`;
-                }
-                
-                // Compress image before upload for better performance
-                let processedFile = file;
-                if (this.config.compression.enabled && file.type.startsWith('image/')) {
-                    try {
-                        const compressedBlob = await this.compressImage(file);
-                        const originalSize = (file.size / 1024).toFixed(1);
-                        const compressedSize = (compressedBlob.size / 1024).toFixed(1);
-                        const compressionRatio = ((1 - compressedBlob.size / file.size) * 100).toFixed(1);
-                        
-                        console.log(`🗜️ Compressed ${file.name}: ${originalSize}KB → ${compressedSize}KB (${compressionRatio}% reduction)`);
-                        
-                        processedFile = new File([compressedBlob], file.name, {
-                            type: this.config.compression.format,
-                            lastModified: file.lastModified
-                        });
-                    } catch (compressionError) {
-                        console.warn(`⚠️ Compression failed for ${file.name}, using original:`, compressionError);
-                    }
-                }
-                
-                if (statusDiv) {
                     statusDiv.textContent = `Uploading ${file.name}... (${i + 1}/${totalFiles})`;
                 }
                 
-                // Upload processed file
+                // Upload file
                 const formData = new FormData();
-                formData.append('image', processedFile);  // Use 'image' key to match backend
+                formData.append('file', file);
                 
-                // Add CSRF token for security
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                if (csrfToken) {
-                    formData.append('csrf_token', csrfToken);
-                } else {
-                    console.warn('⚠️ CSRF token not found');
-                }
-                
-                // Add metadata for quad/sequential capture if applicable
-                if (this.captureMode === 'quad' && this.currentQuadrant !== undefined) {
-                    formData.append('quadrant', this.quadrantOrder[this.currentQuadrant]);
-                } else if (this.captureMode === 'sequential') {
-                    formData.append('sequence_number', i + 1);
-                }
-                
-                const response = await fetch('/camera/upload', {
+                const response = await fetch('/api/upload', {
                     method: 'POST',
-                    body: formData,
-                    credentials: 'same-origin'  // Include cookies for session management
+                    body: formData
                 });
                 
                 const result = await response.json();

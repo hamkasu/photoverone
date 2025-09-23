@@ -16,7 +16,6 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from photovault.models import User, PasswordResetToken, db
 from photovault.utils import safe_db_query, retry_db_operation, TransientDBError
-from photovault.extensions import csrf
 import re
 
 auth_bp = Blueprint('auth', __name__)
@@ -68,12 +67,6 @@ def login():
         if user and check_password_hash(user.password_hash, password):
             login_user(user, remember=remember)
             
-            # Check for pending invitation first
-            pending_invitation = session.pop('pending_invitation', None)
-            if pending_invitation:
-                flash(f'Welcome back, {user.username}! Processing your invitation...', 'success')
-                return redirect(url_for('family.accept_invitation', token=pending_invitation))
-            
             # Get next page from URL parameter
             next_page = request.args.get('next')
             if next_page and next_page.startswith('/'):
@@ -98,16 +91,10 @@ def register():
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
-        accept_terms = request.form.get('accept_terms')
         
         # Basic validation
         if not all([username, email, password, confirm_password]):
             flash('All fields are required.', 'error')
-            return render_template('register.html')
-            
-        # Terms and conditions validation
-        if not accept_terms:
-            flash('You must accept the Terms and Conditions to create an account.', 'error')
             return render_template('register.html')
         
         # Username validation
@@ -155,46 +142,26 @@ def register():
         
         @retry_db_operation(max_retries=3)
         def create_user():
-            from datetime import datetime
             user = User(
                 username=username,
                 email=email,
-                password_hash=generate_password_hash(password),
-                terms_accepted_at=datetime.utcnow()
+                password_hash=generate_password_hash(password)
             )
             db.session.add(user)
             db.session.commit()
             return user
         
         try:
-            user = create_user()
-            
-            # Auto-login the new user
-            login_user(user)
-            
-            # Check for pending invitation
-            pending_invitation = session.pop('pending_invitation', None)
-            if pending_invitation:
-                flash(f'Welcome to PhotoVault, {user.username}! Processing your invitation...', 'success')
-                return redirect(url_for('family.accept_invitation', token=pending_invitation))
-            
-            flash(f'Welcome to PhotoVault, {user.username}!', 'success')
-            return redirect(url_for('main.dashboard'))
+            create_user()
+            flash('Registration successful! You can now log in.', 'success')
+            return redirect(url_for('auth.login'))
             
         except TransientDBError:
             flash('Temporary database issue. Please try again in a moment.', 'error')
             return render_template('register.html')
         except Exception as e:
             db.session.rollback()
-            import traceback
-            error_details = traceback.format_exc()
             current_app.logger.error(f'Registration error: {e}')
-            current_app.logger.error(f'Full traceback: {error_details}')
-            
-            # Enhanced error logging for production debugging
-            current_app.logger.error(f'Database URI configured: {bool(current_app.config.get("SQLALCHEMY_DATABASE_URI"))}')
-            current_app.logger.error(f'SECRET_KEY configured: {bool(current_app.config.get("SECRET_KEY"))}')
-            
             # Check if it's a duplicate user error
             if 'unique constraint' in str(e).lower() or 'already exists' in str(e).lower():
                 flash('Username or email already exists. Please try different values.', 'error')
@@ -293,7 +260,6 @@ def logout():
         return redirect(url_for('auth.login'))
 
 @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
-@csrf.exempt
 def forgot_password():
     """Request password reset"""
     if current_user.is_authenticated:
