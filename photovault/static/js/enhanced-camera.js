@@ -17,7 +17,7 @@ class PhotoVaultEnhancedCamera {
         this.orientationLocked = false;
         
         // Photo capture mode management  
-        this.captureMode = 'single'; // 'single' | 'sequential' | 'quad'
+        this.captureMode = 'single'; // 'single' | 'quad'
         this.quadrantOrder = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
         this.currentQuadrant = 0;
         
@@ -840,7 +840,7 @@ class PhotoVaultEnhancedCamera {
     // Photo Capture Mode Methods
     toggleMultiPhotoMode() {
         if (this.captureMode === 'single') {
-            this.captureMode = 'sequential';
+            this.captureMode = 'quad';
         } else {
             this.captureMode = 'single';
         }
@@ -848,11 +848,8 @@ class PhotoVaultEnhancedCamera {
     }
     
     toggleCaptureMode() {
-        if (this.captureMode === 'sequential') {
-            this.captureMode = 'quad';
-        } else if (this.captureMode === 'quad') {
-            this.captureMode = 'sequential';
-        }
+        // This method is no longer needed as we only toggle between single and quad
+        // but keeping it for backwards compatibility
         this.updateModeUI();
     }
     
@@ -879,20 +876,13 @@ class PhotoVaultEnhancedCamera {
         // Update mode selector visibility and text
         if (this.captureMode === 'single') {
             if (modeSelector) modeSelector.style.display = 'none';
-        } else {
+            this.hideQuadOverlay();
+        } else if (this.captureMode === 'quad') {
             if (modeSelector) modeSelector.style.display = 'flex';
-            
-            if (this.captureMode === 'sequential') {
-                modeSelector?.classList.remove('quad-mode');
-                if (modeSelector) modeSelector.textContent = '🔢 Sequential';
-                this.hideQuadOverlay();
-                console.log('🔄 Sequential mode active');
-            } else if (this.captureMode === 'quad') {
-                modeSelector?.classList.add('quad-mode');
-                if (modeSelector) modeSelector.textContent = '🔲 Quad Split';
-                this.showQuadOverlay();
-                console.log('🔄 Quad Split mode active');
-            }
+            modeSelector?.classList.add('quad-mode');
+            if (modeSelector) modeSelector.textContent = '🔲 Quad Split';
+            this.showQuadOverlay();
+            console.log('🔄 Quad Split mode active');
         }
     }
     
@@ -900,9 +890,6 @@ class PhotoVaultEnhancedCamera {
         switch (this.captureMode) {
             case 'quad':
                 this.captureQuadPhotos();
-                break;
-            case 'sequential':
-                this.captureSequentialPhotos();
                 break;
             case 'single':
             default:
@@ -926,185 +913,9 @@ class PhotoVaultEnhancedCamera {
         console.log('🎯 Photo capture UI initialized - starting in Single Photo mode');
     }
     
-    async captureSequentialPhotos() {
-        if (!this.currentStream || !this.isFullscreen || this.isCapturing) return;
-        
-        this.isCapturing = true;
-        console.log('📸🔢 Starting sequential photo capture...');
-        
-        try {
-            let successCount = 0;
-            const totalPhotos = 4;
-            
-            for (let i = 0; i < totalPhotos; i++) {
-                // Show countdown
-                await this.showSequentialCountdown(i + 1, totalPhotos);
-                
-                // Capture photo
-                const success = await this.captureSinglePhotoSequential(i + 1);
-                if (success) {
-                    successCount++;
-                }
-                
-                // Small delay between captures
-                if (i < totalPhotos - 1) {
-                    await this.delay(1000);
-                }
-            }
-            
-            if (successCount === totalPhotos) {
-                this.showCaptureSuccess(`📷✕4 All ${totalPhotos} sequential photos captured successfully!`);
-                console.log(`✅ All ${totalPhotos} sequential photos captured`);
-                
-                // Auto-exit after successful capture
-                setTimeout(() => {
-                    this.exitFullScreenCamera();
-                }, 2000);
-            } else if (successCount > 0) {
-                this.showCaptureSuccess(`⚠️ ${successCount}/${totalPhotos} sequential photos captured`);
-                console.log(`⚠️ ${successCount}/${totalPhotos} sequential photos captured`);
-            } else {
-                throw new Error('All sequential photo captures failed');
-            }
-            
-        } catch (error) {
-            console.error('❌ Failed to capture sequential photos:', error);
-            this.showError('Failed to capture sequential photos: ' + error.message);
-        } finally {
-            this.isCapturing = false;
-        }
-    }
     
-    async showSequentialCountdown(current, total) {
-        return new Promise((resolve) => {
-            // Create countdown display
-            const countdown = document.createElement('div');
-            countdown.className = 'sequential-countdown';
-            countdown.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.9);
-                color: white;
-                font-size: 48px;
-                font-weight: bold;
-                padding: 30px 50px;
-                border-radius: 15px;
-                z-index: 300;
-                text-align: center;
-                backdrop-filter: blur(10px);
-                border: 3px solid rgba(255, 255, 255, 0.3);
-            `;
-            countdown.innerHTML = `
-                <div style="font-size: 24px; margin-bottom: 10px;">Photo ${current} of ${total}</div>
-                <div style="font-size: 72px; color: #4ade80;">3</div>
-            `;
-            
-            document.body.appendChild(countdown);
-            
-            let count = 3;
-            const countdownInterval = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    countdown.querySelector('div:last-child').textContent = count;
-                    countdown.querySelector('div:last-child').style.color = count === 1 ? '#ff4757' : '#4ade80';
-                } else {
-                    countdown.querySelector('div:last-child').textContent = '📸';
-                    countdown.querySelector('div:last-child').style.color = '#ffd700';
-                    clearInterval(countdownInterval);
-                    
-                    setTimeout(() => {
-                        if (countdown.parentNode) {
-                            countdown.parentNode.removeChild(countdown);
-                        }
-                        resolve();
-                    }, 500);
-                }
-            }, 1000);
-        });
-    }
     
-    async captureSinglePhotoSequential(photoNumber) {
-        try {
-            // Visual feedback
-            this.showCaptureFlash();
-            this.triggerHapticFeedback();
-            
-            // Get video element
-            const video = this.elements.cameraVideo;
-            const canvas = this.elements.photoCanvas;
-            const ctx = canvas.getContext('2d');
-            
-            // Wait for video to be properly loaded
-            if (video.videoWidth === 0 || video.videoHeight === 0) {
-                throw new Error('Video not ready');
-            }
-            
-            // Set canvas dimensions to match video
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            
-            // Draw video frame to canvas
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // Convert to blob
-            const blob = await new Promise((resolve, reject) => {
-                canvas.toBlob(resolve, 'image/jpeg', this.config.captureQuality);
-                setTimeout(() => reject(new Error('Capture timeout')), 5000);
-            });
-            
-            if (!blob) {
-                throw new Error('Failed to create image blob');
-            }
-            
-            // Create file
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-            const filename = `photovault-sequential-${photoNumber}-${timestamp}.jpg`;
-            const file = new File([blob], filename, { type: 'image/jpeg' });
-            
-            console.log(`📷 Sequential photo ${photoNumber} captured: ${filename}`);
-            
-            // Upload the photo
-            return await this.uploadFileWithSequential(file, photoNumber);
-            
-        } catch (error) {
-            console.error(`❌ Failed to capture sequential photo ${photoNumber}:`, error);
-            return false;
-        }
-    }
     
-    async uploadFileWithSequential(file, photoNumber) {
-        console.log(`📤 Uploading sequential photo ${photoNumber}: ${file.name}`);
-        
-        try {
-            const formData = new FormData();
-            formData.append('image', file);
-            formData.append('sequence_number', photoNumber.toString());
-            
-            const response = await fetch('/camera/upload', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''
-                }
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                console.log(`✅ Sequential photo ${photoNumber} upload successful: ${file.name}`);
-                return true;
-            } else {
-                console.error(`❌ Sequential photo ${photoNumber} upload failed: ${result.error}`);
-                return false;
-            }
-            
-        } catch (error) {
-            console.error(`❌ Sequential photo ${photoNumber} upload error:`, error);
-            return false;
-        }
-    }
     
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));

@@ -39,6 +39,15 @@ PhotoVault is a professional photo management platform by Calmic Sdn Bhd, focusi
 - Email functionality includes 7-day invitation expiry with secure token-based invitation acceptance
 - All email security best practices maintained: no credential logging, secure token generation, proper timeout handling
 
+## September 24, 2025 - Sequential Button Removal from Camera Interface
+- Removed Sequential capture mode from camera interface per user request
+- Updated enhanced camera JavaScript to only support Single and Quad Split modes
+- Modified `toggleMultiPhotoMode()` to switch directly between single and quad modes
+- Removed sequential capture methods: `captureSequentialPhotos()`, `showSequentialCountdown()`, `captureSinglePhotoSequential()`, and `uploadFileWithSequential()`
+- Updated mode selector UI logic to only display quad split mode when in multi-photo mode
+- Camera interface now has cleaner, simpler mode switching with only essential capture options
+- Application maintains all other camera functionality including full-screen mode, zoom controls, flash, and quad split capture
+
 ## September 24, 2025 - Navigation Menu Consistency Fix
 - Fixed navigation menu inconsistency across application pages  
 - Updated `gallery/dashboard.html` template to extend base.html instead of standalone HTML structure
