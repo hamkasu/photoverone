@@ -325,14 +325,7 @@ class PhotoVaultEnhancedCamera {
             }
         });
         
-        // Quad mode event listeners
-        this.elements.multiPhotoButton?.addEventListener('click', () => {
-            this.toggleMultiPhotoMode();
-        });
-        
-        this.elements.modeSelector?.addEventListener('click', () => {
-            this.toggleCaptureMode();
-        });
+        // Mode selection buttons removed - using single photo mode only
         
         this.elements.snapButton?.addEventListener('click', () => {
             if (this.isFullscreen && !this.isCapturing) {
@@ -837,53 +830,12 @@ class PhotoVaultEnhancedCamera {
         }
     }
     
-    // Photo Capture Mode Methods
-    toggleMultiPhotoMode() {
-        if (this.captureMode === 'single') {
-            this.captureMode = 'quad';
-        } else {
-            this.captureMode = 'single';
-        }
-        this.updateModeUI();
-    }
-    
-    toggleCaptureMode() {
-        // This method is no longer needed as we only toggle between single and quad
-        // but keeping it for backwards compatibility
-        this.updateModeUI();
-    }
-    
+    // Photo Capture Mode Methods - Simplified to single photo mode only
     updateModeUI() {
-        const button = this.elements.multiPhotoButton;
-        const icon = document.getElementById('multiPhotoIcon');
-        const text = document.getElementById('multiPhotoText');
-        const modeSelector = this.elements.modeSelector;
-        
-        // Update multi-photo button
-        if (this.captureMode === 'single') {
-            button?.classList.remove('active');
-            if (icon) icon.textContent = '📷';
-            if (text) text.textContent = 'Single';
-            this.hideQuadOverlay();
-            console.log('🔄 Single photo mode activated');
-        } else {
-            button?.classList.add('active');
-            if (icon) icon.textContent = '📷✕4';
-            if (text) text.textContent = 'Multi';
-            console.log('🔄 Multi-photo mode activated');
-        }
-        
-        // Update mode selector visibility and text
-        if (this.captureMode === 'single') {
-            if (modeSelector) modeSelector.style.display = 'none';
-            this.hideQuadOverlay();
-        } else if (this.captureMode === 'quad') {
-            if (modeSelector) modeSelector.style.display = 'flex';
-            modeSelector?.classList.add('quad-mode');
-            if (modeSelector) modeSelector.textContent = '🔲 Quad Split';
-            this.showQuadOverlay();
-            console.log('🔄 Quad Split mode active');
-        }
+        // Mode selection buttons removed - always use single photo mode
+        this.captureMode = 'single';
+        this.hideQuadOverlay();
+        console.log('🔄 Single photo mode activated (mode buttons removed)');
     }
     
     handleCaptureAction() {
@@ -907,10 +859,11 @@ class PhotoVaultEnhancedCamera {
     }
     
     initializeQuadUI() {
-        // Initialize mode UI based on current mode (single)
-        this.updateModeUI();
+        // Initialize UI - always single photo mode (mode buttons removed)
+        this.captureMode = 'single';
+        this.hideQuadOverlay();
         
-        console.log('🎯 Photo capture UI initialized - starting in Single Photo mode');
+        console.log('🎯 Photo capture UI initialized - Single Photo mode only');
     }
     
     

@@ -926,12 +926,6 @@
             <button class="control-button ai-button" id="poseDetectionButton" title="Toggle Pose Recognition">
                 <span id="poseDetectionIcon">🤸</span> <span id="poseDetectionText">Poses</span>
             </button>
-            <button class="control-button multi-photo-button" id="multiPhotoButton" title="Toggle Multi-Photo Mode">
-                <span id="multiPhotoIcon">📷</span> <span id="multiPhotoText">Single</span>
-            </button>
-            <button class="mode-selector" id="modeSelector" title="Toggle between Sequential and Quad Split modes">
-                <span id="modeIcon">📷</span> <span id="modeText">Sequential</span>
-            </button>
             <button class="control-button" id="fullscreenButton" title="Toggle Fullscreen Mode">
                 <span id="fullscreenIcon">⛶</span> <span id="fullscreenText">Fullscreen</span>
             </button>
@@ -965,15 +959,15 @@
             <div id="aiLoadingText">Loading AI models...</div>
         </div>
 
+        <!-- SNAP Button (moved above gallery button) -->
+        <button class="snap-button" id="snapButton" style="position: fixed; bottom: 200px; left: 20px; transform: none;">
+            <span id="snapText">📷 SNAP</span>
+        </button>
+
         <!-- Floating Gallery Button -->
         <a href="/dashboard" class="floating-gallery-btn" id="galleryBtn" title="Go to Gallery" aria-label="Go to Gallery">
             🖼️
         </a>
-
-        <!-- SNAP Button -->
-        <button class="snap-button" id="snapButton">
-            <span id="snapText">📷 SNAP</span>
-        </button>
 
         <!-- Multi-Photo Progress -->
         <div class="multi-photo-progress hidden" id="multiPhotoProgress">
