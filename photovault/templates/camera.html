@@ -1141,18 +1141,14 @@
                 this.exitButton = document.getElementById('exitButton');
                 this.flashButton = document.getElementById('flashButton');
                 this.fullscreenButton = document.getElementById('fullscreenButton');
-                this.multiPhotoButton = document.getElementById('multiPhotoButton');
-                this.modeSelector = document.getElementById('modeSelector');
                 this.requestPermissionBtn = document.getElementById('requestPermissionBtn');
                 
-                // Multi-photo elements
+                // Multi-photo elements (removed mode buttons)
                 this.multiPhotoProgress = document.getElementById('multiPhotoProgress');
                 this.snapText = document.getElementById('snapText');
                 
                 // Quad split elements
                 this.quadSplitOverlay = document.getElementById('quadSplitOverlay');
-                this.modeIcon = document.getElementById('modeIcon');
-                this.modeText = document.getElementById('modeText');
             }
 
             setupEventListeners() {
@@ -1161,21 +1157,10 @@
                 document.getElementById('snapButton').addEventListener('click', () => {
                     if (!captureInProgress) {
                         captureInProgress = true;
-                        if (this.multiPhotoMode && !this.isBurstCapture) {
-                            if (this.captureMode === 'quad-split') {
-                                this.captureQuadSplit().finally(() => {
-                                    setTimeout(() => { captureInProgress = false; }, 500);
-                                });
-                            } else {
-                                this.startBurstCapture().finally(() => {
-                                    setTimeout(() => { captureInProgress = false; }, 500);
-                                });
-                            }
-                        } else {
-                            this.capturePhoto().finally(() => {
-                                setTimeout(() => { captureInProgress = false; }, 500);
-                            });
-                        }
+                        // Simplified to single photo capture only
+                        this.capturePhoto().finally(() => {
+                            setTimeout(() => { captureInProgress = false; }, 500);
+                        });
                     }
                 });
                 
@@ -1190,8 +1175,6 @@
                 this.exitButton.addEventListener('click', () => this.exitCamera());
                 this.flashButton.addEventListener('click', () => this.toggleFlash());
                 this.fullscreenButton.addEventListener('click', () => this.toggleFullscreen());
-                this.multiPhotoButton.addEventListener('click', () => this.toggleMultiPhotoMode());
-                this.modeSelector.addEventListener('click', () => this.toggleCaptureMode());
                 this.requestPermissionBtn.addEventListener('click', () => this.requestCameraAccess());
                 
                 // Photo preview
