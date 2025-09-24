@@ -18,10 +18,13 @@ class Config:
         }
         
         if database_uri and 'postgresql' in database_uri:
-            # PostgreSQL-specific settings
+            # PostgreSQL-specific settings - more resilient SSL configuration
             base_options['connect_args'] = {
                 'connect_timeout': 10,
-                'sslmode': 'require',
+                'sslmode': 'prefer',  # More tolerant SSL mode
+                'sslcert': None,
+                'sslkey': None,
+                'sslrootcert': None,
                 'options': '-c statement_timeout=30s'
             }
         
