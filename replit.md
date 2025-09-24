@@ -39,6 +39,14 @@ PhotoVault is a professional photo management platform by Calmic Sdn Bhd, focusi
 - Email functionality includes 7-day invitation expiry with secure token-based invitation acceptance
 - All email security best practices maintained: no credential logging, secure token generation, proper timeout handling
 
+## September 24, 2025 - Navigation Menu Consistency Fix
+- Fixed navigation menu inconsistency across application pages  
+- Updated `gallery/dashboard.html` template to extend base.html instead of standalone HTML structure
+- Updated `index.html` template to extend base.html instead of standalone HTML structure
+- All pages now display complete navigation menu with all items: Dashboard, Upload, Gallery, Enhancement, Montage, People, Family, About
+- Verified consistent navigation experience across authenticated user pages
+- Application maintains professional UI consistency and user experience standards
+
 ## September 23, 2025 - Fresh GitHub Import Setup Complete (Latest)
 - Successfully imported fresh PhotoVault GitHub repository to Replit environment
 - Installed Python 3.11 with complete development toolchain (pip, poetry, pyright, debugpy)
