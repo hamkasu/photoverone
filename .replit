@@ -13,10 +13,6 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 5173
-externalPort = 5173
-
-[[ports]]
 localPort = 38157
 externalPort = 6000
 
@@ -88,33 +84,17 @@ author = "agent"
 task = "workflow.run"
 args = "PhotoVault Server"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "PhotoVault iOS"
-
 [[workflows.workflow]]
 name = "PhotoVault Server"
 author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py"
 waitForPort = 5000
 
-[[workflows.workflow]]
-name = "PhotoVault iOS"
-author = "agent"
-
 [workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd photovault-ios && npm start"
-waitForPort = 5173
+outputType = "webview"
 
 [deployment]
 deploymentTarget = "autoscale"
