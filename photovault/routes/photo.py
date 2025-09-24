@@ -23,6 +23,9 @@ from photovault.extensions import db
 from photovault.utils.face_detection import detect_faces_in_photo
 from photovault.utils.face_recognition import face_recognizer
 
+# Import file handling utilities
+from photovault.utils.file_handler import create_thumbnail
+
 # Create blueprint
 photo_bp = Blueprint('photo', __name__)
 
@@ -395,7 +398,13 @@ def annotate_photo(photo_id):
         # Create thumbnail for edited version
         thumbnail_filename = f"{base_name}_edited_{timestamp}_{unique_id}_thumb.jpg"
         thumbnail_path = os.path.join(user_upload_dir, thumbnail_filename)
-        create_thumbnail(edited_filepath, thumbnail_path)
+        success, result = create_thumbnail(edited_filepath)
+        if not success:
+            logger.error(f"Failed to create thumbnail: {result}")
+            # Continue without thumbnail, just log the error
+            thumbnail_path = None
+        else:
+            thumbnail_path = result
         
         # Update photo record with edited version info
         photo.edited_filename = edited_filename
@@ -411,8 +420,8 @@ def annotate_photo(photo_id):
             'success': True,
             'message': 'Annotated photo saved successfully',
             'edited_filename': edited_filename,
-            'thumbnail_url': url_for('uploaded_file', filename=f'{current_user.id}/{thumbnail_filename}'),
-            'edited_url': url_for('uploaded_file', filename=f'{current_user.id}/{edited_filename}')
+            'thumbnail_url': url_for('gallery.uploaded_file', filename=f'{current_user.id}/{thumbnail_filename}') if thumbnail_path else None,
+            'edited_url': url_for('gallery.uploaded_file', filename=f'{current_user.id}/{edited_filename}')
         })
         
     except Exception as e:
