@@ -11,6 +11,8 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 import { apiService } from '../services/api';
 
 const { width, height } = Dimensions.get('window');
@@ -59,9 +61,30 @@ export default function PhotoViewScreen({ route, navigation }) {
     }
   };
 
-  const handleShare = () => {
-    // TODO: Implement share functionality
-    Alert.alert('Share', 'Share functionality coming soon!');
+  const handleShare = async () => {
+    try {
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert('Share', 'Sharing is not available on this device');
+        return;
+      }
+
+      // Download the image to local storage first
+      const downloadPath = `${FileSystem.documentDirectory}${photo.filename}`;
+      const downloadObject = await FileSystem.downloadAsync(photo.url, downloadPath);
+      
+      if (downloadObject.status === 200) {
+        await Sharing.shareAsync(downloadObject.uri, {
+          mimeType: 'image/jpeg',
+          dialogTitle: 'Share Photo',
+        });
+      } else {
+        Alert.alert('Error', 'Failed to download photo for sharing');
+      }
+    } catch (error) {
+      console.error('Share error:', error);
+      Alert.alert('Error', 'Failed to share photo. Please try again.');
+    }
   };
 
   const handleEdit = () => {

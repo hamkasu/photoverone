@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,14 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { apiService } from '../services/api';
 
 export default function DashboardScreen({ navigation }) {
+  const [isUploading, setIsUploading] = useState(false);
   const menuItems = [
     {
       id: 'camera',
@@ -33,10 +37,7 @@ export default function DashboardScreen({ navigation }) {
       description: 'Upload from device',
       icon: 'cloud-upload',
       color: '#FF9500',
-      onPress: () => {
-        // TODO: Implement upload from device
-        console.log('Upload from device');
-      },
+      onPress: () => handleUploadFromDevice(),
     },
     {
       id: 'enhance',
@@ -51,17 +52,87 @@ export default function DashboardScreen({ navigation }) {
     },
   ];
 
+  const handleUploadFromDevice = async () => {
+    try {
+      // Request permission
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (!permissionResult.granted) {
+        Alert.alert(
+          'Permission Required',
+          'PhotoVault needs access to your photo library to upload photos.'
+        );
+        return;
+      }
+
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+        allowsMultipleSelection: false,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
+      setIsUploading(true);
+      
+      const asset = result.assets[0];
+      
+      // Upload the photo
+      const metadata = {
+        source: 'gallery',
+        timestamp: new Date().toISOString(),
+      };
+
+      await apiService.uploadCameraPhoto(asset.uri, metadata);
+
+      Alert.alert(
+        'Success',
+        'Photo uploaded successfully!',
+        [
+          {
+            text: 'View Gallery',
+            onPress: () => navigation.navigate('Gallery'),
+          },
+          {
+            text: 'OK',
+            style: 'cancel',
+          },
+        ]
+      );
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      Alert.alert(
+        'Upload Failed', 
+        'Failed to upload photo. Please try again.'
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const renderMenuItem = (item) => (
     <TouchableOpacity
       key={item.id}
-      style={styles.menuItem}
+      style={[
+        styles.menuItem, 
+        isUploading && item.id === 'upload' && styles.menuItemDisabled
+      ]}
       onPress={item.onPress}
+      disabled={isUploading && item.id === 'upload'}
     >
       <View style={[styles.iconContainer, { backgroundColor: item.color }]}>
         <Ionicons name={item.icon} size={30} color="#fff" />
       </View>
       <View style={styles.menuContent}>
-        <Text style={styles.menuTitle}>{item.title}</Text>
+        <Text style={styles.menuTitle}>
+          {isUploading && item.id === 'upload' ? 'Uploading...' : item.title}
+        </Text>
         <Text style={styles.menuDescription}>{item.description}</Text>
       </View>
       <Ionicons name="chevron-forward" size={20} color="#666" />
@@ -131,6 +202,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 15,
     marginBottom: 10,
+  },
+  menuItemDisabled: {
+    opacity: 0.6,
   },
   iconContainer: {
     width: 50,
