@@ -41,6 +41,9 @@ CALMIC SDN BHD - "Committed to Excellence"
                             <button class="btn btn-outline-info" onclick="showQuickAnnotation()" title="Quick annotation">
                                 <i class="bi bi-chat-square-text"></i>
                             </button>
+                            <button class="btn btn-outline-primary" onclick="autoDetectPhotos()" title="Auto-detect photos" id="autoDetectBtn">
+                                <i class="bi bi-search"></i> Auto-Detect
+                            </button>
                         </div>
                         
                         <!-- View Operations Group -->
@@ -840,6 +843,113 @@ function copyImageInfo() {
     } else {
         alert('Photo Information:\n' + info);
     }
+}
+
+// Auto-detect photos functionality
+function autoDetectPhotos() {
+    const btn = document.getElementById('autoDetectBtn');
+    const originalContent = btn.innerHTML;
+    
+    // Show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Detecting...';
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(`/api/photos/{{ photo.id }}/auto-detect`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.extracted_count > 0) {
+                const message = `Success! Detected ${data.detected_count} potential photos and extracted ${data.extracted_count} photos.\n\nThe extracted photos have been added to your gallery. You can find them by scrolling down or searching for "auto_extract" in your photos.`;
+                alert(message);
+                
+                // Optional: Show extracted photos preview
+                showExtractedPhotos(data.extracted_photos);
+            } else {
+                alert('No photos were detected in this image. Try with an image that contains multiple distinct photos, like a photo album page or collage.');
+            }
+        } else {
+            alert('Auto-detection failed: ' + (data.error || 'Unknown error occurred'));
+        }
+    })
+    .catch(error => {
+        console.error('Auto-detection error:', error);
+        alert('Auto-detection failed due to a network error. Please try again.');
+    })
+    .finally(() => {
+        // Restore button state
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+    });
+}
+
+function showExtractedPhotos(extractedPhotos) {
+    if (!extractedPhotos || extractedPhotos.length === 0) return;
+    
+    // Create a modal or sidebar showing extracted photos
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'extractedPhotosModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-images"></i> Extracted Photos (${extractedPhotos.length})
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        ${extractedPhotos.map((photo, index) => `
+                            <div class="col-md-4 mb-3">
+                                <div class="card">
+                                    <img src="${photo.thumbnail_url || photo.photo_url}" 
+                                         class="card-img-top" alt="Extracted photo ${index + 1}"
+                                         style="height: 150px; object-fit: cover;">
+                                    <div class="card-body p-2">
+                                        <p class="card-text small">
+                                            <strong>Confidence:</strong> ${Math.round(photo.confidence * 100)}%<br>
+                                            <strong>Size:</strong> ${photo.width}×${photo.height}
+                                        </p>
+                                        <div class="btn-group btn-group-sm w-100">
+                                            <a href="${photo.photo_url}" class="btn btn-outline-primary btn-sm" target="_blank">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                            <a href="/photo/${photo.id}" class="btn btn-outline-secondary btn-sm">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="/gallery" class="btn btn-primary">Go to Gallery</a>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    
+    // Remove modal from DOM when closed
+    modal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(modal);
+    });
 }
 </script>
 

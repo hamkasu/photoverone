@@ -26,6 +26,9 @@ from photovault.utils.face_recognition import face_recognizer
 # Import file handling utilities
 from photovault.utils.file_handler import create_thumbnail
 
+# Import photo detection utilities
+from photovault.utils.photo_detection import detect_photos_in_image, extract_detected_photos
+
 # Create blueprint
 photo_bp = Blueprint('photo', __name__)
 
@@ -1692,4 +1695,124 @@ def get_ai_metadata(photo_id):
         return jsonify({
             'success': False,
             'error': 'Failed to retrieve AI metadata'
+        }), 500
+
+@photo_bp.route('/api/photos/<int:photo_id>/auto-detect', methods=['POST'])
+@login_required
+def auto_detect_photos(photo_id):
+    """Automatically detect and extract photos from a larger image"""
+    try:
+        # Get the photo and verify ownership
+        photo = Photo.query.get_or_404(photo_id)
+        if photo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        # Get the original photo file path
+        if not photo.file_path or not os.path.exists(photo.file_path):
+            return jsonify({'success': False, 'error': 'Original photo file not found'}), 404
+        
+        logger.info(f"Starting auto-detection for photo {photo_id} by user {current_user.id}")
+        
+        # Detect photos in the image
+        detected_photos = detect_photos_in_image(photo.file_path)
+        
+        if not detected_photos:
+            return jsonify({
+                'success': True,
+                'message': 'No photos detected in the image',
+                'detected_count': 0,
+                'detected_photos': []
+            })
+        
+        # Create output directory for extracted photos
+        user_upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(current_user.id))
+        extract_dir = os.path.join(user_upload_dir, 'auto_extracted')
+        os.makedirs(extract_dir, exist_ok=True)
+        
+        # Extract detected photos
+        extracted_photos = extract_detected_photos(photo.file_path, extract_dir, detected_photos)
+        
+        # Save extracted photos to database
+        saved_photos = []
+        
+        for extracted in extracted_photos:
+            try:
+                # Generate secure filename
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                unique_id = str(uuid.uuid4())[:8]
+                base_name = f"{current_user.username}_auto_extract_{timestamp}_{unique_id}"
+                final_filename = f"{base_name}.jpg"
+                
+                # Move file to main upload directory
+                final_path = os.path.join(user_upload_dir, final_filename)
+                os.rename(extracted['file_path'], final_path)
+                
+                # Get image dimensions
+                with Image.open(final_path) as img:
+                    width, height = img.size
+                
+                # Create thumbnail using the imported utility function
+                from photovault.utils.file_handler import create_thumbnail as create_thumb_util
+                success, thumbnail_result = create_thumb_util(final_path)
+                thumbnail_path = thumbnail_result if success else None
+                
+                # Create Photo record
+                new_photo = Photo(
+                    filename=final_filename,
+                    file_path=final_path,
+                    thumbnail_path=thumbnail_path,
+                    user_id=current_user.id,
+                    width=width,
+                    height=height,
+                    file_size=os.path.getsize(final_path),
+                    upload_source='auto_extract'
+                )
+                
+                db.session.add(new_photo)
+                db.session.flush()  # Get the ID
+                
+                saved_photos.append({
+                    'id': new_photo.id,
+                    'filename': final_filename,
+                    'confidence': extracted['confidence'],
+                    'width': width,
+                    'height': height,
+                    'thumbnail_url': url_for('gallery.uploaded_file', filename=f'{current_user.id}/{os.path.basename(thumbnail_path)}') if thumbnail_path else None,
+                    'photo_url': url_for('gallery.uploaded_file', filename=f'{current_user.id}/{final_filename}')
+                })
+                
+            except Exception as e:
+                logger.error(f"Failed to save extracted photo: {e}")
+                continue
+        
+        db.session.commit()
+        
+        # Clean up temporary extraction directory
+        try:
+            import shutil
+            shutil.rmtree(extract_dir, ignore_errors=True)
+        except Exception as e:
+            logger.warning(f"Failed to cleanup extraction directory: {e}")
+        
+        logger.info(f"Auto-detection completed: {len(saved_photos)} photos extracted from photo {photo_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully detected and extracted {len(saved_photos)} photos',
+            'detected_count': len(detected_photos),
+            'extracted_count': len(saved_photos),
+            'detected_photos': [{
+                'x': p['x'], 'y': p['y'], 
+                'width': p['width'], 'height': p['height'],
+                'confidence': p['confidence']
+            } for p in detected_photos],
+            'extracted_photos': saved_photos
+        })
+        
+    except Exception as e:
+        logger.error(f"Auto-detection failed for photo {photo_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Failed to auto-detect photos'
         }), 500
