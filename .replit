@@ -98,5 +98,5 @@ outputType = "webview"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["gunicorn", "--bind=0.0.0.0:5000", "--reuse-port", "wsgi:app"]
+run = ["gunicorn", "--bind=0.0.0.0:5000", "--reuse-port", "main:app"]
 build = ["python", "-m", "flask", "db", "upgrade"]
