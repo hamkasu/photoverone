@@ -115,16 +115,25 @@ CALMIC SDN BHD - "Committed to Excellence"
                     <!-- Display thumbnail if available, fallback to full image -->
                     {% if photo.thumbnail_path %}
                         <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.thumbnail_path.split('/')[-1]) }}" 
-                             class="card-img-top" 
-                             alt="{{ photo.original_name }}">
+                             class="card-img-top photo-preview-trigger" 
+                             alt="{{ photo.original_name }}"
+                             onclick="showPhotoPreview({{ photo.id }})"
+                             style="cursor: pointer;"
+                             data-full-src="{% if photo.edited_filename %}{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}{% else %}{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}{% endif %}">
                     {% elif photo.edited_filename %}
                         <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
-                             class="card-img-top" 
-                             alt="{{ photo.original_name }} (Edited)">
+                             class="card-img-top photo-preview-trigger" 
+                             alt="{{ photo.original_name }} (Edited)"
+                             onclick="showPhotoPreview({{ photo.id }})"
+                             style="cursor: pointer;"
+                             data-full-src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}">
                     {% else %}
                         <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
-                             class="card-img-top" 
-                             alt="{{ photo.original_name }}">
+                             class="card-img-top photo-preview-trigger" 
+                             alt="{{ photo.original_name }}"
+                             onclick="showPhotoPreview({{ photo.id }})"
+                             style="cursor: pointer;"
+                             data-full-src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}">
                     {% endif %}
                 </div>
                 
@@ -565,6 +574,79 @@ function galleryZoomOut(button) {
 function galleryResetZoom(button) {
     const img = button.closest('.modal-content').querySelector('img');
     img.style.transform = 'scale(1)';
+}
+
+function showPhotoPreview(photoId) {
+    const photoCard = document.querySelector('[data-photo-id="' + photoId + '"]');
+    const img = photoCard.querySelector('img');
+    const fullSrc = img.getAttribute('data-full-src') || img.src;
+    const photoName = photoCard.querySelector('.card-text').textContent;
+    
+    // Get download URLs for both versions if available
+    const hasEditedBadge = photoCard.querySelector('.badge.bg-success');
+    const hasEdited = hasEditedBadge && hasEditedBadge.textContent.includes('Edited');
+    
+    let downloadButtons = '';
+    if (hasEdited) {
+        // Find download links in the existing dropdown
+        const dropdownItems = photoCard.querySelectorAll('.dropdown-menu .dropdown-item');
+        let editedDownload = '', originalDownload = '';
+        
+        dropdownItems.forEach(item => {
+            const text = item.textContent.trim();
+            if (text.includes('Download Edited')) {
+                editedDownload = item.href;
+            } else if (text.includes('Download Original')) {
+                originalDownload = item.href;
+            }
+        });
+        
+        downloadButtons = '<div class="btn-group me-2">' +
+            (editedDownload ? '<a href="' + editedDownload + '" class="btn btn-success" download><i class="bi bi-download me-1"></i>Download Edited</a>' : '') +
+            (originalDownload ? '<a href="' + originalDownload + '" class="btn btn-outline-secondary" download><i class="bi bi-camera me-1"></i>Download Original</a>' : '') +
+            '</div>';
+    } else {
+        const downloadLink = photoCard.querySelector('.dropdown-menu .dropdown-item[download]');
+        const downloadUrl = downloadLink ? downloadLink.href : fullSrc;
+        downloadButtons = '<a href="' + downloadUrl + '" class="btn btn-success me-2" download><i class="bi bi-download me-1"></i>Download Photo</a>';
+    }
+    
+    // Create preview modal
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = '<div class="modal-dialog modal-xl">' +
+        '<div class="modal-content">' +
+            '<div class="modal-header">' +
+                '<h5 class="modal-title">' + photoName + '</h5>' +
+                '<button type="button" class="btn-close" data-bs-dismiss="modal"></button>' +
+            '</div>' +
+            '<div class="modal-body text-center p-4">' +
+                '<img src="' + fullSrc + '" class="img-fluid rounded shadow-sm" style="max-height: 70vh; max-width: 100%; object-fit: contain;">' +
+            '</div>' +
+            '<div class="modal-footer justify-content-center">' +
+                downloadButtons +
+                '<div class="btn-group">' +
+                    '<button class="btn btn-outline-secondary" onclick="galleryZoomIn(this)" title="Zoom In">' +
+                        '<i class="bi bi-zoom-in"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-outline-secondary" onclick="galleryZoomOut(this)" title="Zoom Out">' +
+                        '<i class="bi bi-zoom-out"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-outline-secondary" onclick="galleryResetZoom(this)" title="Fit to Screen">' +
+                        '<i class="bi bi-aspect-ratio"></i>' +
+                    '</button>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    modal.addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(modal);
+    });
 }
 
 function quickMarkup(photoId) {

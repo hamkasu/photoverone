@@ -84,7 +84,8 @@ CALMIC SDN BHD - "Committed to Excellence"
                                 <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
                                      class="img-fluid rounded mb-2" 
                                      alt="{{ photo.original_name }}"
-                                     style="height: 200px; width: 100%; object-fit: cover;">
+                                     style="height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
+                                     onclick="showDashboardPreview('{{ photo.id }}', '{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}', '{{ photo.original_name }}')">
                             {% else %}
                                 <i class="fas fa-image fa-2x text-muted mb-2"></i>
                             {% endif %}
@@ -118,4 +119,74 @@ CALMIC SDN BHD - "Committed to Excellence"
 
 {% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+<script>
+function showDashboardPreview(photoId, imageSrc, photoName) {
+    // Create preview modal for dashboard photos
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = '<div class="modal-dialog modal-xl">' +
+        '<div class="modal-content">' +
+            '<div class="modal-header">' +
+                '<h5 class="modal-title">' + photoName + '</h5>' +
+                '<button type="button" class="btn-close" data-bs-dismiss="modal"></button>' +
+            '</div>' +
+            '<div class="modal-body text-center p-4">' +
+                '<img src="' + imageSrc + '" class="img-fluid rounded shadow-sm" style="max-height: 70vh; max-width: 100%; object-fit: contain;">' +
+            '</div>' +
+            '<div class="modal-footer justify-content-center">' +
+                '<a href="' + imageSrc + '" class="btn btn-success me-2" download="' + photoName + '">' +
+                    '<i class="bi bi-download me-1"></i>Download Photo' +
+                '</a>' +
+                '<div class="btn-group">' +
+                    '<button class="btn btn-outline-secondary" onclick="galleryZoomIn(this)" title="Zoom In">' +
+                        '<i class="bi bi-zoom-in"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-outline-secondary" onclick="galleryZoomOut(this)" title="Zoom Out">' +
+                        '<i class="bi bi-zoom-out"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-outline-secondary" onclick="galleryResetZoom(this)" title="Fit to Screen">' +
+                        '<i class="bi bi-aspect-ratio"></i>' +
+                    '</button>' +
+                '</div>' +
+                '<a href="{{ url_for("gallery.photos") }}" class="btn btn-outline-primary ms-2">' +
+                    '<i class="bi bi-images me-1"></i>View All Photos' +
+                '</a>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    modal.addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(modal);
+    });
+}
+
+function galleryZoomIn(button) {
+    const img = button.closest('.modal-content').querySelector('img');
+    const currentTransform = img.style.transform || 'scale(1)';
+    const scaleMatch = currentTransform.match(/scale\(([^)]+)\)/);
+    const currentScale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+    const newScale = Math.min(currentScale * 1.2, 3);
+    img.style.transform = 'scale(' + newScale + ')';
+    img.style.transformOrigin = 'center';
+}
+
+function galleryZoomOut(button) {
+    const img = button.closest('.modal-content').querySelector('img');
+    const currentTransform = img.style.transform || 'scale(1)';
+    const scaleMatch = currentTransform.match(/scale\(([^)]+)\)/);
+    const currentScale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+    const newScale = Math.max(currentScale / 1.2, 0.5);
+    img.style.transform = 'scale(' + newScale + ')';
+    img.style.transformOrigin = 'center';
+}
+
+function galleryResetZoom(button) {
+    const img = button.closest('.modal-content').querySelector('img');
+    img.style.transform = 'scale(1)';
+}
+</script>
 {% endblock %}
