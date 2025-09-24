@@ -82,6 +82,24 @@ PhotoVault is a professional photo management platform by Calmic Sdn Bhd, focusi
 - Application fully operational with complete feature set: photo management, user authentication, family vaults, image enhancement
 - All database connections and web interfaces verified working - ready for immediate use and development
 
+## September 24, 2025 - Photo Detection & Cropping Page Implementation
+- Created comprehensive photo detection and cropping functionality as a dedicated page
+- Implemented secure token-based file handling system with automatic expiry and cleanup
+- Added photo detection route blueprint (`photo_detection_bp`) with three main endpoints:
+  - `/photo-detection` - Main page interface for uploading and managing photo detection
+  - `/api/photo-detection/upload` - Secure upload endpoint with OpenCV-based photo detection processing
+  - `/api/photo-detection/extract` - Extract selected detected photos as separate images
+  - `/api/photo-detection/preview/<token>` - Secure token-based image preview endpoint
+- Created professional HTML template with drag-and-drop upload interface, real-time preview, and selection controls
+- Integrated existing OpenCV photo detection utilities (`PhotoDetector` class) for automatic rectangular photo identification
+- Added comprehensive security measures including user authorization, path traversal protection, and secure session management
+- Updated navigation menu to include "Detection" link with scissors icon for easy access
+- Implemented JavaScript functionality for file uploads, photo selection, progress tracking, and extraction workflow
+- Added Bootstrap 5 styling with professional UI components, loading overlays, and responsive design
+- All security vulnerabilities addressed: no file path exposure, secure token authentication, proper user ownership validation
+- Feature allows users to upload images containing multiple photos and automatically extract individual photos to their gallery
+- Perfect for digitizing photo albums, scanned documents, or collages with confidence-based photo detection scoring
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
