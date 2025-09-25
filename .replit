@@ -13,10 +13,6 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 39287
-externalPort = 5000
-
-[[ports]]
 localPort = 39459
 externalPort = 6000
 
@@ -93,7 +89,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "SECRET_KEY=Vw7VkCKEoKCZvfUGjdOJGWBv8LJ5fKWDTLyMgEVcKjU FLASK_ENV=development python main.py"
+args = "SECRET_KEY=bpt_0nO90G-7ZNZggHo7b5bHIk0pXDYAYtosnk14UR8 FLASK_ENV=development python main.py"
 waitForPort = 5000
 
 [deployment]
