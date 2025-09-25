@@ -97,10 +97,8 @@ CALMIC SDN BHD - "Committed to Excellence"
                        href="{{ url_for('upload.upload_page') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('upload.') %}page{% endif %}">
                         Upload
                     </a>
-                    <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('photo_detection.') }}" 
-                       href="{{ url_for('photo_detection.photo_detection_page') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('photo_detection.') %}page{% endif %}">
-                        <i class="bi bi-scissors"></i> Detection
-                    </a>
+                    <!-- Photo Detection disabled - OpenCV functionality removed -->
+                    <!-- <a class="nav-link" href="#"><i class="bi bi-scissors"></i> Detection (Disabled)</a> -->
                     <a class="nav-link {{ 'active' if request.endpoint and (request.endpoint == 'gallery.photos' or request.endpoint.startswith('gallery.')) }}" 
                        href="{{ url_for('gallery.photos') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('gallery.') %}page{% endif %}">
                         Gallery

@@ -84,7 +84,7 @@ def create_app(config_class=None):
     from photovault.routes.main import main_bp
     from photovault.routes.auth import auth_bp
     from photovault.routes.upload import upload_bp
-    from photovault.routes.photo_detection import photo_detection_bp
+    # from photovault.routes.photo_detection import photo_detection_bp  # DISABLED - OpenCV removed
     from photovault.routes.admin import admin_bp
     from photovault.routes.superuser import superuser_bp
     from photovault.routes.photo import photo_bp
@@ -96,7 +96,7 @@ def create_app(config_class=None):
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(upload_bp)
-    app.register_blueprint(photo_detection_bp)
+    # app.register_blueprint(photo_detection_bp)  # DISABLED - OpenCV removed
     app.register_blueprint(camera_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(superuser_bp, url_prefix='/superuser')
