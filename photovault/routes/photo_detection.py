@@ -202,7 +202,8 @@ def extract_detected_photos_api():
         try:
             from photovault.models import Photo
             from photovault.extensions import db
-            from photovault.utils.file_handler import get_image_dimensions, get_file_size
+            from photovault.utils.file_handler import get_image_dimensions
+            from PIL import Image
             
             for extracted_photo in extracted_photos:
                 file_path_full = extracted_photo['file_path']
@@ -210,25 +211,24 @@ def extract_detected_photos_api():
                 
                 # Get image metadata
                 width, height = get_image_dimensions(file_path_full)
-                file_size = get_file_size(file_path_full)
+                file_size = os.path.getsize(file_path_full)
                 
                 # Create relative path for database storage
                 user_upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(current_user.id))
                 relative_path = os.path.relpath(file_path_full, user_upload_dir)
                 
                 # Create new Photo record
-                new_photo = Photo(
-                    filename=filename,
-                    original_name=f"Extracted from {file_info['original_filename']}",
-                    file_path=relative_path,
-                    file_size=file_size,
-                    width=width,
-                    height=height,
-                    mime_type='image/jpeg',
-                    upload_source='photo_detection',
-                    user_id=current_user.id,
-                    processing_notes=f"Extracted via photo detection with {extracted_photo['confidence']:.2f} confidence"
-                )
+                new_photo = Photo()
+                new_photo.filename = filename
+                new_photo.original_name = f"Extracted from {file_info['original_filename']}"
+                new_photo.file_path = relative_path
+                new_photo.file_size = file_size
+                new_photo.width = width
+                new_photo.height = height
+                new_photo.mime_type = 'image/jpeg'
+                new_photo.upload_source = 'photo_detection'
+                new_photo.user_id = current_user.id
+                new_photo.processing_notes = f"Extracted via photo detection with {extracted_photo['confidence']:.2f} confidence"
                 
                 db.session.add(new_photo)
                 saved_photos.append({

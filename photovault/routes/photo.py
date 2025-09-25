@@ -340,13 +340,40 @@ def get_thumbnail(file_id):
 def list_photos():
     """List uploaded photos for the current user"""
     try:
-        # This would typically query your database
-        # For now, return a basic response
+        from photovault.models import Photo
+        from flask import url_for
+        
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        
+        # Query photos for current user
+        photos_query = Photo.query.filter_by(user_id=current_user.id).order_by(Photo.created_at.desc())
+        photos_paginated = photos_query.paginate(page=page, per_page=per_page, error_out=False)
+        
+        photo_list = []
+        for photo in photos_paginated.items:
+            photo_data = {
+                'id': photo.id,
+                'filename': photo.filename,
+                'original_name': photo.original_name,
+                'file_size': photo.file_size,
+                'width': photo.width,
+                'height': photo.height,
+                'upload_source': photo.upload_source,
+                'created_at': photo.created_at.isoformat(),
+                'url': url_for('gallery.uploaded_file', filename=photo.file_path, _external=True),
+                'thumbnail_url': url_for('gallery.uploaded_file', filename=photo.thumbnail_path, _external=True) if photo.thumbnail_path else None
+            }
+            photo_list.append(photo_data)
+        
         return jsonify({
             'success': True,
-            'photos': [],
-            'total': 0,
-            'message': 'Photo listing endpoint - implement with your database model'
+            'photos': photo_list,
+            'total': photos_paginated.total,
+            'pages': photos_paginated.pages,
+            'current_page': page,
+            'has_more': photos_paginated.has_next,
+            'per_page': per_page
         })
         
     except Exception as e:
