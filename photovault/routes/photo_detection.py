@@ -203,7 +203,6 @@ def extract_detected_photos_api():
             from photovault.models import Photo
             from photovault.extensions import db
             from photovault.utils.file_handler import get_image_dimensions, get_file_size
-            import os
             
             for extracted_photo in extracted_photos:
                 file_path_full = extracted_photo['file_path']
