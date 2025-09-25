@@ -5,7 +5,7 @@ nixPkgs = ["python311"]
 
 [phases.install]
 dependsOn = ["setup"]
-cmds = ["pip install --upgrade pip setuptools wheel", "pip install -r requirements.txt"]
+cmds = ["python -m pip install --upgrade pip setuptools wheel", "python -m pip install -r requirements.txt"]
 
 [phases.release]
 dependsOn = ["install"]
