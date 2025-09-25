@@ -16,6 +16,12 @@ def gallery():
     """Gallery index - redirect to photos"""
     return redirect(url_for('gallery.photos'))
 
+@gallery_bp.route('/gallery/photos')
+@login_required  
+def gallery_photos():
+    """Redirect gallery/photos to photos for compatibility"""
+    return redirect(url_for('gallery.photos'))
+
 @gallery_bp.route('/dashboard')
 @login_required
 def dashboard():
