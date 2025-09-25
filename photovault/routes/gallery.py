@@ -2,7 +2,7 @@
 PhotoVault Gallery Routes
 Simple gallery blueprint for photo management
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, abort, current_app, Response
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, send_file, abort, current_app, Response
 from flask_login import login_required, current_user
 import os
 from photovault.utils.enhanced_file_handler import get_file_content, file_exists_enhanced
@@ -14,6 +14,12 @@ gallery_bp = Blueprint('gallery', __name__)
 @login_required
 def gallery():
     """Gallery index - redirect to photos"""
+    return redirect(url_for('gallery.photos'))
+
+@gallery_bp.route('/gallery/photos')
+@login_required  
+def gallery_photos():
+    """Redirect gallery/photos to photos for compatibility"""
     return redirect(url_for('gallery.photos'))
 
 @gallery_bp.route('/dashboard')
@@ -237,9 +243,44 @@ def uploaded_file(user_id, filename):
                 abort(404)
         
         # Fallback to local filesystem
-        uploads_dir = os.path.join(current_app.config.get('UPLOAD_FOLDER', 'photovault/uploads'), str(user_id))
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'photovault/uploads')
+        uploads_dir = os.path.join(upload_folder, str(user_id))
         
-        return send_from_directory(uploads_dir, filename)
+        # Determine the actual file path to serve
+        if photo.file_path:
+            file_path = photo.file_path
+            
+            if os.path.isabs(file_path):
+                # Use absolute path directly
+                file_to_serve = file_path
+            elif file_path.startswith(upload_folder + '/'):
+                # Path already includes the upload folder root (e.g., "photovault/uploads/1/file.jpg")
+                file_to_serve = file_path
+            elif file_path.startswith('uploads/') or file_path.startswith('users/'):
+                # App Storage style path - strip the storage prefix and use with upload folder
+                # e.g., "uploads/123/file.jpg" -> "photovault/uploads/123/file.jpg"
+                # or "users/123/file.jpg" -> "photovault/uploads/123/file.jpg"
+                path_parts = file_path.split('/', 1)
+                if len(path_parts) > 1:
+                    relative_part = path_parts[1]  # "123/file.jpg"
+                    file_to_serve = os.path.join(upload_folder, relative_part)
+                else:
+                    file_to_serve = os.path.join(uploads_dir, file_path)
+            elif '/' in file_path and file_path.split('/')[0].isdigit():
+                # Bare user-relative path like "123/file.jpg" - map to upload folder
+                file_to_serve = os.path.join(upload_folder, file_path)
+            else:
+                # Relative path within user directory (e.g., "extracted_photos/file.jpg")
+                file_to_serve = os.path.join(uploads_dir, file_path)
+            
+            if os.path.exists(file_to_serve):
+                return send_file(file_to_serve)
+            else:
+                current_app.logger.error(f"File not found: {file_to_serve} (from photo.file_path: {file_path})")
+                abort(404)
+        else:
+            # No stored file_path, use filename from URL
+            return send_from_directory(uploads_dir, filename)
         
     except Exception as e:
         current_app.logger.error(f"Error serving file {filename} for user {user_id}: {e}")

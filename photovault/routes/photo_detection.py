@@ -197,6 +197,55 @@ def extract_detected_photos_api():
                 'error': 'Failed to extract photos'
             }), 500
         
+        # Save extracted photos to database
+        saved_photos = []
+        try:
+            from photovault.models import Photo
+            from photovault.extensions import db
+            from photovault.utils.file_handler import get_image_dimensions
+            from PIL import Image
+            
+            for extracted_photo in extracted_photos:
+                file_path_full = extracted_photo['file_path']
+                filename = extracted_photo['filename']
+                
+                # Get image metadata
+                width, height = get_image_dimensions(file_path_full)
+                file_size = os.path.getsize(file_path_full)
+                
+                # Create relative path for database storage
+                user_upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(current_user.id))
+                relative_path = os.path.relpath(file_path_full, user_upload_dir)
+                
+                # Create new Photo record
+                new_photo = Photo()
+                new_photo.filename = filename
+                new_photo.original_name = f"Extracted from {file_info['original_filename']}"
+                new_photo.file_path = relative_path
+                new_photo.file_size = file_size
+                new_photo.width = width
+                new_photo.height = height
+                new_photo.mime_type = 'image/jpeg'
+                new_photo.upload_source = 'photo_detection'
+                new_photo.user_id = current_user.id
+                new_photo.processing_notes = f"Extracted via photo detection with {extracted_photo['confidence']:.2f} confidence"
+                
+                db.session.add(new_photo)
+                saved_photos.append({
+                    'filename': filename,
+                    'width': width,
+                    'height': height,
+                    'confidence': extracted_photo['confidence']
+                })
+            
+            db.session.commit()
+            logger.info(f"Successfully saved {len(saved_photos)} extracted photos to database for user {current_user.id}")
+            
+        except Exception as e:
+            logger.error(f"Failed to save extracted photos to database: {e}")
+            db.session.rollback()
+            # Don't fail the entire operation, photos are still extracted to disk
+        
         # Clean up the temporary original file and token
         delete_file_enhanced(file_path)
         del _temp_files[token]
@@ -205,9 +254,9 @@ def extract_detected_photos_api():
         
         return jsonify({
             'success': True,
-            'extracted_photos': extracted_photos,
+            'extracted_photos': saved_photos,
             'extraction_count': len(extracted_photos),
-            'message': f'Successfully extracted {len(extracted_photos)} photo(s). They have been saved to your gallery.'
+            'message': f'Successfully extracted {len(extracted_photos)} photo(s) and saved them to your gallery.'
         })
         
     except Exception as e:
