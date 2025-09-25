@@ -68,8 +68,9 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or os.environ.get('DATABASE_URL') or \
         'sqlite:///' + os.path.join(os.path.dirname(os.path.abspath(__file__)), 'photovault_dev.db')
     
-    # Relaxed security for development
-    SESSION_COOKIE_SECURE = False
+    # Replit-compatible session settings for development
+    SESSION_COOKIE_SECURE = False  # Must be False for HTTP in development
+    SESSION_COOKIE_SAMESITE = 'Lax'  # Compatible with Replit proxy
     WTF_CSRF_SSL_STRICT = False
     
     def __init__(self):
@@ -109,6 +110,7 @@ class ProductionConfig(Config):
     
     # Railway-compatible security settings
     SESSION_COOKIE_SECURE = os.environ.get('HTTPS', 'true').lower() == 'true'
+    SESSION_COOKIE_SAMESITE = 'Lax'  # Required for Railway HTTPS environment
     WTF_CSRF_SSL_STRICT = os.environ.get('HTTPS', 'true').lower() == 'true'
     
     # Production logging
@@ -120,8 +122,9 @@ class ProductionConfig(Config):
         
         # Critical security checks
         if not (os.environ.get('SECRET_KEY') or os.environ.get('RAILWAY_SECRET_KEY')):
-            app.logger.critical('SECURITY RISK: SECRET_KEY not provided! Generated random key for this session only. '
-                              'Set SECRET_KEY environment variable immediately! User sessions will not persist across restarts.')
+            app.logger.critical('CRITICAL: SECRET_KEY not provided! Generated random key for this session only. '
+                              'User sessions WILL NOT persist across Railway restarts. '
+                              'Set SECRET_KEY environment variable in Railway dashboard immediately!')
         
         # Fail-fast if no database configured in production
         if not app.config.get('SQLALCHEMY_DATABASE_URI'):

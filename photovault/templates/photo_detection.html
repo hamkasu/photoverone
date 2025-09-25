@@ -231,8 +231,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Click to browse
-    uploadArea.addEventListener('click', function() {
+    // Click to browse - but don't trigger if clicking on buttons
+    uploadArea.addEventListener('click', function(e) {
+        // Don't trigger file input if clicking on buttons or interactive elements
+        if (e.target.tagName === 'BUTTON' || 
+            e.target.closest('button') || 
+            e.target.closest('.btn')) {
+            return;
+        }
         fileInput.click();
     });
 });
