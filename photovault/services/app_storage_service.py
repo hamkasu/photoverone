@@ -16,13 +16,6 @@ class AppStorageService:
     def __init__(self):
         """Initialize the App Storage client"""
         try:
-            # Check if we're in Replit environment
-            import os
-            if not os.environ.get('REPLIT_DB_URL') and not os.environ.get('REPL_ID'):
-                logger.info("Not in Replit environment, skipping App Storage initialization")
-                self.client = None
-                return
-                
             self.client = Client()
             logger.info("App Storage client initialized successfully")
         except Exception as e:
