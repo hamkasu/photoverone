@@ -2,16 +2,6 @@
 
 PhotoVault by Calmic Sdn Bhd is a professional photo management platform built with Flask. Its purpose is to provide secure storage, advanced editing, and comprehensive organization of photographs. It aims to deliver an enterprise-grade solution for personal and professional photo archiving, featuring robust security, role-based access control, user management, and administrative tools. The platform seeks to offer an efficient and secure environment for managing photo collections.
 
-# Recent Changes
-
-**September 2025 - OpenCV Removal for Replit Compatibility:**
-- Removed all OpenCV dependencies (opencv-python-headless, opencv-contrib-python-headless, scikit-image) due to compatibility issues
-- Disabled AI functionality including face detection, photo detection, and advanced image enhancement
-- Replaced AI services with disabled stub implementations to maintain code compatibility
-- Removed photo detection navigation from templates
-- Disabled TensorFlow.js manager to prevent client-side AI model loading
-- Application now runs cleanly without AI features while maintaining core photo management functionality
-
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -31,7 +21,8 @@ Preferred communication style: Simple, everyday language.
 - **Security**: Role-Based Access Control (User, Admin, Superuser), server-side input validation, file validation, CSRF protection via Flask-WTF, and decorator-based route protection. Password reset functionality implemented with secure token generation and email delivery.
 - **File Management**: Pillow for image manipulation, Werkzeug for secure filename handling, and organized storage for original and edited versions.
 - **API**: `/api` health check endpoint for monitoring.
-- **Image Processing**: Basic image processing using Pillow for standard photo operations (resize, format conversion). Advanced AI features (OpenCV, face detection, photo enhancement) have been removed for compatibility.
+- **Image Processing**: OpenCV-based advanced image processing for photo enhancement (CLAHE, bilateral filtering, auto-levels, brightness/contrast adjustments).
+- **Photo Detection & Cropping**: Dedicated functionality allows users to upload images containing multiple photos, automatically detect them using OpenCV, and extract individual photos. This includes secure token-based file handling and a drag-and-drop interface.
 - **Email Services**: Integration with Replit Mail for features like password reset and family vault invitations, utilizing secure token-based systems and branded HTML templates.
 
 ## Feature Specifications
@@ -55,6 +46,8 @@ Preferred communication style: Simple, everyday language.
 
 ## Image Processing
 - **Pillow**: Image manipulation and validation.
+- **OpenCV**: Advanced computer vision and photo enhancement.
+- **scikit-image**: Image processing library.
 
 ## Frontend Libraries
 - **Bootstrap 5**: CSS framework for responsive design.
