@@ -13,16 +13,16 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 38157
-externalPort = 6000
-
-[[ports]]
 localPort = 38513
 externalPort = 9000
 
 [[ports]]
 localPort = 39287
 externalPort = 5000
+
+[[ports]]
+localPort = 39459
+externalPort = 6000
 
 [[ports]]
 localPort = 41591
@@ -82,10 +82,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "PhotoVault Server"
+args = "PhotoVault Frontend"
 
 [[workflows.workflow]]
-name = "PhotoVault Server"
+name = "PhotoVault Frontend"
 author = "agent"
 
 [[workflows.workflow.tasks]]
