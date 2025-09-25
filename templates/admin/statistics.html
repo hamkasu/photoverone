@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% block title %}System Statistics - PhotoVault{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>System Statistics</h2>
+            <p class="text-muted">Detailed analytics and system overview</p>
+        </div>
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Admin Dashboard
+        </a>
+    </div>
+
+    <!-- Debug Information (Remove this section after fixing) -->
+    <div class="alert alert-info">
+        <h6>Debug Information:</h6>
+        <p><strong>Stats object exists:</strong> {{ "Yes" if stats else "No" }}</p>
+        {% if stats %}
+        <p><strong>Users total:</strong> {{ stats.users.total if stats.users else "N/A" }}</p>
+        <p><strong>Photos total:</strong> {{ stats.photos.total if stats.photos else "N/A" }}</p>
+        <p><strong>Storage total MB:</strong> {{ stats.storage.total_mb if stats.storage else "N/A" }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-gradient" style="background: linear-gradient(45deg, #007bff, #0056b3);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h3>{{ stats.users.total if stats and stats.users else 0 }}</h3>
+                            <p class="mb-0">Total Users</p>
+                            <small>+{{ stats.users.recent if stats and stats.users else 0 }} this month</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-people fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-gradient" style="background: linear-gradient(45deg, #28a745, #1e7e34);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h3>{{ stats.photos.total if stats and stats.photos else 0 }}</h3>
+                            <p class="mb-0">Total Photos</p>
+                            <small>+{{ stats.photos.recent_uploads if stats and stats.photos else 0 }} this month</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-images fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-gradient" style="background: linear-gradient(45deg, #ffc107, #e0a800);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h3>{{ stats.photos.edited if stats and stats.photos else 0 }}</h3>
+                            <p class="mb-0">Edited Photos</p>
+                            {% if stats and stats.photos and stats.photos.total > 0 %}
+                            <small>{{ "%.1f"|format((stats.photos.edited / stats.photos.total * 100)) }}% of total</small>
+                            {% else %}
+                            <small>0% of total</small>
+                            {% endif %}
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-pencil-square fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-gradient" style="background: linear-gradient(45deg, #17a2b8, #117a8b);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            {% if stats and stats.storage %}
+                            <h3>{{ stats.storage.total_gb if stats.storage.total_gb >= 1 else stats.storage.total_mb }}</h3>
+                            <p class="mb-0">{{ "GB" if stats.storage.total_gb >= 1 else "MB" }} Used</p>
+                            <small>Avg: {{ stats.storage.avg_file_size_kb }} KB/file</small>
+                            {% else %}
+                            <h3>0</h3>
+                            <p class="mb-0">MB Used</p>
+                            <small>Avg: 0 KB/file</small>
+                            {% endif %}
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-hdd-stack fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- User Statistics -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">User Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 class="text-primary">{{ stats.users.total if stats and stats.users else 0 }}</h4>
+                            <small class="text-muted">Total Users</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-warning">{{ stats.users.admins if stats and stats.users else 0 }}</h4>
+                            <small class="text-muted">Admins</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-danger">{{ stats.users.superusers if stats and stats.users else 0 }}</h4>
+                            <small class="text-muted">Superusers</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-6">
+                            <strong>New Users (30 days):</strong>
+                        </div>
+                        <div class="col-6 text-end">
+                            <span class="badge bg-success">{{ stats.users.recent if stats and stats.users else 0 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Photo Statistics -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Photo Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 class="text-primary">{{ stats.photos.total if stats and stats.photos else 0 }}</h4>
+                            <small class="text-muted">Total Photos</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-success">{{ stats.photos.edited if stats and stats.photos else 0 }}</h4>
+                            <small class="text-muted">Edited</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-secondary">{{ stats.photos.original_only if stats and stats.photos else 0 }}</h4>
+                            <small class="text-muted">Original Only</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-6">
+                            <strong>New Uploads (30 days):</strong>
+                        </div>
+                        <div class="col-6 text-end">
+                            <span class="badge bg-info">{{ stats.photos.recent_uploads if stats and stats.photos else 0 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Storage Statistics -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Storage Usage</h5>
+                </div>
+                <div class="card-body">
+                    {% if stats and stats.storage %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Total Storage Used:</span>
+                            <strong>{{ stats.storage.total_mb }} MB ({{ stats.storage.total_gb }} GB)</strong>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Average File Size:</span>
+                            <strong>{{ stats.storage.avg_file_size_kb }} KB</strong>
+                        </div>
+                    </div>
+                    <div class="progress" style="height: 20px;">
+                        {% set usage_percentage = (stats.storage.total_mb / 1000 * 100)|round(1) if stats.storage.total_mb else 0 %}
+                        <div class="progress-bar {% if usage_percentage > 80 %}bg-danger{% elif usage_percentage > 60 %}bg-warning{% else %}bg-info{% endif %}" 
+                             role="progressbar" style="width: {{ usage_percentage if usage_percentage <= 100 else 100 }}%">
+                            {{ usage_percentage }}% of 1GB
+                        </div>
+                    </div>
+                    <small class="text-muted">Storage usage visualization (assuming 1GB limit)</small>
+                    {% else %}
+                    <p class="text-muted">No storage information available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Most Active Users -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Most Active Users</h5>
+                </div>
+                <div class="card-body">
+                    {% if stats and stats.most_active_users and stats.most_active_users|length > 0 %}
+                    <div class="list-group list-group-flush">
+                        {% for user_data in stats.most_active_users %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span>{{ user_data[0] }}</span>
+                            <span class="badge bg-primary rounded-pill">{{ user_data[1] }} photos</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No photo uploads yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Analysis -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Analysis Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">User Engagement</h5>
+                                    <p class="card-text">
+                                        {% if stats and stats.most_active_users and stats.users %}
+                                        {% set active_users = stats.most_active_users|length %}
+                                        {{ "%.1f"|format((active_users / stats.users.total * 100) if stats.users.total > 0 else 0) }}%
+                                        {% else %}
+                                        0%
+                                        {% endif %}
+                                    </p>
+                                    <small class="text-muted">Users with uploads</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Edit Rate</h5>
+                                    <p class="card-text">
+                                        {% if stats and stats.photos %}
+                                        {{ "%.1f"|format((stats.photos.edited / stats.photos.total * 100) if stats.photos.total > 0 else 0) }}%
+                                        {% else %}
+                                        0%
+                                        {% endif %}
+                                    </p>
+                                    <small class="text-muted">Photos that get edited</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Avg per User</h5>
+                                    <p class="card-text">
+                                        {% if stats and stats.photos and stats.users %}
+                                        {{ "%.1f"|format((stats.photos.total / stats.users.total) if stats.users.total > 0 else 0) }}
+                                        {% else %}
+                                        0
+                                        {% endif %}
+                                    </p>
+                                    <small class="text-muted">Photos per user</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card-body i.fs-1 {
+    opacity: 0.8;
+}
+
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

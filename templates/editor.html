@@ -1,0 +1,163 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+-->
+
+<!-- photovault/templates/editor.html -->
+{% extends "base.html" %}
+{% block title %}Edit Photo - PhotoVault{% endblock %}
+
+{% block extra_css %}
+    <!-- Ensure CSRF token is available for the editor -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+    <div class="row">
+        <div class="col-md-8">
+            <canvas id="canvas"></canvas>
+            <!-- Load the ORIGINAL image as the source for editing -->
+            <img id="sourceImage" src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" style="display: none;">
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Editing Tools</h5>
+                    <small class="text-muted">Editing: {{ photo.original_name }}</small>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Brightness</label>
+                        <input type="range" class="form-range" id="brightness" min="-100" max="100" value="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contrast</label>
+                        <input type="range" class="form-range" id="contrast" min="-100" max="100" value="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Saturation</label>
+                        <input type="range" class="form-range" id="saturation" min="-100" max="100" value="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rotation</label>
+                        <input type="range" class="form-range" id="rotation" min="0" max="360" value="0">
+                    </div>
+
+                    <h6>Markup Tools</h6>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-lg-4 mb-2">
+                            <button class="btn btn-outline-primary btn-sm w-100" onclick="setTool('pen')" title="Pen">
+                                <i class="bi bi-pen"></i>
+                            </button>
+                        </div>
+                        <div class="col-6 col-lg-4 mb-2">
+                            <button class="btn btn-outline-primary btn-sm w-100" onclick="setTool('highlight')" title="Highlight">
+                                <i class="bi bi-highlighter"></i>
+                            </button>
+                        </div>
+                        <div class="col-6 col-lg-4 mb-2">
+                            <button class="btn btn-outline-primary btn-sm w-100" onclick="setTool('arrow')" title="Arrow">
+                                <i class="bi bi-arrow-up-right"></i>
+                            </button>
+                        </div>
+                        <div class="col-6 col-lg-4 mb-2">
+                            <button class="btn btn-outline-primary btn-sm w-100" onclick="setTool('rectangle')" title="Rectangle">
+                                <i class="bi bi-square"></i>
+                            </button>
+                        </div>
+                        <div class="col-6 col-lg-4 mb-2">
+                            <button class="btn btn-outline-primary btn-sm w-100" onclick="setTool('circle')" title="Circle">
+                                <i class="bi bi-circle"></i>
+                            </button>
+                        </div>
+                        <div class="col-6 col-lg-4 mb-2">
+                            <button class="btn btn-outline-primary btn-sm w-100" onclick="setTool('text')" title="Add Text">
+                                <i class="bi bi-fonts"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <input type="text" id="textInput" class="form-control form-control-sm" placeholder="Enter text..." style="display: none;">
+                    </div>
+
+                    <!-- Modified Color Picker Section -->
+                    <div class="mb-3">
+                        <label for="drawColor" class="form-label">Color</label>
+                        <!-- Added style to fix height/width -->
+                        <input type="color" class="form-control form-control-color" id="drawColor" value="#ff0000" style="height: 40px; width: 60px; padding: 5px;">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Line Width: <span id="lineWidthValue">3</span>px</label>
+                        <input type="range" class="form-range" id="lineWidth" min="1" max="20" value="3">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Font Size: <span id="fontSizeValue">16</span>px</label>
+                        <input type="range" class="form-range" id="fontSize" min="12" max="72" value="16">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="fillShapes">
+                            <label class="form-check-label" for="fillShapes">
+                                Fill shapes
+                            </label>
+                        </div>
+                    </div>
+                    <!-- End Modified Color Picker Section -->
+
+                    <hr>
+                    <div class="mb-3">
+                        <div class="btn-group w-100 mb-2" role="group">
+                            <button class="btn btn-outline-secondary" onclick="undo()" title="Undo (Ctrl+Z)">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="redo()" title="Redo (Ctrl+Y)">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-success w-100 mb-2" onclick="saveEdit()">
+                        <i class="bi bi-save"></i> Save Changes
+                    </button>
+                    <button class="btn btn-warning w-100 mb-2" onclick="resetImage()">
+                        <i class="bi bi-arrow-clockwise"></i> Reset Canvas
+                    </button>
+                     <!-- Optional Enhancement: Reset to Original Base Image -->
+                     <button class="btn btn-secondary w-100 mb-2" onclick="resetToOriginalImage()">
+                        <i class="bi bi-file-image"></i> Reload Original Image
+                    </button>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-dark w-100">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/editor.js') }}"></script>
+<script src="{{ url_for('static', filename='js/editor-enhanced.js') }}"></script>
+<script>
+    // Pass the photo ID to the JavaScript
+    const photoId = {{ photo.id }};
+    
+    // Override the original startDrawing to save state
+    const originalStartDrawing = startDrawing;
+    startDrawing = function(e) {
+        saveStateBeforeDrawing();
+        originalStartDrawing(e);
+    };
+</script>
+{% endblock %}

@@ -1,0 +1,185 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+-->
+
+{% extends "base.html" %}
+{% block title %}Family Vaults - PhotoVault{% endblock %}
+{% block extra_css %}
+<style>
+.vault-card {
+    transition: transform 0.2s ease;
+}
+.vault-card:hover {
+    transform: translateY(-2px);
+}
+.vault-code {
+    font-family: 'Courier New', monospace;
+    background-color: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-people"></i> Family Vaults
+                    </h4>
+                    <div>
+                        <a href="{{ url_for('family.create_vault') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Create Vault
+                        </a>
+                        <a href="{{ url_for('family.join_vault') }}" class="btn btn-outline-primary ms-2">
+                            <i class="bi bi-box-arrow-in-right"></i> Join Vault
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Created Vaults -->
+                    {% if created_vaults %}
+                    <div class="mb-4">
+                        <h5 class="text-primary">My Vaults</h5>
+                        <div class="row">
+                            {% for vault in created_vaults %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card vault-card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title d-flex align-items-center">
+                                            <i class="bi bi-shield-lock me-2"></i>
+                                            {{ vault.name }}
+                                        </h6>
+                                        <p class="card-text text-muted small">
+                                            {{ vault.description or "No description" }}
+                                        </p>
+                                        <p class="card-text">
+                                            <span class="vault-code">{{ vault.vault_code }}</span>
+                                        </p>
+                                        <p class="card-text">
+                                            <i class="bi bi-people"></i> {{ vault.member_count or 0 }} members
+                                            <br>
+                                            <i class="bi bi-images"></i> {{ vault.photo_count or 0 }} photos
+                                        </p>
+                                    </div>
+                                    <div class="card-footer">
+                                        <a href="{{ url_for('family.view_vault', vault_id=vault.id) }}" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                        <a href="{{ url_for('family.invite_member', vault_id=vault.id) }}" class="btn btn-outline-primary btn-sm ms-2">
+                                            <i class="bi bi-person-plus"></i> Invite
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Member Vaults -->
+                    {% if member_vaults %}
+                    <div class="mb-4">
+                        <h5 class="text-success">Member Of</h5>
+                        <div class="row">
+                            {% for vault in member_vaults %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card vault-card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title d-flex align-items-center">
+                                            <i class="bi bi-people me-2"></i>
+                                            {{ vault.name }}
+                                        </h6>
+                                        <p class="card-text text-muted small">
+                                            {{ vault.description or "No description" }}
+                                        </p>
+                                        <p class="card-text">
+                                            <i class="bi bi-people"></i> {{ vault.member_count or 0 }} members
+                                            <br>
+                                            <i class="bi bi-images"></i> {{ vault.photo_count or 0 }} photos
+                                        </p>
+                                    </div>
+                                    <div class="card-footer">
+                                        <a href="{{ url_for('family.view_vault', vault_id=vault.id) }}" class="btn btn-success btn-sm">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Pending Invitations -->
+                    {% if pending_invitations %}
+                    <div class="mb-4">
+                        <h5 class="text-warning">Pending Invitations</h5>
+                        <div class="row">
+                            {% for invitation in pending_invitations %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card border-warning">
+                                    <div class="card-body">
+                                        <h6 class="card-title d-flex align-items-center">
+                                            <i class="bi bi-envelope me-2"></i>
+                                            {{ invitation.vault.name }}
+                                        </h6>
+                                        <p class="card-text text-muted small">
+                                            Invited as: <strong>{{ invitation.role }}</strong>
+                                        </p>
+                                        <p class="card-text small">
+                                            <i class="bi bi-calendar"></i> Expires: {{ invitation.expires_at.strftime('%Y-%m-%d') }}
+                                        </p>
+                                    </div>
+                                    <div class="card-footer">
+                                        <a href="{{ url_for('family.accept_invitation', token=invitation.invitation_token) }}" class="btn btn-warning btn-sm">
+                                            <i class="bi bi-check-circle"></i> Accept
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Empty State -->
+                    {% if not created_vaults and not member_vaults and not pending_invitations %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-people" style="font-size: 4rem; color: #6c757d;"></i>
+                        <h5 class="mt-3 text-muted">No Family Vaults Yet</h5>
+                        <p class="text-muted">Create your first family vault to start sharing memories with loved ones</p>
+                        <div class="mt-4">
+                            <a href="{{ url_for('family.create_vault') }}" class="btn btn-primary me-2">
+                                <i class="bi bi-plus-circle"></i> Create Your First Vault
+                            </a>
+                            <a href="{{ url_for('family.join_vault') }}" class="btn btn-outline-primary">
+                                <i class="bi bi-box-arrow-in-right"></i> Join Existing Vault
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="card mt-3">
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-house"></i> Back to Dashboard
+                        </a>
+                        <a href="{{ url_for('main.people') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-person"></i> Manage People
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

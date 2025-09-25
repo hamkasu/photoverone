@@ -1,0 +1,769 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+-->
+
+{% extends "base.html" %}
+{% block title %}Advanced Image Enhancement - PhotoVault{% endblock %}
+
+{% block extra_css %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+.enhancement-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 90vh;
+    padding: 2rem 0;
+}
+
+.feature-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+
+.opencv-badge {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.enhancement-preview {
+    border-radius: 10px;
+    max-width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+}
+
+.tool-section {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.processing-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    display: none;
+}
+
+.processing-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    max-width: 400px;
+}
+
+.btn-enhance {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.btn-enhance:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+.before-after-container {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.image-container {
+    flex: 1;
+    min-width: 300px;
+    text-align: center;
+}
+
+.canvas-editor {
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    max-width: 100%;
+    background: white;
+}
+
+@media (max-width: 768px) {
+    .before-after-container {
+        flex-direction: column;
+    }
+    
+    .image-container {
+        min-width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="enhancement-container">
+    <div class="container">
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-12 text-center text-white">
+                <h1 class="display-4 mb-3">
+                    <i class="bi bi-magic"></i> Advanced Image Enhancement
+                </h1>
+                <p class="lead mb-4">Professional-grade image processing powered by OpenCV computer vision</p>
+                {% if opencv_available %}
+                    <span class="opencv-badge">
+                        <i class="bi bi-cpu"></i> OpenCV Powered
+                    </span>
+                {% else %}
+                    <div class="alert alert-warning d-inline-block">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        OpenCV not available - limited features
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Photo Selection or Current Photo -->
+        {% if not photo %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="feature-card p-4">
+                    <h4 class="mb-3"><i class="bi bi-images"></i> Select Photo to Enhance</h4>
+                    <div class="row">
+                        {% for p in photos %}
+                        <div class="col-md-3 col-sm-4 col-6 mb-3">
+                            <div class="card">
+                                <img src="{{ url_for('gallery.uploaded_file', user_id=p.user_id, filename=p.filename) }}" 
+                                     class="card-img-top" style="height: 150px; object-fit: cover;">
+                                <div class="card-body p-2">
+                                    <small class="text-muted">{{ p.original_name[:20] }}...</small>
+                                    <a href="{{ url_for('main.enhance_photo', photo_id=p.id) }}" 
+                                       class="btn btn-primary btn-sm w-100 mt-1">
+                                        <i class="bi bi-magic"></i> Enhance
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if not photos %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-image" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted mt-2">No photos available. Upload some photos first!</p>
+                        <a href="{{ url_for('main.upload') }}" class="btn btn-primary">
+                            <i class="bi bi-upload"></i> Upload Photos
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Main Enhancement Interface -->
+        {% if photo %}
+        <div class="row">
+            <!-- Left Column: Enhancement Tools -->
+            <div class="col-lg-4">
+                <div class="feature-card p-3 mb-4">
+                    <h5 class="mb-3">
+                        <i class="bi bi-gear-fill"></i> Enhancement Settings
+                    </h5>
+                    <small class="text-muted mb-3 d-block">Enhancing: {{ photo.original_name }}</small>
+
+                    <!-- OpenCV Processing Tools -->
+                    {% if opencv_available %}
+                    <div class="tool-section">
+                        <h6 class="text-dark mb-3">
+                            <i class="bi bi-cpu"></i> OpenCV Processing
+                        </h6>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableCLAHE" checked>
+                                <label class="form-check-label text-dark" for="enableCLAHE">
+                                    <strong>CLAHE Enhancement</strong><br>
+                                    <small>Contrast Limited Adaptive Histogram Equalization</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableDenoising" checked>
+                                <label class="form-check-label text-dark" for="enableDenoising">
+                                    <strong>Bilateral Filtering</strong><br>
+                                    <small>Noise reduction while preserving edges</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableAutoLevels" checked>
+                                <label class="form-check-label text-dark" for="enableAutoLevels">
+                                    <strong>Auto-Levels</strong><br>
+                                    <small>Automatic histogram stretching</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-enhance w-100 mb-2" onclick="applyOpenCVEnhancement()">
+                            <i class="bi bi-magic"></i> Apply OpenCV Enhancement
+                        </button>
+                    </div>
+                    {% endif %}
+
+                    <!-- Manual Adjustments -->
+                    <div class="tool-section">
+                        <h6 class="text-dark mb-3">
+                            <i class="bi bi-sliders"></i> Manual Adjustments
+                        </h6>
+                        
+                        <div class="mb-3">
+                            <label class="form-label text-dark">Brightness: <span id="brightnessValue">1.0</span></label>
+                            <input type="range" class="form-range" id="brightness" min="0.1" max="2.0" step="0.1" value="1.0">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-dark">Contrast: <span id="contrastValue">1.0</span></label>
+                            <input type="range" class="form-range" id="contrast" min="0.1" max="3.0" step="0.1" value="1.0">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-dark">Color/Saturation: <span id="colorValue">1.0</span></label>
+                            <input type="range" class="form-range" id="color" min="0.0" max="2.0" step="0.1" value="1.0">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-dark">Sharpness: <span id="sharpnessValue">1.0</span></label>
+                            <input type="range" class="form-range" id="sharpness" min="0.1" max="2.5" step="0.1" value="1.0">
+                        </div>
+
+                        <button class="btn btn-enhance w-100 mb-2" onclick="applyManualEnhancement()">
+                            <i class="bi bi-sliders"></i> Apply Manual Adjustments
+                        </button>
+                    </div>
+
+                    <!-- Canvas Editor Tools -->
+                    <div class="tool-section">
+                        <h6 class="text-dark mb-3">
+                            <i class="bi bi-brush"></i> Canvas Editor
+                        </h6>
+                        
+                        <div class="row g-2 mb-3">
+                            <div class="col-4">
+                                <button class="btn btn-outline-dark btn-sm w-100" onclick="setCanvasTool('pen')" title="Pen">
+                                    <i class="bi bi-pen"></i>
+                                </button>
+                            </div>
+                            <div class="col-4">
+                                <button class="btn btn-outline-dark btn-sm w-100" onclick="setCanvasTool('highlight')" title="Highlight">
+                                    <i class="bi bi-highlighter"></i>
+                                </button>
+                            </div>
+                            <div class="col-4">
+                                <button class="btn btn-outline-dark btn-sm w-100" onclick="setCanvasTool('text')" title="Text">
+                                    <i class="bi bi-fonts"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label text-dark">Color</label>
+                            <input type="color" class="form-control form-control-color" id="canvasColor" value="#ff0000">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-dark">Line Width: <span id="lineWidthValue">3</span>px</label>
+                            <input type="range" class="form-range" id="lineWidth" min="1" max="20" value="3">
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success" onclick="saveEnhanced()">
+                            <i class="bi bi-save"></i> Save Enhanced Version
+                        </button>
+                        <button class="btn btn-warning" onclick="resetImage()">
+                            <i class="bi bi-arrow-clockwise"></i> Reset to Original
+                        </button>
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-dark">
+                            <i class="bi bi-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Image Preview -->
+            <div class="col-lg-8">
+                <div class="feature-card p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5><i class="bi bi-image"></i> Image Preview</h5>
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="viewMode" id="original" checked autocomplete="off">
+                            <label class="btn btn-outline-primary btn-sm" for="original">Original</label>
+
+                            <input type="radio" class="btn-check" name="viewMode" id="enhanced" autocomplete="off">
+                            <label class="btn btn-outline-primary btn-sm" for="enhanced">Enhanced</label>
+
+                            <input type="radio" class="btn-check" name="viewMode" id="sideBySide" autocomplete="off">
+                            <label class="btn btn-outline-primary btn-sm" for="sideBySide">Side by Side</label>
+                        </div>
+                    </div>
+
+                    <!-- Image Display Area -->
+                    <div id="imageDisplayArea">
+                        <!-- Single Image View -->
+                        <div id="singleImageView">
+                            <div class="text-center">
+                                <img id="mainImage" 
+                                     src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}"
+                                     class="enhancement-preview" 
+                                     alt="{{ photo.original_name }}">
+                                <canvas id="canvasEditor" class="canvas-editor" style="display: none;"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Side by Side View -->
+                        <div id="sideBySideView" style="display: none;">
+                            <div class="before-after-container">
+                                <div class="image-container">
+                                    <h6>Original</h6>
+                                    <img id="originalImage" 
+                                         src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}"
+                                         class="enhancement-preview" 
+                                         alt="Original">
+                                </div>
+                                <div class="image-container">
+                                    <h6>Enhanced</h6>
+                                    <img id="enhancedImage" 
+                                         src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}"
+                                         class="enhancement-preview" 
+                                         alt="Enhanced">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature Information -->
+                <div class="feature-card p-3 mt-3">
+                    <h6><i class="bi bi-info-circle"></i> Enhancement Features</h6>
+                    <div class="row text-center">
+                        <div class="col-md-3 col-6 mb-2">
+                            <div class="p-2">
+                                <i class="bi bi-eye" style="font-size: 1.5rem; color: #667eea;"></i>
+                                <br><small><strong>CLAHE</strong><br>Contrast Enhancement</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-2">
+                            <div class="p-2">
+                                <i class="bi bi-funnel" style="font-size: 1.5rem; color: #667eea;"></i>
+                                <br><small><strong>Bilateral</strong><br>Noise Reduction</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-2">
+                            <div class="p-2">
+                                <i class="bi bi-graph-up" style="font-size: 1.5rem; color: #667eea;"></i>
+                                <br><small><strong>Auto-Levels</strong><br>Histogram Stretch</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-2">
+                            <div class="p-2">
+                                <i class="bi bi-brush" style="font-size: 1.5rem; color: #667eea;"></i>
+                                <br><small><strong>Canvas</strong><br>Manual Editing</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Processing Overlay -->
+<div id="processingOverlay" class="processing-overlay">
+    <div class="processing-content">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h5>Processing Image...</h5>
+        <p class="text-muted mb-0">Applying OpenCV enhancements. This may take a moment.</p>
+    </div>
+</div>
+
+<!-- Hidden elements -->
+{% if photo %}
+<img id="sourceImage" src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" style="display: none;">
+{% endif %}
+
+<script>
+// Global variables
+const photoId = {{ photo.id if photo else 'null' }};
+let currentTool = 'pen';
+let canvas, ctx;
+let originalImageData = null;
+let enhancedImageData = null;
+
+// Initialize the enhancement interface
+document.addEventListener('DOMContentLoaded', function() {
+    {% if photo %}
+    initializeCanvas();
+    setupEventListeners();
+    {% endif %}
+});
+
+function initializeCanvas() {
+    canvas = document.getElementById('canvasEditor');
+    if (canvas) {
+        ctx = canvas.getContext('2d');
+        
+        const mainImage = document.getElementById('mainImage');
+        const sourceImage = document.getElementById('sourceImage');
+        
+        // Set canvas size to match image
+        sourceImage.onload = function() {
+            canvas.width = this.naturalWidth;
+            canvas.height = this.naturalHeight;
+            
+            // Draw original image to canvas
+            ctx.drawImage(this, 0, 0);
+            originalImageData = canvas.toDataURL();
+        };
+        
+        if (sourceImage.complete) {
+            sourceImage.onload();
+        }
+    }
+}
+
+function setupEventListeners() {
+    // View mode change
+    document.querySelectorAll('input[name="viewMode"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            toggleViewMode(this.id);
+        });
+    });
+    
+    // Range sliders
+    ['brightness', 'contrast', 'color', 'sharpness', 'lineWidth'].forEach(id => {
+        const slider = document.getElementById(id);
+        if (slider) {
+            slider.addEventListener('input', function() {
+                document.getElementById(id + 'Value').textContent = this.value;
+            });
+        }
+    });
+    
+    // Canvas drawing events
+    if (canvas) {
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+    }
+}
+
+function toggleViewMode(mode) {
+    const singleView = document.getElementById('singleImageView');
+    const sideBySideView = document.getElementById('sideBySideView');
+    const canvasEditor = document.getElementById('canvasEditor');
+    const mainImage = document.getElementById('mainImage');
+    
+    switch(mode) {
+        case 'original':
+            singleView.style.display = 'block';
+            sideBySideView.style.display = 'none';
+            canvasEditor.style.display = 'none';
+            mainImage.style.display = 'block';
+            break;
+        case 'enhanced':
+            singleView.style.display = 'block';
+            sideBySideView.style.display = 'none';
+            canvasEditor.style.display = 'block';
+            mainImage.style.display = 'none';
+            break;
+        case 'sideBySide':
+            singleView.style.display = 'none';
+            sideBySideView.style.display = 'block';
+            break;
+    }
+}
+
+function applyOpenCVEnhancement() {
+    if (!photoId) {
+        alert('No photo selected');
+        return;
+    }
+    
+    const settings = {
+        clahe_enabled: document.getElementById('enableCLAHE').checked,
+        denoise: document.getElementById('enableDenoising').checked,
+        auto_levels: document.getElementById('enableAutoLevels').checked,
+        brightness: parseFloat(document.getElementById('brightness').value),
+        contrast: parseFloat(document.getElementById('contrast').value),
+        color: parseFloat(document.getElementById('color').value),
+        sharpness: parseFloat(document.getElementById('sharpness').value)
+    };
+    
+    showProcessing();
+    
+    // Get CSRF token properly
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(`/api/photos/${photoId}/enhance`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ settings: settings })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideProcessing();
+        if (data.success) {
+            // Update enhanced image
+            document.getElementById('enhancedImage').src = data.enhanced_url + '?t=' + Date.now();
+            
+            // Switch to enhanced view
+            document.getElementById('enhanced').checked = true;
+            toggleViewMode('enhanced');
+            
+            // Update canvas with enhanced image
+            const img = new Image();
+            img.onload = function() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+                enhancedImageData = canvas.toDataURL();
+            };
+            img.src = data.enhanced_url + '?t=' + Date.now();
+            
+            showAlert('Enhancement applied successfully!', 'success');
+        } else {
+            showAlert('Enhancement failed: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        hideProcessing();
+        console.error('Error:', error);
+        showAlert('Enhancement failed: ' + error.message, 'danger');
+    });
+}
+
+function applyManualEnhancement() {
+    // Apply manual adjustments using canvas filters
+    if (!originalImageData) return;
+    
+    const img = new Image();
+    img.onload = function() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Apply CSS filters to the canvas context
+        const brightness = document.getElementById('brightness').value;
+        const contrast = document.getElementById('contrast').value;
+        const saturation = document.getElementById('color').value;
+        
+        ctx.filter = `brightness(${brightness}) contrast(${contrast}) saturate(${saturation})`;
+        ctx.drawImage(img, 0, 0);
+        ctx.filter = 'none'; // Reset filter
+        
+        // Switch to enhanced view
+        document.getElementById('enhanced').checked = true;
+        toggleViewMode('enhanced');
+        
+        showAlert('Manual adjustments applied!', 'success');
+    };
+    img.src = originalImageData;
+}
+
+function setCanvasTool(tool) {
+    currentTool = tool;
+    
+    // Update button states
+    document.querySelectorAll('.btn-outline-light').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.closest('button').classList.add('active');
+}
+
+// Canvas drawing functions
+let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
+
+function startDrawing(e) {
+    isDrawing = true;
+    [lastX, lastY] = getMousePos(e);
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    
+    const [x, y] = getMousePos(e);
+    const color = document.getElementById('canvasColor').value;
+    const lineWidth = document.getElementById('lineWidth').value;
+    
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    switch(currentTool) {
+        case 'pen':
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            break;
+        case 'highlight':
+            ctx.globalAlpha = 0.3;
+            ctx.lineWidth = lineWidth * 3;
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+            break;
+    }
+    
+    [lastX, lastY] = [x, y];
+}
+
+function stopDrawing() {
+    isDrawing = false;
+}
+
+function getMousePos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    return [
+        (e.clientX - rect.left) * scaleX,
+        (e.clientY - rect.top) * scaleY
+    ];
+}
+
+function saveEnhanced() {
+    if (!canvas) {
+        alert('No enhanced image to save');
+        return;
+    }
+    
+    const imageData = canvas.toDataURL('image/jpeg', 0.9);
+    
+    showProcessing();
+    
+    // Get CSRF token properly
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(`/api/photos/${photoId}/annotate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ imageData: imageData })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideProcessing();
+        if (data.success) {
+            showAlert('Enhanced image saved successfully!', 'success');
+        } else {
+            showAlert('Save failed: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        hideProcessing();
+        showAlert('Save failed: ' + error.message, 'danger');
+    });
+}
+
+function resetImage() {
+    if (originalImageData) {
+        const img = new Image();
+        img.onload = function() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+        };
+        img.src = originalImageData;
+        
+        // Reset all sliders
+        document.getElementById('brightness').value = 1.0;
+        document.getElementById('contrast').value = 1.0;
+        document.getElementById('color').value = 1.0;
+        document.getElementById('sharpness').value = 1.0;
+        
+        // Update display
+        ['brightnessValue', 'contrastValue', 'colorValue', 'sharpnessValue'].forEach(id => {
+            document.getElementById(id).textContent = '1.0';
+        });
+        
+        showAlert('Image reset to original', 'info');
+    }
+}
+
+function showProcessing() {
+    document.getElementById('processingOverlay').style.display = 'flex';
+}
+
+function hideProcessing() {
+    document.getElementById('processingOverlay').style.display = 'none';
+}
+
+function showAlert(message, type) {
+    // Create bootstrap alert
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

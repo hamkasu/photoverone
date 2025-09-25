@@ -1,0 +1,396 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PhotoVault - Professional photo management solution by Calmic Sdn Bhd">
+    <meta name="author" content="Calmic Sdn Bhd">
+    
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+
+    <!-- CSRF Token for JavaScript requests -->
+    {% if csrf_token is defined %}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    {% endif %}
+    
+    <title>{% block title %}PhotoVault{% endblock %} - {{ company_info.name if company_info else 'Calmic Sdn Bhd' }}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}" onerror="this.style.display='none'">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" as="style">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" as="style">
+    
+    <!-- Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" 
+          integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="visually-hidden-focusable">Skip to main content</a>
+    
+    <!-- Navbar with Enhanced Calmic Branding -->
+    <nav class="navbar navbar-expand-lg navbar-dark" role="navigation" aria-label="Main navigation">
+        <div class="container">
+            <!-- Company Brand with Improved Logo Handling -->
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.index') }}" aria-label="PhotoVault Home">
+                <!-- Logo with improved fallback handling -->
+                <div class="logo-container me-2 d-flex align-items-center">
+                    <img src="{{ url_for('static', filename='img/calmic-logo.png') }}" 
+                         alt="Calmic Logo" 
+                         height="35" 
+                         class="logo-img"
+                         onload="this.parentNode.querySelector('.logo-fallback').style.display='none';"
+                         onerror="this.style.display='none'; this.parentNode.querySelector('.logo-fallback').style.display='flex';">
+                    
+                    <!-- Improved fallback logo -->
+                    <div class="logo-fallback" 
+                         style="display: none; width: 35px; height: 35px; background: linear-gradient(45deg, #495057, #343a40); border-radius: 6px; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1rem;"
+                         aria-label="Calmic Logo Placeholder">
+                        C
+                    </div>
+                </div>
+                
+                <div class="brand-text">
+                    <div class="brand-name">{{ app_title if app_title else 'PhotoVault' }}</div>
+                    <div class="company-name">{{ company_info.name if company_info else 'Calmic Sdn Bhd' }}</div>
+                </div>
+            </a>
+            
+            <!-- Mobile menu toggle -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                {% if current_user.is_authenticated %}
+                <!-- Main Navigation for authenticated users -->
+                <div class="navbar-nav me-auto">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}" 
+                       href="{{ url_for('main.dashboard') }}" aria-current="{% if request.endpoint == 'main.dashboard' %}page{% endif %}">
+                        Dashboard
+                    </a>
+                    <a class="nav-link {{ 'active' if request.endpoint and (request.endpoint == 'upload.upload_page' or request.endpoint.startswith('upload.')) }}" 
+                       href="{{ url_for('upload.upload_page') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('upload.') %}page{% endif %}">
+                        Upload
+                    </a>
+                    <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('photo_detection.') }}" 
+                       href="{{ url_for('photo_detection.photo_detection_page') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('photo_detection.') %}page{% endif %}">
+                        <i class="bi bi-scissors"></i> Detection
+                    </a>
+                    <a class="nav-link {{ 'active' if request.endpoint and (request.endpoint == 'gallery.photos' or request.endpoint.startswith('gallery.')) }}" 
+                       href="{{ url_for('gallery.photos') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('gallery.') %}page{% endif %}">
+                        Gallery
+                    </a>
+                    <a class="nav-link {{ 'active' if request.endpoint in ['main.advanced_enhancement', 'main.enhance_photo'] }}" 
+                       href="{{ url_for('main.advanced_enhancement') }}" aria-current="{% if request.endpoint in ['main.advanced_enhancement', 'main.enhance_photo'] %}page{% endif %}">
+                        <i class="bi bi-magic"></i> Enhancement
+                    </a>
+                    <a class="nav-link {{ 'active' if request.endpoint == 'main.montage' }}" 
+                       href="{{ url_for('main.montage') }}" aria-current="{% if request.endpoint == 'main.montage' %}page{% endif %}">
+                        <i class="bi bi-grid-3x3"></i> Montage
+                    </a>
+                    <a class="nav-link {{ 'active' if request.endpoint == 'main.people' }}" 
+                       href="{{ url_for('main.people') }}" aria-current="{% if request.endpoint == 'main.people' %}page{% endif %}">
+                        People
+                    </a>
+                    <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('family.') }}" 
+                       href="{{ url_for('family.index') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('family.') %}page{% endif %}">
+                        Family
+                    </a>
+                    <a class="nav-link {{ 'active' if request.endpoint == 'main.about' }}" 
+                       href="{{ url_for('main.about') }}" aria-current="{% if request.endpoint == 'main.about' %}page{% endif %}">
+                        About
+                    </a>
+                </div>
+                
+                <!-- Right side navigation items -->
+                <div class="navbar-nav ms-auto">
+                    <!-- Admin/Superuser Dropdown -->
+                    {% if current_user.is_admin or current_user.is_superuser %}
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" 
+                           data-bs-toggle="dropdown" aria-expanded="false" aria-label="Admin menu">
+                            <i class="bi bi-gear-fill" aria-hidden="true"></i> Admin
+                            {% if current_user.is_superuser %}
+                                <span class="badge bg-danger ms-1" aria-label="Superuser role">Super</span>
+                            {% else %}
+                                <span class="badge bg-warning ms-1" aria-label="Admin role">Admin</span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">
+                                <i class="bi bi-speedometer2" aria-hidden="true"></i> Admin Dashboard
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.statistics') }}">
+                                <i class="bi bi-bar-chart" aria-hidden="true"></i> Statistics
+                            </a></li>
+                            {% if current_user.is_superuser %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('superuser.dashboard') }}">
+                                <i class="bi bi-star-fill" aria-hidden="true"></i> Superuser Panel
+                            </a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.profile') }}">
+                                <i class="bi bi-person-circle" aria-hidden="true"></i> Admin Profile
+                            </a></li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- User menu -->
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" 
+                           data-bs-toggle="dropdown" aria-expanded="false" aria-label="User menu for {{ current_user.username }}">
+                            <i class="bi bi-person-circle" aria-hidden="true"></i> 
+                            <span class="d-none d-sm-inline">{{ current_user.username }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><h6 class="dropdown-header">Welcome, {{ current_user.username }}</h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.dashboard') }}">
+                                <i class="bi bi-house" aria-hidden="true"></i> Dashboard
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('gallery.photos') }}">
+                                <i class="bi bi-file-image" aria-hidden="true"></i> Original Photos
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.profile') }}">
+                                <i class="bi bi-person" aria-hidden="true"></i> Profile
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+                                <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Logout
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Non-authenticated user menu -->
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'main.about' }}" 
+                       href="{{ url_for('main.about') }}" aria-current="{% if request.endpoint == 'main.about' %}page{% endif %}">About</a>
+                    <a class="nav-link {{ 'active' if request.endpoint == 'auth.login' }}" 
+                       href="{{ url_for('auth.login') }}" aria-current="{% if request.endpoint == 'auth.login' %}page{% endif %}">Login</a>
+                    <a class="nav-link {{ 'active' if request.endpoint == 'auth.register' }}" 
+                       href="{{ url_for('auth.register') }}" aria-current="{% if request.endpoint == 'auth.register' %}page{% endif %}">Register</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Enhanced Flash Messages with better UX -->
+    <div id="flash-messages" class="flash-messages-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" 
+                     role="alert" aria-live="assertive">
+                    <div class="d-flex align-items-start">
+                        <div class="flex-grow-1">
+                            {% if category == 'error' or category == 'danger' %}
+                                <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>
+                            {% elif category == 'success' %}
+                                <i class="bi bi-check-circle-fill me-2" aria-hidden="true"></i>
+                            {% elif category == 'warning' %}
+                                <i class="bi bi-exclamation-circle-fill me-2" aria-hidden="true"></i>
+                            {% elif category == 'info' %}
+                                <i class="bi bi-info-circle-fill me-2" aria-hidden="true"></i>
+                            {% endif %}
+                            {{ message }}
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content -->
+    <main class="container my-4" id="main-content" role="main">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Enhanced Footer with Company Info -->
+    <footer class="py-4 mt-5" role="contentinfo">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <div class="d-flex align-items-center mb-3">
+                        <!-- Footer logo with same improved handling -->
+                        <div class="footer-logo-container me-2 d-flex align-items-center">
+                            <img src="{{ url_for('static', filename='img/calmic-logo.png') }}" 
+                                 alt="Calmic Logo" 
+                                 height="25" 
+                                 class="footer-logo-img"
+                                 onload="this.parentNode.querySelector('.footer-logo-fallback').style.display='none';"
+                                 onerror="this.style.display='none'; this.parentNode.querySelector('.footer-logo-fallback').style.display='flex';">
+                            
+                            <div class="footer-logo-fallback" 
+                                 style="display: none; width: 25px; height: 25px; background: linear-gradient(45deg, #495057, #343a40); border-radius: 4px; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.8rem;">
+                                C
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h6 class="mb-0">{{ app_title if app_title else 'PhotoVault' }}</h6>
+                            <small class="text-muted">by {{ company_info.name if company_info else 'Calmic Sdn Bhd' }}</small>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-0">Professional photo management solution</p>
+                    {% if app_version %}
+                    <small class="text-muted">Version {{ app_version }}</small>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="mb-2">
+                        {% if company_info and company_info.website %}
+                        <a href="{{ company_info.website }}" class="text-muted text-decoration-none me-3" 
+                           target="_blank" rel="noopener noreferrer" aria-label="Visit Calmic website">
+                            <i class="bi bi-globe" aria-hidden="true"></i> Website
+                        </a>
+                        {% endif %}
+                        {% if company_info and company_info.support_email %}
+                        <a href="mailto:{{ company_info.support_email }}" class="text-muted text-decoration-none" 
+                           aria-label="Contact support">
+                            <i class="bi bi-envelope" aria-hidden="true"></i> Support
+                        </a>
+                        {% endif %}
+                    </div>
+                    <p class="mb-1">{{ company_copyright if company_copyright else '© 2025 Calmic Sdn Bhd' }}</p>
+                    <p class="text-muted mb-0">All rights reserved</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" 
+            integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" 
+            crossorigin="anonymous"></script>
+    
+    <!-- Enhanced JavaScript utilities -->
+    <script>
+        // CSRF Token utility for AJAX requests
+        function getCSRFToken() {
+            const token = document.querySelector('meta[name="csrf-token"]');
+            return token ? token.getAttribute('content') : null;
+        }
+        
+        // Enhanced AJAX setup with CSRF
+        if (typeof fetch !== 'undefined') {
+            const originalFetch = window.fetch;
+            window.fetch = function(...args) {
+                if (args[1] && (args[1].method === 'POST' || args[1].method === 'PUT' || args[1].method === 'DELETE')) {
+                    const token = getCSRFToken();
+                    if (token) {
+                        args[1].headers = args[1].headers || {};
+                        args[1].headers['X-CSRFToken'] = token;
+                    }
+                }
+                return originalFetch.apply(this, args);
+            };
+        }
+        
+        // Auto-hide flash messages after delay
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert:not(.alert-danger):not(.alert-warning)');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    if (bsAlert) {
+                        bsAlert.close();
+                    }
+                }, 5000); // Auto-hide success/info messages after 5 seconds
+            });
+        });
+        
+        // Improved logo error handling
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle main logo
+            const mainLogos = document.querySelectorAll('.logo-img');
+            mainLogos.forEach(function(img) {
+                img.addEventListener('error', function() {
+                    this.style.display = 'none';
+                    const container = this.closest('.logo-container');
+                    if (container) {
+                        const fallback = container.querySelector('.logo-fallback');
+                        if (fallback) {
+                            fallback.style.display = 'flex';
+                        }
+                    }
+                });
+            });
+            
+            // Handle footer logo
+            const footerLogos = document.querySelectorAll('.footer-logo-img');
+            footerLogos.forEach(function(img) {
+                img.addEventListener('error', function() {
+                    this.style.display = 'none';
+                    const container = this.closest('.footer-logo-container');
+                    if (container) {
+                        const fallback = container.querySelector('.footer-logo-fallback');
+                        if (fallback) {
+                            fallback.style.display = 'flex';
+                        }
+                    }
+                });
+            });
+        });
+        
+        // Keyboard navigation improvements
+        document.addEventListener('keydown', function(e) {
+            // Close alerts with Escape key
+            if (e.key === 'Escape') {
+                const alerts = document.querySelectorAll('.alert.show');
+                alerts.forEach(function(alert) {
+                    const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                    if (bsAlert) {
+                        bsAlert.close();
+                    }
+                });
+            }
+        });
+        
+        // Performance: Preload critical pages on hover (optional enhancement)
+        document.addEventListener('DOMContentLoaded', function() {
+            const criticalLinks = document.querySelectorAll('a[href*="dashboard"], a[href*="upload"]');
+            criticalLinks.forEach(function(link) {
+                link.addEventListener('mouseenter', function() {
+                    const linkElement = document.createElement('link');
+                    linkElement.rel = 'prefetch';
+                    linkElement.href = this.href;
+                    document.head.appendChild(linkElement);
+                }, { once: true });
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

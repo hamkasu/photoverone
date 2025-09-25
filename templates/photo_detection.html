@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+
+{% block title %}Photo Detection & Cropping{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detection-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .upload-area {
+        border: 3px dashed #007bff;
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+        background-color: #f8f9fa;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .upload-area:hover {
+        border-color: #0056b3;
+        background-color: #e6f3ff;
+    }
+    
+    .upload-area.dragover {
+        border-color: #28a745;
+        background-color: #d4edda;
+    }
+    
+    .detection-results {
+        margin-top: 30px;
+        display: none;
+    }
+    
+    .original-preview {
+        max-width: 100%;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    
+    .detected-photo {
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        margin: 10px;
+        padding: 10px;
+        background: white;
+        display: inline-block;
+        position: relative;
+    }
+    
+    .detected-photo img {
+        max-width: 200px;
+        max-height: 200px;
+        border-radius: 3px;
+    }
+    
+    .confidence-badge {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: rgba(0, 123, 255, 0.8);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+    }
+    
+    .photo-checkbox {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        transform: scale(1.2);
+    }
+    
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    
+    .loading-spinner {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        text-align: center;
+    }
+    
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+    
+    .detection-info {
+        background: #e9ecef;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .btn-extract {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        border: none;
+        color: white;
+        font-weight: 500;
+    }
+    
+    .btn-extract:hover {
+        background: linear-gradient(45deg, #218838, #1ba085);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detection-container">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mb-4">
+                <i class="bi bi-scissors"></i> Photo Detection & Cropping
+            </h2>
+            <p class="text-muted mb-4">
+                Upload an image containing multiple photos, and our AI will automatically detect and extract individual photos for you.
+                Perfect for digitizing photo albums, scanned documents, or collages.
+            </p>
+        </div>
+    </div>
+    
+    <!-- Upload Area -->
+    <div class="upload-area" id="uploadArea">
+        <div class="upload-content">
+            <i class="bi bi-cloud-upload" style="font-size: 3rem; color: #007bff; margin-bottom: 15px;"></i>
+            <h4>Drop your image here or click to browse</h4>
+            <p class="text-muted">Supports JPG, PNG, GIF, WebP files up to 16MB</p>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                <i class="bi bi-folder-open"></i> Choose File
+            </button>
+        </div>
+    </div>
+    
+    <!-- Detection Results -->
+    <div class="detection-results" id="detectionResults">
+        <div class="detection-info">
+            <h5><i class="bi bi-info-circle"></i> Detection Results</h5>
+            <p id="detectionSummary" class="mb-0"></p>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Original Image</h6>
+                <div id="originalPreview"></div>
+            </div>
+            <div class="col-md-6">
+                <h6>Detected Photos</h6>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllPhotos()">
+                            Select All
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectNonePhotos()">
+                            Select None
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-extract" onclick="extractSelectedPhotos()">
+                        <i class="bi bi-download"></i> Extract Selected Photos
+                    </button>
+                </div>
+                <div id="detectedPhotos"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 mb-0">Processing your image...</p>
+        <small class="text-muted">This may take a few moments</small>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentDetectionData = null;
+
+// File input and drag & drop handling
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    
+    // Drag and drop events
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
+    });
+    
+    // File input change
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            handleFile(e.target.files[0]);
+        }
+    });
+    
+    // Click to browse
+    uploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
+});
+
+function handleFile(file) {
+    if (!file.type.startsWith('image/')) {
+        showAlert('Please select a valid image file.', 'danger');
+        return;
+    }
+    
+    if (file.size > 16 * 1024 * 1024) {
+        showAlert('File size must be less than 16MB.', 'danger');
+        return;
+    }
+    
+    uploadForDetection(file);
+}
+
+function uploadForDetection(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    showLoading(true);
+    
+    fetch('/api/photo-detection/upload', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        showLoading(false);
+        
+        if (data.success) {
+            currentDetectionData = data;
+            displayDetectionResults(data);
+            showAlert(data.message, 'success');
+        } else {
+            showAlert(data.error || 'Detection failed', 'danger');
+        }
+    })
+    .catch(error => {
+        showLoading(false);
+        console.error('Detection error:', error);
+        showAlert('An error occurred during photo detection.', 'danger');
+    });
+}
+
+function displayDetectionResults(data) {
+    const resultsDiv = document.getElementById('detectionResults');
+    const summaryDiv = document.getElementById('detectionSummary');
+    const originalDiv = document.getElementById('originalPreview');
+    const detectedDiv = document.getElementById('detectedPhotos');
+    
+    // Update summary
+    summaryDiv.innerHTML = `
+        Detected <strong>${data.detection_count}</strong> photo(s) in <strong>${data.original_filename}</strong>.
+        Select the photos you want to extract and save to your gallery.
+    `;
+    
+    // Show original image preview
+    originalDiv.innerHTML = `
+        <img src="/api/photo-detection/preview/${data.token}" 
+             class="original-preview" alt="Original uploaded image">
+    `;
+    
+    // Display detected photos
+    let photosHtml = '';
+    data.detected_photos.forEach((photo, index) => {
+        const confidence = Math.round(photo.confidence * 100);
+        photosHtml += `
+            <div class="detected-photo">
+                <input type="checkbox" class="photo-checkbox" id="photo_${index}" checked>
+                <div class="confidence-badge">${confidence}%</div>
+                <div style="margin-top: 20px;">
+                    <strong>Photo ${index + 1}</strong><br>
+                    <small>${photo.width} × ${photo.height}px</small><br>
+                    <small>Confidence: ${confidence}%</small>
+                </div>
+            </div>
+        `;
+    });
+    
+    detectedDiv.innerHTML = photosHtml;
+    
+    // Show results section
+    resultsDiv.style.display = 'block';
+    
+    // Scroll to results
+    resultsDiv.scrollIntoView({ behavior: 'smooth' });
+}
+
+function selectAllPhotos() {
+    const checkboxes = document.querySelectorAll('.photo-checkbox');
+    checkboxes.forEach(checkbox => checkbox.checked = true);
+}
+
+function selectNonePhotos() {
+    const checkboxes = document.querySelectorAll('.photo-checkbox');
+    checkboxes.forEach(checkbox => checkbox.checked = false);
+}
+
+function extractSelectedPhotos() {
+    if (!currentDetectionData) {
+        showAlert('No detection data available.', 'danger');
+        return;
+    }
+    
+    const checkboxes = document.querySelectorAll('.photo-checkbox');
+    const selectedIndices = [];
+    
+    checkboxes.forEach((checkbox, index) => {
+        if (checkbox.checked) {
+            selectedIndices.push(index);
+        }
+    });
+    
+    if (selectedIndices.length === 0) {
+        showAlert('Please select at least one photo to extract.', 'warning');
+        return;
+    }
+    
+    const requestData = {
+        token: currentDetectionData.token,
+        selected_photos: selectedIndices
+    };
+    
+    showLoading(true);
+    
+    fetch('/api/photo-detection/extract', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        showLoading(false);
+        
+        if (data.success) {
+            showAlert(data.message, 'success');
+            
+            // Reset the interface after successful extraction
+            setTimeout(() => {
+                resetInterface();
+            }, 2000);
+        } else {
+            showAlert(data.error || 'Extraction failed', 'danger');
+        }
+    })
+    .catch(error => {
+        showLoading(false);
+        console.error('Extraction error:', error);
+        showAlert('An error occurred during photo extraction.', 'danger');
+    });
+}
+
+function resetInterface() {
+    document.getElementById('detectionResults').style.display = 'none';
+    document.getElementById('fileInput').value = '';
+    currentDetectionData = null;
+    
+    // Clean up any temporary server data by calling a cleanup endpoint
+    // This is optional since the server has automatic expiry
+}
+
+function showLoading(show) {
+    const overlay = document.getElementById('loadingOverlay');
+    overlay.style.display = show ? 'flex' : 'none';
+}
+
+function showAlert(message, type) {
+    // Create or update alert
+    let alertDiv = document.getElementById('detection-alert');
+    if (!alertDiv) {
+        alertDiv = document.createElement('div');
+        alertDiv.id = 'detection-alert';
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '10000';
+        alertDiv.style.minWidth = '300px';
+        document.body.appendChild(alertDiv);
+    }
+    
+    alertDiv.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        if (alertDiv) {
+            alertDiv.innerHTML = '';
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

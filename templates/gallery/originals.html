@@ -1,0 +1,261 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+-->
+
+<!-- photovault/templates/gallery/originals.html -->
+{% extends "base.html" %}
+{% block title %}Original Photos - PhotoVault{% endblock %}
+
+{% block extra_css %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>My Original Photos</h2>
+            <p class="text-muted">These are your unedited, original uploads.</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('gallery.photos') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-images"></i> All Photos
+                </a>
+                <button class="btn btn-primary active">
+                    <i class="bi bi-camera"></i> Original Photos
+                </button>
+                <a href="{{ url_for('gallery.edited') }}" class="btn btn-outline-success">
+                    <i class="bi bi-pencil"></i> Edited Photos
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if photos and photos.items %}
+    <div class="row" id="photoGrid">
+        {% for photo in photos.items %}
+        <div class="col-md-3 mb-4">
+            <div class="card h-100" data-photo-id="{{ photo.id }}" data-has-edited="{% if photo.edited_filename %}true{% else %}false{% endif %}" data-photo-name="{{ photo.original_name }}">
+                <!-- Display the ORIGINAL image -->
+                <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                     class="card-img-top" 
+                     alt="{{ photo.original_name }} (Original)">
+                
+                <div class="card-body d-flex flex-column">
+                    <p class="card-text small flex-grow-1">{{ photo.original_name }}</p>
+                    
+                    <div class="mb-2">
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-camera"></i> Original
+                        </span>
+                        {% if photo.upload_source == 'camera' %}
+                        <span class="badge bg-warning">
+                            <i class="bi bi-camera-video"></i> Camera
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="btn-group btn-group-sm" role="group">
+                        <!-- View photo details -->
+                        <a href="{{ url_for('gallery.view_photo', photo_id=photo.id) }}" class="btn btn-outline-primary" title="View photo details">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <!-- Edit/Markup photo -->
+                        <a href="{{ url_for('main.edit_photo', photo_id=photo.id) }}" class="btn btn-outline-warning" title="Edit/markup photo">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <!-- Download the original file -->
+                        <a href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                           download="{{ photo.original_name }}" 
+                           class="btn btn-outline-success" 
+                           title="Download original file">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        <!-- Delete photo -->
+                        <button class="btn btn-outline-danger" onclick="deletePhoto({{ photo.id }})" title="Delete photo">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if photos.pages > 1 %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if photos.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('gallery.originals', page=photos.prev_num) }}">Previous</a>
+                </li>
+            {% endif %}
+            
+            {% for page_num in photos.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != photos.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('gallery.originals', page=page_num) }}">{{ page_num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                    {% endif %}
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if photos.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('gallery.originals', page=photos.next_num) }}">Next</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-camera fa-4x text-muted mb-3"></i>
+        <h4>No original photos yet</h4>
+        <p class="text-muted">All your photos have been edited! Upload new photos to see originals here.</p>
+        <a href="{{ url_for('main.upload') }}" class="btn btn-primary">
+            <i class="bi bi-camera me-2"></i>Upload Photos
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Selective Deletion Modal -->
+<div class="modal fade" id="deletePhotoModal" tabindex="-1" aria-labelledby="deletePhotoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deletePhotoModalLabel">Delete Photo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>What would you like to delete for <strong id="photoNameToDelete"></strong>?</p>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="deletionType" id="deleteBoth" value="both" checked>
+                    <label class="form-check-label" for="deleteBoth">
+                        <strong>Delete Both</strong> - Remove original and edited versions (cannot be undone)
+                    </label>
+                </div>
+                <div class="form-check" id="deleteOriginalOption" style="display: none;">
+                    <input class="form-check-input" type="radio" name="deletionType" id="deleteOriginal" value="original">
+                    <label class="form-check-label" for="deleteOriginal">
+                        <strong>Delete Original Only</strong> - Keep edited version as the main photo
+                    </label>
+                </div>
+                <div class="form-check" id="deleteEditedOption" style="display: none;">
+                    <input class="form-check-input" type="radio" name="deletionType" id="deleteEdited" value="edited">
+                    <label class="form-check-label" for="deleteEdited">
+                        <strong>Delete Edited Only</strong> - Keep original and remove edited version
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeletePhoto()">
+                    <i class="bi bi-trash"></i> Delete Selected
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPhotoIdToDelete = null;
+
+function deletePhoto(photoId) {
+    currentPhotoIdToDelete = photoId;
+    
+    // Find the photo element to get its name and check if it has edited version
+    const photoCard = document.querySelector(`[data-photo-id="${photoId}"]`);
+    const photoName = photoCard ? photoCard.getAttribute('data-photo-name') : 'this photo';
+    const hasEdited = photoCard ? photoCard.getAttribute('data-has-edited') === 'true' : false;
+    
+    // Set photo name in modal
+    document.getElementById('photoNameToDelete').textContent = photoName;
+    
+    // Show/hide options based on whether photo has edited version
+    const deleteOriginalOption = document.getElementById('deleteOriginalOption');
+    const deleteEditedOption = document.getElementById('deleteEditedOption');
+    
+    if (hasEdited) {
+        deleteOriginalOption.style.display = 'block';
+        deleteEditedOption.style.display = 'block';
+    } else {
+        deleteOriginalOption.style.display = 'none';
+        deleteEditedOption.style.display = 'none';
+        // Reset to 'both' option for photos without edited versions
+        document.getElementById('deleteBoth').checked = true;
+    }
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('deletePhotoModal'));
+    modal.show();
+}
+
+function confirmDeletePhoto() {
+    if (!currentPhotoIdToDelete) return;
+    
+    const selectedOption = document.querySelector('input[name="deletionType"]:checked');
+    const deletionType = selectedOption ? selectedOption.value : 'both';
+    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+    };
+    
+    if (csrfToken) {
+        headers['X-CSRFToken'] = csrfToken;
+    }
+    
+    fetch(`/api/photos/${currentPhotoIdToDelete}/delete`, {
+        method: 'DELETE',
+        headers: headers,
+        body: JSON.stringify({
+            deletion_type: deletionType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'Photo deleted successfully!');
+            location.reload();
+        } else {
+            alert('Error deleting photo: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error deleting photo. Please try again.');
+    })
+    .finally(() => {
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('deletePhotoModal'));
+        if (modal) modal.hide();
+        currentPhotoIdToDelete = null;
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,191 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+-->
+
+{% extends "base.html" %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-person-circle"></i> My Profile
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Account Information</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Username:</strong></td>
+                                    <td>{{ current_user.username }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Email:</strong></td>
+                                    <td>{{ current_user.email }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Member Since:</strong></td>
+                                    <td>{{ stats.member_since }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Account Type:</strong></td>
+                                    <td>
+                                        {% if current_user.is_superuser %}
+                                            <span class="badge bg-danger">Superuser</span>
+                                        {% elif current_user.is_admin %}
+                                            <span class="badge bg-warning">Administrator</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">User</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Storage Statistics</h6>
+                            <div class="row text-center">
+                                <div class="col-6 mb-3">
+                                    <div class="card bg-primary text-white">
+                                        <div class="card-body py-3">
+                                            <h4>{{ stats.total_photos }}</h4>
+                                            <small>Total Photos</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <div class="card bg-success text-white">
+                                        <div class="card-body py-3">
+                                            <h4>{{ stats.edited_photos }}</h4>
+                                            <small>Edited Photos</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card bg-light">
+                                <div class="card-body text-center py-3">
+                                    <h5>{{ stats.total_size // (1024 * 1024) }} MB</h5>
+                                    <small class="text-muted">Storage Used</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Storage Usage Bar -->
+                    {% if stats.total_size > 0 %}
+                    <div class="mb-4">
+                        <h6 class="text-muted">Storage Usage</h6>
+                        {% set storage_mb = stats.total_size // (1024 * 1024) %}
+                        {% set usage_percent = (storage_mb / 100 * 100) | round(1) %}
+                        <div class="progress mb-2" style="height: 20px;">
+                            <div class="progress-bar {% if usage_percent > 80 %}bg-danger{% elif usage_percent > 60 %}bg-warning{% else %}bg-info{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ usage_percent if usage_percent <= 100 else 100 }}%;">
+                                {{ usage_percent }}%
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {{ storage_mb }} MB used of 100 MB limit
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    <!-- Account Actions -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Quick Actions</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <a href="{{ url_for('main.upload') }}" class="btn btn-primary">
+                                            <i class="bi bi-cloud-upload"></i> Upload Photos
+                                        </a>
+                                        <a href="{{ url_for('main.gallery') }}" class="btn btn-outline-secondary">
+                                            <i class="bi bi-images"></i> View Gallery
+                                        </a>
+                                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-info">
+                                            <i class="bi bi-speedometer2"></i> Dashboard
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Account Security</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted small">
+                                        <i class="bi bi-shield-check"></i>
+                                        Your account is secured with industry-standard encryption.
+                                    </p>
+                                    <p class="text-muted small">
+                                        <i class="bi bi-clock"></i>
+                                        Last login: {{ current_user.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </p>
+                                    <div class="d-grid gap-2">
+                                        <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-shield-lock"></i> Change Password
+                                        </a>
+                                        {% if current_user.is_admin or current_user.is_superuser %}
+                                        <a href="{{ url_for('admin.profile') }}" class="btn btn-outline-warning btn-sm">
+                                            <i class="bi bi-gear"></i> Admin Profile
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activity Summary -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Activity Summary</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-4">
+                                    <h5 class="text-primary">{{ stats.total_photos }}</h5>
+                                    <p class="text-muted mb-0">Photos Uploaded</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <h5 class="text-success">{{ stats.edited_photos }}</h5>
+                                    <p class="text-muted mb-0">Photos Edited</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <h5 class="text-info">{{ stats.total_photos - stats.edited_photos }}</h5>
+                                    <p class="text-muted mb-0">Original Only</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-center">
+                    <small class="text-muted">
+                        Member of PhotoVault by Calmic Sdn Bhd since {{ stats.member_since }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

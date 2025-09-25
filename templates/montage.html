@@ -1,0 +1,1052 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+-->
+
+{% extends "base.html" %}
+{% block title %}Photo Montage Creator - PhotoVault{% endblock %}
+
+{% block extra_css %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+.montage-container {
+    background: linear-gradient(135deg, #6b73ff 0%, #000dff 100%);
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.feature-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-2px);
+}
+
+.montage-badge {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.section-header {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.layout-option {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.layout-option:hover {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.layout-option.active {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.15);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.layout-icon {
+    font-size: 2.5rem;
+    color: #007bff;
+    margin-bottom: 0.5rem;
+}
+
+.photo-thumbnail {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.photo-thumbnail:hover {
+    border-color: #007bff;
+    transform: scale(1.05);
+}
+
+.photo-thumbnail.selected {
+    border-color: #28a745;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
+}
+
+.photo-grid {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.montage-preview {
+    border: 2px dashed #dee2e6;
+    border-radius: 15px;
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(45deg, #f8f9fa, #ffffff);
+    position: relative;
+    overflow: hidden;
+}
+
+.montage-canvas {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.color-picker {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    cursor: pointer;
+    margin: 0.25rem;
+    display: inline-block;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.color-picker.active {
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+.style-option {
+    padding: 0.75rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 0.5rem;
+}
+
+.style-option:hover {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.style-option.active {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.15);
+    color: #007bff;
+    font-weight: bold;
+}
+
+.btn-montage {
+    background: linear-gradient(45deg, #6b73ff, #000dff);
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.btn-montage:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(107, 115, 255, 0.4);
+    color: white;
+}
+
+.processing-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    display: none;
+}
+
+.processing-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    max-width: 400px;
+}
+
+@media (max-width: 768px) {
+    .montage-container {
+        padding: 1rem 0;
+    }
+    
+    .layout-option {
+        height: 120px;
+    }
+    
+    .layout-icon {
+        font-size: 2rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="montage-container">
+    <div class="container">
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-12 text-center text-white">
+                <h1 class="display-4 mb-3">
+                    <i class="bi bi-grid-3x3"></i> Photo Montage Creator
+                </h1>
+                <p class="lead mb-4">Create stunning photo collages and montages with professional layouts and customization options</p>
+                <span class="montage-badge">
+                    <i class="bi bi-images"></i> Professional Montage Tools
+                </span>
+            </div>
+        </div>
+
+        <!-- Main Montage Interface -->
+        <div class="row">
+            <!-- Left Column: Settings and Options -->
+            <div class="col-lg-4">
+                <!-- Layout Selection -->
+                <div class="feature-card p-4 mb-4">
+                    <h5 class="mb-3">
+                        <i class="bi bi-grid"></i> Layout Templates
+                    </h5>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="layout-option" data-layout="grid-2x2" onclick="selectLayout('grid-2x2')">
+                                <div class="layout-icon">
+                                    <i class="bi bi-grid"></i>
+                                </div>
+                                <small><strong>2x2 Grid</strong></small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="layout-option" data-layout="grid-3x3" onclick="selectLayout('grid-3x3')">
+                                <div class="layout-icon">
+                                    <i class="bi bi-grid-3x3"></i>
+                                </div>
+                                <small><strong>3x3 Grid</strong></small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="layout-option" data-layout="collage" onclick="selectLayout('collage')">
+                                <div class="layout-icon">
+                                    <i class="bi bi-puzzle"></i>
+                                </div>
+                                <small><strong>Collage</strong></small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="layout-option" data-layout="polaroid" onclick="selectLayout('polaroid')">
+                                <div class="layout-icon">
+                                    <i class="bi bi-card-image"></i>
+                                </div>
+                                <small><strong>Polaroid</strong></small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="layout-option" data-layout="magazine" onclick="selectLayout('magazine')">
+                                <div class="layout-icon">
+                                    <i class="bi bi-book"></i>
+                                </div>
+                                <small><strong>Magazine</strong></small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="layout-option" data-layout="mosaic" onclick="selectLayout('mosaic')">
+                                <div class="layout-icon">
+                                    <i class="bi bi-hexagon"></i>
+                                </div>
+                                <small><strong>Mosaic</strong></small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="layout-option" data-layout="story" onclick="selectLayout('story')">
+                                <div class="layout-icon">
+                                    <i class="bi bi-journal"></i>
+                                </div>
+                                <small><strong>Story</strong></small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="layout-option" data-layout="timeline" onclick="selectLayout('timeline')">
+                                <div class="layout-icon">
+                                    <i class="bi bi-clock-history"></i>
+                                </div>
+                                <small><strong>Timeline</strong></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Background Options -->
+                <div class="feature-card p-4 mb-4">
+                    <h5 class="mb-3">
+                        <i class="bi bi-palette"></i> Background & Style
+                    </h5>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-dark"><strong>Background Color</strong></label>
+                        <div class="d-flex flex-wrap">
+                            <div class="color-picker active" style="background: #ffffff" data-color="#ffffff" onclick="selectColor('#ffffff')"></div>
+                            <div class="color-picker" style="background: #f8f9fa" data-color="#f8f9fa" onclick="selectColor('#f8f9fa')"></div>
+                            <div class="color-picker" style="background: #000000" data-color="#000000" onclick="selectColor('#000000')"></div>
+                            <div class="color-picker" style="background: #6c757d" data-color="#6c757d" onclick="selectColor('#6c757d')"></div>
+                            <div class="color-picker" style="background: #007bff" data-color="#007bff" onclick="selectColor('#007bff')"></div>
+                            <div class="color-picker" style="background: #28a745" data-color="#28a745" onclick="selectColor('#28a745')"></div>
+                            <div class="color-picker" style="background: #dc3545" data-color="#dc3545" onclick="selectColor('#dc3545')"></div>
+                            <div class="color-picker" style="background: #ffc107" data-color="#ffc107" onclick="selectColor('#ffc107')"></div>
+                        </div>
+                        <input type="color" class="form-control mt-2" id="customColor" value="#ffffff" onchange="selectColor(this.value)">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-dark"><strong>Background Style</strong></label>
+                        <div class="style-option active" data-style="solid" onclick="selectBackgroundStyle('solid')">
+                            <i class="bi bi-square"></i> Solid Color
+                        </div>
+                        <div class="style-option" data-style="gradient" onclick="selectBackgroundStyle('gradient')">
+                            <i class="bi bi-circle-half"></i> Gradient
+                        </div>
+                        <div class="style-option" data-style="pattern" onclick="selectBackgroundStyle('pattern')">
+                            <i class="bi bi-grid-1x2"></i> Pattern
+                        </div>
+                        <div class="style-option" data-style="texture" onclick="selectBackgroundStyle('texture')">
+                            <i class="bi bi-texture"></i> Texture
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-dark">Border Width: <span id="borderWidthValue">2</span>px</label>
+                        <input type="range" class="form-range" id="borderWidth" min="0" max="20" value="2">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-dark">Spacing: <span id="spacingValue">10</span>px</label>
+                        <input type="range" class="form-range" id="spacing" min="0" max="50" value="10">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-dark">Corner Radius: <span id="radiusValue">5</span>px</label>
+                        <input type="range" class="form-range" id="radius" min="0" max="50" value="5">
+                    </div>
+                </div>
+
+                <!-- Text Options -->
+                <div class="feature-card p-4 mb-4">
+                    <h5 class="mb-3">
+                        <i class="bi bi-fonts"></i> Text & Captions
+                    </h5>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-dark"><strong>Montage Title</strong></label>
+                        <input type="text" class="form-control" id="montageTitle" placeholder="Enter montage title...">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-dark"><strong>Subtitle</strong></label>
+                        <input type="text" class="form-control" id="montageSubtitle" placeholder="Enter subtitle...">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-dark"><strong>Font Style</strong></label>
+                        <select class="form-select" id="fontStyle">
+                            <option value="Arial">Arial</option>
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Verdana">Verdana</option>
+                            <option value="Courier New">Courier New</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-dark">Font Size: <span id="fontSizeValue">24</span>px</label>
+                        <input type="range" class="form-range" id="fontSize" min="12" max="48" value="24">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-dark"><strong>Text Color</strong></label>
+                        <input type="color" class="form-control form-control-color" id="textColor" value="#000000">
+                    </div>
+                </div>
+
+                <!-- Effects and Filters -->
+                <div class="feature-card p-4 mb-4">
+                    <h5 class="mb-3">
+                        <i class="bi bi-stars"></i> Effects & Filters
+                    </h5>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="enableShadow" checked>
+                            <label class="form-check-label text-dark" for="enableShadow">
+                                <strong>Drop Shadow</strong><br>
+                                <small>Add depth with shadow effects</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="enableVintage">
+                            <label class="form-check-label text-dark" for="enableVintage">
+                                <strong>Vintage Filter</strong><br>
+                                <small>Classic aged photo look</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="enableSepia">
+                            <label class="form-check-label text-dark" for="enableSepia">
+                                <strong>Sepia Tone</strong><br>
+                                <small>Warm brown monochrome effect</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="enableFrame">
+                            <label class="form-check-label text-dark" for="enableFrame">
+                                <strong>Decorative Frame</strong><br>
+                                <small>Elegant border decoration</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export Options -->
+                <div class="feature-card p-4 mb-4">
+                    <h5 class="mb-3">
+                        <i class="bi bi-download"></i> Export Settings
+                    </h5>
+
+                    <div class="mb-3">
+                        <label class="form-label text-dark"><strong>Output Size</strong></label>
+                        <select class="form-select" id="outputSize">
+                            <option value="1920x1080">HD (1920x1080)</option>
+                            <option value="2560x1440">2K (2560x1440)</option>
+                            <option value="3840x2160">4K (3840x2160)</option>
+                            <option value="1080x1080">Square (1080x1080)</option>
+                            <option value="1200x630">Social Media (1200x630)</option>
+                            <option value="custom">Custom Size</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-dark"><strong>Quality</strong></label>
+                        <select class="form-select" id="outputQuality">
+                            <option value="high">High Quality</option>
+                            <option value="medium">Medium Quality</option>
+                            <option value="low">Low Quality</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-dark"><strong>Format</strong></label>
+                        <select class="form-select" id="outputFormat">
+                            <option value="jpg">JPEG</option>
+                            <option value="png">PNG</option>
+                            <option value="webp">WebP</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2">
+                    <button class="btn btn-montage" onclick="generateMontage()">
+                        <i class="bi bi-magic"></i> Generate Montage
+                    </button>
+                    <button class="btn btn-success" onclick="saveMontage()" style="display: none;" id="saveMontageBtn">
+                        <i class="bi bi-save"></i> Save Montage
+                    </button>
+                    <button class="btn btn-warning" onclick="resetMontage()">
+                        <i class="bi bi-arrow-clockwise"></i> Reset
+                    </button>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-dark">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Column: Photo Selection and Preview -->
+            <div class="col-lg-8">
+                <!-- Photo Selection -->
+                <div class="feature-card p-4 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5><i class="bi bi-images"></i> Select Photos</h5>
+                        <div>
+                            <span class="badge bg-primary" id="selectedCount">0 selected</span>
+                        </div>
+                    </div>
+
+                    {% if photos %}
+                    <div class="photo-grid">
+                        <div class="row g-2">
+                            {% for photo in photos %}
+                            <div class="col-md-2 col-sm-3 col-4">
+                                <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                                     class="photo-thumbnail" 
+                                     data-photo-id="{{ photo.id }}"
+                                     data-photo-url="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}"
+                                     alt="{{ photo.original_name }}"
+                                     onclick="togglePhotoSelection(this)">
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-image" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted mt-2">No photos available. Upload some photos first!</p>
+                        <a href="{{ url_for('main.upload') }}" class="btn btn-primary">
+                            <i class="bi bi-upload"></i> Upload Photos
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Montage Preview -->
+                <div class="feature-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5><i class="bi bi-eye"></i> Montage Preview</h5>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-primary" onclick="previewMontage()">
+                                <i class="bi bi-eye"></i> Preview
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="randomizeMontage()">
+                                <i class="bi bi-shuffle"></i> Randomize
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="montage-preview" id="montagePreview">
+                        <div class="text-center text-muted">
+                            <i class="bi bi-grid-3x3" style="font-size: 4rem; color: #ccc;"></i>
+                            <h4 class="mt-3">Select photos and a layout to preview your montage</h4>
+                            <p>Choose from the available layout templates and select photos to get started</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Templates Gallery -->
+                <div class="feature-card p-4 mt-4">
+                    <h5 class="mb-3"><i class="bi bi-collection"></i> Template Examples</h5>
+                    <div class="row g-3">
+                        <div class="col-md-4 col-6">
+                            <div class="template-example" onclick="loadTemplate('family')">
+                                <div class="template-preview bg-light rounded p-3 text-center">
+                                    <i class="bi bi-people" style="font-size: 2rem; color: #007bff;"></i>
+                                    <h6 class="mt-2">Family Collection</h6>
+                                    <small class="text-muted">Perfect for family photos</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-6">
+                            <div class="template-example" onclick="loadTemplate('vacation')">
+                                <div class="template-preview bg-light rounded p-3 text-center">
+                                    <i class="bi bi-camera" style="font-size: 2rem; color: #28a745;"></i>
+                                    <h6 class="mt-2">Vacation Memories</h6>
+                                    <small class="text-muted">Travel and adventure</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-6">
+                            <div class="template-example" onclick="loadTemplate('events')">
+                                <div class="template-preview bg-light rounded p-3 text-center">
+                                    <i class="bi bi-calendar-event" style="font-size: 2rem; color: #dc3545;"></i>
+                                    <h6 class="mt-2">Special Events</h6>
+                                    <small class="text-muted">Celebrations and milestones</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Processing Overlay -->
+<div id="processingOverlay" class="processing-overlay">
+    <div class="processing-content">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h5>Creating Your Montage...</h5>
+        <p class="text-muted mb-0">Processing photos and applying your customizations</p>
+    </div>
+</div>
+
+<script>
+// Global variables
+let selectedPhotos = [];
+let currentLayout = 'grid-2x2';
+let currentBackground = '#ffffff';
+let currentBackgroundStyle = 'solid';
+
+// Initialize the montage interface
+document.addEventListener('DOMContentLoaded', function() {
+    setupEventListeners();
+    selectLayout('grid-2x2'); // Default selection
+});
+
+function setupEventListeners() {
+    // Range sliders
+    ['borderWidth', 'spacing', 'radius', 'fontSize'].forEach(id => {
+        const slider = document.getElementById(id);
+        if (slider) {
+            slider.addEventListener('input', function() {
+                document.getElementById(id + 'Value').textContent = this.value;
+                updatePreview();
+            });
+        }
+    });
+}
+
+function selectLayout(layout) {
+    // Remove active class from all layout options
+    document.querySelectorAll('.layout-option').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    // Add active class to selected layout
+    document.querySelector(`[data-layout="${layout}"]`).classList.add('active');
+    
+    currentLayout = layout;
+    updatePreview();
+}
+
+function selectColor(color) {
+    // Remove active class from all color pickers
+    document.querySelectorAll('.color-picker').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    // Add active class to selected color
+    document.querySelector(`[data-color="${color}"]`)?.classList.add('active');
+    
+    currentBackground = color;
+    document.getElementById('customColor').value = color;
+    updatePreview();
+}
+
+function selectBackgroundStyle(style) {
+    // Remove active class from all style options
+    document.querySelectorAll('[data-style]').forEach(el => {
+        el.classList.remove('active');
+    });
+    
+    // Add active class to selected style
+    document.querySelector(`[data-style="${style}"]`).classList.add('active');
+    
+    currentBackgroundStyle = style;
+    updatePreview();
+}
+
+function togglePhotoSelection(img) {
+    const photoId = img.getAttribute('data-photo-id');
+    const photoUrl = img.getAttribute('data-photo-url');
+    
+    if (img.classList.contains('selected')) {
+        // Remove from selection
+        img.classList.remove('selected');
+        selectedPhotos = selectedPhotos.filter(photo => photo.id !== photoId);
+    } else {
+        // Add to selection
+        img.classList.add('selected');
+        selectedPhotos.push({
+            id: photoId,
+            url: photoUrl,
+            element: img
+        });
+    }
+    
+    updateSelectedCount();
+    updatePreview();
+}
+
+function updateSelectedCount() {
+    document.getElementById('selectedCount').textContent = `${selectedPhotos.length} selected`;
+}
+
+function updatePreview() {
+    if (selectedPhotos.length === 0) {
+        showEmptyPreview();
+        return;
+    }
+    
+    const preview = document.getElementById('montagePreview');
+    
+    // Create preview based on current layout and settings
+    const montageHtml = generateMontagePreview();
+    preview.innerHTML = montageHtml;
+}
+
+function showEmptyPreview() {
+    const preview = document.getElementById('montagePreview');
+    preview.innerHTML = `
+        <div class="text-center text-muted">
+            <i class="bi bi-grid-3x3" style="font-size: 4rem; color: #ccc;"></i>
+            <h4 class="mt-3">Select photos and a layout to preview your montage</h4>
+            <p>Choose from the available layout templates and select photos to get started</p>
+        </div>
+    `;
+}
+
+function generateMontagePreview() {
+    const borderWidth = document.getElementById('borderWidth').value;
+    const spacing = document.getElementById('spacing').value;
+    const radius = document.getElementById('radius').value;
+    const title = document.getElementById('montageTitle').value;
+    const subtitle = document.getElementById('montageSubtitle').value;
+    
+    let html = `
+        <div style="background: ${currentBackground}; padding: ${spacing}px; border-radius: ${radius}px; width: 100%; height: 100%;">
+    `;
+    
+    if (title) {
+        html += `<h3 style="text-align: center; margin-bottom: 10px; color: ${document.getElementById('textColor').value}; font-family: ${document.getElementById('fontStyle').value}; font-size: ${document.getElementById('fontSize').value}px;">${title}</h3>`;
+    }
+    
+    if (subtitle) {
+        html += `<p style="text-align: center; margin-bottom: 20px; color: ${document.getElementById('textColor').value}; font-family: ${document.getElementById('fontStyle').value}; font-size: ${Math.round(document.getElementById('fontSize').value * 0.7)}px;">${subtitle}</p>`;
+    }
+    
+    html += generateLayoutHtml();
+    html += '</div>';
+    
+    return html;
+}
+
+function generateLayoutHtml() {
+    const borderWidth = document.getElementById('borderWidth').value;
+    const spacing = document.getElementById('spacing').value;
+    const radius = document.getElementById('radius').value;
+    
+    const photoStyle = `
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: ${radius}px;
+        ${borderWidth > 0 ? `border: ${borderWidth}px solid #fff;` : ''}
+        ${document.getElementById('enableShadow').checked ? 'box-shadow: 0 4px 8px rgba(0,0,0,0.2);' : ''}
+        ${document.getElementById('enableVintage').checked ? 'filter: sepia(30%) contrast(1.2) brightness(1.1);' : ''}
+        ${document.getElementById('enableSepia').checked ? 'filter: sepia(100%);' : ''}
+    `;
+    
+    switch (currentLayout) {
+        case 'grid-2x2':
+            return generateGridLayout(2, 2, photoStyle);
+        case 'grid-3x3':
+            return generateGridLayout(3, 3, photoStyle);
+        case 'collage':
+            return generateCollageLayout(photoStyle);
+        case 'polaroid':
+            return generatePolaroidLayout(photoStyle);
+        case 'magazine':
+            return generateMagazineLayout(photoStyle);
+        case 'mosaic':
+            return generateMosaicLayout(photoStyle);
+        case 'story':
+            return generateStoryLayout(photoStyle);
+        case 'timeline':
+            return generateTimelineLayout(photoStyle);
+        default:
+            return generateGridLayout(2, 2, photoStyle);
+    }
+}
+
+function generateGridLayout(rows, cols, photoStyle) {
+    const totalCells = rows * cols;
+    const photosToUse = selectedPhotos.slice(0, totalCells);
+    
+    let html = `<div style="display: grid; grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${rows}, 1fr); gap: 10px; height: 300px;">`;
+    
+    for (let i = 0; i < totalCells; i++) {
+        if (i < photosToUse.length) {
+            html += `<div><img src="${photosToUse[i].url}" style="${photoStyle}" /></div>`;
+        } else {
+            html += `<div style="background: #f0f0f0; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: #ccc;"><i class="bi bi-image"></i></div>`;
+        }
+    }
+    
+    html += '</div>';
+    return html;
+}
+
+function generateCollageLayout(photoStyle) {
+    const photosToUse = selectedPhotos.slice(0, 6);
+    
+    return `
+        <div style="position: relative; height: 300px; width: 100%;">
+            ${photosToUse.map((photo, index) => {
+                const positions = [
+                    { top: '10%', left: '10%', width: '35%', height: '40%', rotation: '-5deg' },
+                    { top: '20%', right: '10%', width: '30%', height: '35%', rotation: '3deg' },
+                    { bottom: '30%', left: '5%', width: '40%', height: '30%', rotation: '2deg' },
+                    { bottom: '10%', right: '15%', width: '35%', height: '35%', rotation: '-3deg' },
+                    { top: '45%', left: '35%', width: '25%', height: '30%', rotation: '8deg' },
+                    { top: '5%', left: '45%', width: '20%', height: '25%', rotation: '-8deg' }
+                ];
+                
+                const pos = positions[index] || positions[0];
+                return `
+                    <div style="position: absolute; ${pos.top ? `top: ${pos.top};` : ''} ${pos.bottom ? `bottom: ${pos.bottom};` : ''} ${pos.left ? `left: ${pos.left};` : ''} ${pos.right ? `right: ${pos.right};` : ''} width: ${pos.width}; height: ${pos.height}; transform: rotate(${pos.rotation}); z-index: ${index + 1};">
+                        <img src="${photo.url}" style="${photoStyle}" />
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+}
+
+function generatePolaroidLayout(photoStyle) {
+    const photosToUse = selectedPhotos.slice(0, 4);
+    
+    return `
+        <div style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; align-items: center; height: 300px;">
+            ${photosToUse.map((photo, index) => `
+                <div style="background: white; padding: 15px 15px 40px 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transform: rotate(${(index % 2 ? -1 : 1) * (Math.random() * 10 + 5)}deg); width: 120px;">
+                    <img src="${photo.url}" style="width: 100%; height: 100px; object-fit: cover;" />
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function generateMagazineLayout(photoStyle) {
+    const photosToUse = selectedPhotos.slice(0, 5);
+    
+    return `
+        <div style="display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; height: 300px;">
+            <div style="grid-row: 1 / 3;">
+                ${photosToUse[0] ? `<img src="${photosToUse[0].url}" style="${photoStyle}" />` : '<div style="background: #f0f0f0; height: 100%; border-radius: 5px;"></div>'}
+            </div>
+            <div>
+                ${photosToUse[1] ? `<img src="${photosToUse[1].url}" style="${photoStyle}" />` : '<div style="background: #f0f0f0; height: 100%; border-radius: 5px;"></div>'}
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                <div>
+                    ${photosToUse[2] ? `<img src="${photosToUse[2].url}" style="${photoStyle}" />` : '<div style="background: #f0f0f0; height: 100%; border-radius: 5px;"></div>'}
+                </div>
+                <div>
+                    ${photosToUse[3] ? `<img src="${photosToUse[3].url}" style="${photoStyle}" />` : '<div style="background: #f0f0f0; height: 100%; border-radius: 5px;"></div>'}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generateMosaicLayout(photoStyle) {
+    const photosToUse = selectedPhotos.slice(0, 8);
+    
+    return `
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr); gap: 5px; height: 300px;">
+            ${photosToUse.slice(0, 8).map((photo, index) => {
+                const spans = ['1', '1', '2', '1', '1', '2', '1', '1'];
+                return `
+                    <div style="grid-column: span ${spans[index]};">
+                        <img src="${photo.url}" style="${photoStyle}" />
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+}
+
+function generateStoryLayout(photoStyle) {
+    const photosToUse = selectedPhotos.slice(0, 4);
+    
+    return `
+        <div style="display: flex; align-items: center; height: 300px; gap: 15px; overflow-x: auto;">
+            ${photosToUse.map((photo, index) => `
+                <div style="min-width: 200px; text-align: center;">
+                    <div style="width: 150px; height: 150px; margin: 0 auto 10px; border-radius: 50%; overflow: hidden; border: 3px solid #007bff;">
+                        <img src="${photo.url}" style="width: 100%; height: 100%; object-fit: cover;" />
+                    </div>
+                    <div style="font-size: 12px; color: #666; font-weight: bold;">Step ${index + 1}</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function generateTimelineLayout(photoStyle) {
+    const photosToUse = selectedPhotos.slice(0, 4);
+    
+    return `
+        <div style="position: relative; height: 300px; padding: 20px 0;">
+            <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #007bff; transform: translateX(-50%);"></div>
+            ${photosToUse.map((photo, index) => `
+                <div style="position: absolute; top: ${20 + index * 60}px; ${index % 2 ? 'right' : 'left'}: 60%; width: 100px; height: 80px;">
+                    <img src="${photo.url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px; border: 2px solid #007bff;" />
+                    <div style="position: absolute; ${index % 2 ? 'left' : 'right'}: -15px; top: 50%; transform: translateY(-50%); width: 10px; height: 10px; background: #007bff; border-radius: 50%;"></div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function previewMontage() {
+    if (selectedPhotos.length === 0) {
+        alert('Please select at least one photo to preview the montage.');
+        return;
+    }
+    
+    updatePreview();
+}
+
+function randomizeMontage() {
+    // Randomize background color
+    const colors = ['#ffffff', '#f8f9fa', '#000000', '#6c757d', '#007bff', '#28a745', '#dc3545', '#ffc107'];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    selectColor(randomColor);
+    
+    // Randomize layout
+    const layouts = ['grid-2x2', 'grid-3x3', 'collage', 'polaroid', 'magazine', 'mosaic', 'story', 'timeline'];
+    const randomLayout = layouts[Math.floor(Math.random() * layouts.length)];
+    selectLayout(randomLayout);
+    
+    // Randomize some settings
+    document.getElementById('borderWidth').value = Math.floor(Math.random() * 10);
+    document.getElementById('spacing').value = Math.floor(Math.random() * 30) + 5;
+    document.getElementById('radius').value = Math.floor(Math.random() * 20);
+    
+    // Update value displays
+    document.getElementById('borderWidthValue').textContent = document.getElementById('borderWidth').value;
+    document.getElementById('spacingValue').textContent = document.getElementById('spacing').value;
+    document.getElementById('radiusValue').textContent = document.getElementById('radius').value;
+    
+    updatePreview();
+}
+
+function loadTemplate(template) {
+    // Load predefined template settings
+    switch (template) {
+        case 'family':
+            selectLayout('collage');
+            selectColor('#f8f9fa');
+            document.getElementById('montageTitle').value = 'Family Memories';
+            document.getElementById('enableShadow').checked = true;
+            document.getElementById('enableFrame').checked = true;
+            break;
+        case 'vacation':
+            selectLayout('magazine');
+            selectColor('#007bff');
+            document.getElementById('montageTitle').value = 'Vacation Adventures';
+            document.getElementById('enableVintage').checked = true;
+            break;
+        case 'events':
+            selectLayout('timeline');
+            selectColor('#ffffff');
+            document.getElementById('montageTitle').value = 'Special Moments';
+            document.getElementById('enableShadow').checked = true;
+            break;
+    }
+    
+    updatePreview();
+}
+
+function generateMontage() {
+    if (selectedPhotos.length === 0) {
+        alert('Please select at least one photo to create a montage.');
+        return;
+    }
+    
+    showProcessing();
+    
+    // Simulate montage generation
+    setTimeout(() => {
+        hideProcessing();
+        document.getElementById('saveMontageBtn').style.display = 'block';
+        alert('Montage generated successfully! You can now save it.');
+    }, 3000);
+}
+
+function saveMontage() {
+    alert('Montage saved to your gallery!');
+    // Here you would implement the actual save functionality
+}
+
+function resetMontage() {
+    selectedPhotos = [];
+    document.querySelectorAll('.photo-thumbnail').forEach(img => {
+        img.classList.remove('selected');
+    });
+    
+    selectLayout('grid-2x2');
+    selectColor('#ffffff');
+    selectBackgroundStyle('solid');
+    
+    document.getElementById('montageTitle').value = '';
+    document.getElementById('montageSubtitle').value = '';
+    document.getElementById('borderWidth').value = 2;
+    document.getElementById('spacing').value = 10;
+    document.getElementById('radius').value = 5;
+    document.getElementById('fontSize').value = 24;
+    
+    // Update value displays
+    document.getElementById('borderWidthValue').textContent = '2';
+    document.getElementById('spacingValue').textContent = '10';
+    document.getElementById('radiusValue').textContent = '5';
+    document.getElementById('fontSizeValue').textContent = '24';
+    
+    // Reset checkboxes
+    document.getElementById('enableShadow').checked = true;
+    document.getElementById('enableVintage').checked = false;
+    document.getElementById('enableSepia').checked = false;
+    document.getElementById('enableFrame').checked = false;
+    
+    document.getElementById('saveMontageBtn').style.display = 'none';
+    
+    updateSelectedCount();
+    showEmptyPreview();
+}
+
+function showProcessing() {
+    document.getElementById('processingOverlay').style.display = 'flex';
+}
+
+function hideProcessing() {
+    document.getElementById('processingOverlay').style.display = 'none';
+}
+</script>
+{% endblock %}

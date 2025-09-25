@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}{{ vault.name }} - PhotoVault{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Vault Header -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-1">
+                            <i class="bi bi-people"></i> {{ vault.name }}
+                        </h4>
+                        <p class="text-muted mb-0">{{ vault.description or "No description" }}</p>
+                    </div>
+                    <div>
+                        {% if user_role == 'admin' or vault.created_by == current_user.id %}
+                        <a href="{{ url_for('family.invite_member', vault_id=vault.id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-person-plus"></i> Invite
+                        </a>
+                        {% endif %}
+                        {% if user_role in ['admin', 'contributor'] or vault.created_by == current_user.id %}
+                        <a href="{{ url_for('family.add_photos', vault_id=vault.id) }}" class="btn btn-success ms-2">
+                            <i class="bi bi-images"></i> Add Photos
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('family.create_story', vault_id=vault.id) }}" class="btn btn-primary ms-2">
+                            <i class="bi bi-plus-circle"></i> Add Story
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Vault Code:</strong>
+                            <span class="vault-code">{{ vault.vault_code }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Members:</strong> {{ members|length }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vault Photos -->
+            {% if vault_photos %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-images"></i> Shared Photos ({{ vault_photos|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for vault_photo in vault_photos %}
+                        <div class="col-md-4 col-lg-3 mb-3">
+                            <div class="card">
+                                <img src="{{ url_for('gallery.uploaded_file', user_id=vault_photo.photo.user_id, filename=vault_photo.photo.filename) }}" 
+                                     class="card-img-top" alt="Shared photo" style="height: 200px; object-fit: cover;">
+                                <div class="card-body p-2">
+                                    <p class="card-text small">{{ vault_photo.caption or "No caption" }}</p>
+                                    <small class="text-muted">Shared by {{ vault_photo.sharer.username }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Vault Stories -->
+            {% if stories %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-journal"></i> Stories ({{ stories|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for story in stories %}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ story.title }}</h6>
+                            <p class="card-text">{{ story.content[:200] }}{% if story.content|length > 200 %}...{% endif %}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">By {{ story.author.username }} - {{ story.created_at.strftime('%Y-%m-%d') }}</small>
+                                <a href="{{ url_for('family.view_story', story_id=story.id) }}" class="btn btn-sm btn-outline-primary">Read More</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Members -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people"></i> Members ({{ members|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for member in members %}
+                        <div class="col-md-6 col-lg-4 mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-person-circle me-2"></i>
+                                <div>
+                                    <strong>{{ member.user.username }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ member.role.title() }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <a href="{{ url_for('family.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Family Vaults
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.vault-code {
+    font-family: 'Courier New', monospace;
+    background-color: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}

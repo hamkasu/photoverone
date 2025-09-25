@@ -1,0 +1,570 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+-->
+
+{% extends "base.html" %}
+
+{% block title %}{{ photo.original_name }} - Comparison - PhotoVault{% endblock %}
+
+{% block extra_css %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+.comparison-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.comparison-header {
+    background: linear-gradient(135deg, #343a40, #495057);
+    color: white;
+    padding: 1.5rem;
+}
+
+.comparison-content {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    min-height: 70vh;
+    gap: 0;
+}
+
+.image-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: #f8f9fa;
+}
+
+.image-panel-header {
+    padding: 1rem;
+    border-bottom: 2px solid;
+    font-weight: 600;
+    text-align: center;
+}
+
+.image-panel.original .image-panel-header {
+    background: #6c757d;
+    color: white;
+    border-color: #495057;
+}
+
+.image-panel.edited .image-panel-header {
+    background: #28a745;
+    color: white;
+    border-color: #20c997;
+}
+
+.image-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    overflow: hidden;
+}
+
+.comparison-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.comparison-image:hover {
+    transform: scale(1.02);
+}
+
+.divider {
+    width: 3px;
+    background: linear-gradient(to bottom, #dee2e6, #adb5bd, #dee2e6);
+    position: relative;
+}
+
+.divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background: #6c757d;
+    border-radius: 50%;
+    border: 3px solid white;
+}
+
+.image-info {
+    padding: 1rem;
+    background: white;
+    border-top: 1px solid #dee2e6;
+    font-size: 0.875rem;
+}
+
+.comparison-actions {
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.zoom-controls {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    gap: 0.25rem;
+    z-index: 10;
+}
+
+.zoom-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.zoom-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+@media (max-width: 768px) {
+    .comparison-content {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .divider {
+        display: none;
+    }
+    
+    .image-container {
+        min-height: 300px;
+    }
+    
+    .comparison-actions {
+        flex-direction: column;
+    }
+    
+    .comparison-actions .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="comparison-container">
+        <div class="comparison-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">
+                        <i class="bi bi-compare"></i> Photo Comparison
+                    </h3>
+                    <h5 class="mb-0 opacity-75">{{ photo.original_name }}</h5>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('gallery.compare_photos') }}" class="btn btn-outline-light btn-sm">
+                        <i class="bi bi-arrow-left"></i> Back to Comparison Gallery
+                    </a>
+                    <a href="{{ url_for('gallery.view_photo', photo_id=photo.id) }}" class="btn btn-outline-light btn-sm">
+                        <i class="bi bi-info-circle"></i> Photo Details
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="comparison-content">
+            <!-- Original Image Panel -->
+            <div class="image-panel original">
+                <div class="image-panel-header">
+                    <i class="bi bi-image"></i> Original Version
+                </div>
+                <div class="image-container">
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" onclick="zoomImage('original', 1.2)" title="Zoom In">
+                            <i class="bi bi-zoom-in"></i>
+                        </button>
+                        <button class="zoom-btn" onclick="zoomImage('original', 0.8)" title="Zoom Out">
+                            <i class="bi bi-zoom-out"></i>
+                        </button>
+                        <button class="zoom-btn" onclick="resetZoom('original')" title="Reset Zoom">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                    <img id="originalImage" 
+                         src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                         alt="{{ photo.original_name }} - Original"
+                         class="comparison-image"
+                         onclick="viewFullSize('{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}', '{{ photo.original_name }} - Original')">
+                </div>
+                <div class="image-info">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <strong>File:</strong><br>
+                            <small class="text-muted">{{ photo.filename }}</small>
+                        </div>
+                        <div class="col-6">
+                            <strong>Size:</strong><br>
+                            <small class="text-muted">{{ "%.2f"|format(photo.file_size / 1024 / 1024) }} MB</small>
+                        </div>
+                        <div class="col-6">
+                            <strong>Dimensions:</strong><br>
+                            <small class="text-muted">{{ photo.width }} × {{ photo.height }}</small>
+                        </div>
+                        <div class="col-6">
+                            <strong>Uploaded:</strong><br>
+                            <small class="text-muted">{{ photo.created_at.strftime('%m/%d/%Y') }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="divider"></div>
+
+            <!-- Edited Image Panel -->
+            <div class="image-panel edited">
+                <div class="image-panel-header">
+                    <i class="bi bi-magic"></i> Edited Version
+                </div>
+                <div class="image-container">
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" onclick="zoomImage('edited', 1.2)" title="Zoom In">
+                            <i class="bi bi-zoom-in"></i>
+                        </button>
+                        <button class="zoom-btn" onclick="zoomImage('edited', 0.8)" title="Zoom Out">
+                            <i class="bi bi-zoom-out"></i>
+                        </button>
+                        <button class="zoom-btn" onclick="resetZoom('edited')" title="Reset Zoom">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                    {% if photo.edited_filename %}
+                        <img id="editedImage" 
+                             src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
+                             alt="{{ photo.original_name }} - Edited"
+                             class="comparison-image"
+                             onclick="viewFullSize('{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}', '{{ photo.original_name }} - Edited')">
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="bi bi-exclamation-triangle display-1"></i>
+                            <p class="mt-3">Edited version not available</p>
+                        </div>
+                    {% endif %}
+                </div>
+                {% if photo.edited_filename %}
+                <div class="image-info">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <strong>File:</strong><br>
+                            <small class="text-muted">{{ photo.edited_filename }}</small>
+                        </div>
+                        <div class="col-6">
+                            <strong>Status:</strong><br>
+                            <small class="text-success"><i class="bi bi-check-circle"></i> Enhanced</small>
+                        </div>
+                        <div class="col-6">
+                            <strong>Modified:</strong><br>
+                            <small class="text-muted">{{ photo.updated_at.strftime('%m/%d/%Y') if photo.updated_at else 'N/A' }}</small>
+                        </div>
+                        <div class="col-6">
+                            <strong>Auto Enhanced:</strong><br>
+                            <small class="text-muted">
+                                {% if photo.auto_enhanced %}
+                                    <i class="bi bi-check text-success"></i> Yes
+                                {% else %}
+                                    <i class="bi bi-x text-muted"></i> Manual
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="comparison-actions">
+            <a href="{{ url_for('main.edit_photo', photo_id=photo.id) }}" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> Continue Editing
+            </a>
+            <a href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+               download="{{ photo.original_name }}" class="btn btn-secondary">
+                <i class="bi bi-download"></i> Download Original
+            </a>
+            {% if photo.edited_filename %}
+            <a href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
+               download="{{ photo.original_name.split('.')[0] }}_edited.{{ photo.edited_filename.split('.')[-1] }}" 
+               class="btn btn-success">
+                <i class="bi bi-download"></i> Download Edited
+            </a>
+            {% endif %}
+            <button class="btn btn-info" onclick="toggleSyncZoom()">
+                <i class="bi bi-link-45deg"></i> <span id="syncText">Sync Zoom</span>
+            </button>
+            <button class="btn btn-danger" onclick="deletePhoto({{ photo.id }})" title="Delete photo">
+                <i class="bi bi-trash"></i> Delete Photo
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Full Size Image Modal -->
+<div class="modal fade" id="fullSizeModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="fullSizeModalTitle">Full Size View</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="fullSizeImage" src="" alt="" class="img-fluid">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Selective Deletion Modal -->
+<div class="modal fade" id="deletePhotoModal" tabindex="-1" aria-labelledby="deletePhotoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deletePhotoModalLabel">Delete Photo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>What would you like to delete for <strong>{{ photo.original_name }}</strong>?</p>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="deletionType" id="deleteBoth" value="both" checked>
+                    <label class="form-check-label" for="deleteBoth">
+                        <strong>Delete Both</strong> - Remove original and edited versions (cannot be undone)
+                    </label>
+                </div>
+                {% if photo.edited_filename %}
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="deletionType" id="deleteOriginal" value="original">
+                    <label class="form-check-label" for="deleteOriginal">
+                        <strong>Delete Original Only</strong> - Keep edited version as the main photo
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="deletionType" id="deleteEdited" value="edited">
+                    <label class="form-check-label" for="deleteEdited">
+                        <strong>Delete Edited Only</strong> - Keep original and remove edited version
+                    </label>
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeletePhoto()">
+                    <i class="bi bi-trash"></i> Delete Selected
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let originalScale = 1;
+let editedScale = 1;
+let syncZoom = false;
+
+function zoomImage(imageType, factor) {
+    const image = document.getElementById(imageType + 'Image');
+    if (!image) return;
+    
+    if (imageType === 'original') {
+        originalScale *= factor;
+        image.style.transform = `scale(${originalScale})`;
+        if (syncZoom) {
+            editedScale = originalScale;
+            const editedImage = document.getElementById('editedImage');
+            if (editedImage) {
+                editedImage.style.transform = `scale(${editedScale})`;
+            }
+        }
+    } else if (imageType === 'edited') {
+        editedScale *= factor;
+        image.style.transform = `scale(${editedScale})`;
+        if (syncZoom) {
+            originalScale = editedScale;
+            const originalImage = document.getElementById('originalImage');
+            if (originalImage) {
+                originalImage.style.transform = `scale(${originalScale})`;
+            }
+        }
+    }
+}
+
+function resetZoom(imageType) {
+    if (imageType === 'original' || syncZoom) {
+        originalScale = 1;
+        const originalImage = document.getElementById('originalImage');
+        if (originalImage) {
+            originalImage.style.transform = 'scale(1)';
+        }
+    }
+    
+    if (imageType === 'edited' || syncZoom) {
+        editedScale = 1;
+        const editedImage = document.getElementById('editedImage');
+        if (editedImage) {
+            editedImage.style.transform = 'scale(1)';
+        }
+    }
+}
+
+function toggleSyncZoom() {
+    syncZoom = !syncZoom;
+    const syncText = document.getElementById('syncText');
+    if (syncZoom) {
+        syncText.textContent = 'Unsync Zoom';
+        // Sync current zoom levels
+        const avgScale = (originalScale + editedScale) / 2;
+        originalScale = editedScale = avgScale;
+        
+        const originalImage = document.getElementById('originalImage');
+        const editedImage = document.getElementById('editedImage');
+        if (originalImage) originalImage.style.transform = `scale(${avgScale})`;
+        if (editedImage) editedImage.style.transform = `scale(${avgScale})`;
+    } else {
+        syncText.textContent = 'Sync Zoom';
+    }
+}
+
+function viewFullSize(imageSrc, imageTitle) {
+    document.getElementById('fullSizeImage').src = imageSrc;
+    document.getElementById('fullSizeModalTitle').textContent = imageTitle;
+    
+    const modal = new bootstrap.Modal(document.getElementById('fullSizeModal'));
+    modal.show();
+}
+
+// Delete photo functionality
+function deletePhoto(photoId) {
+    // Store the photo ID for deletion
+    window.currentPhotoIdToDelete = photoId;
+    
+    // Show the selective deletion modal
+    const modal = new bootstrap.Modal(document.getElementById('deletePhotoModal'));
+    modal.show();
+}
+
+function confirmDeletePhoto() {
+    const selectedOption = document.querySelector('input[name="deletionType"]:checked');
+    const deletionType = selectedOption ? selectedOption.value : 'both';
+    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+    };
+    
+    if (csrfToken) {
+        headers['X-CSRFToken'] = csrfToken;
+    }
+    
+    fetch(`/api/photos/${window.currentPhotoIdToDelete}/delete`, {
+        method: 'DELETE',
+        headers: headers,
+        body: JSON.stringify({
+            deletion_type: deletionType
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'Photo deleted successfully!');
+            window.location.href = '/gallery';
+        } else {
+            alert('Error deleting photo: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Delete photo error:', error);
+        alert('Error deleting photo. Please try again.');
+    })
+    .finally(() => {
+        // Hide modal and cleanup
+        const modal = bootstrap.Modal.getInstance(document.getElementById('deletePhotoModal'));
+        if (modal) modal.hide();
+        window.currentPhotoIdToDelete = null;
+    });
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.target.tagName.toLowerCase() === 'input') return;
+    
+    switch(e.key) {
+        case '+':
+        case '=':
+            e.preventDefault();
+            if (syncZoom) {
+                zoomImage('original', 1.2);
+            } else if (e.ctrlKey) {
+                zoomImage('original', 1.2);
+            } else {
+                zoomImage('edited', 1.2);
+            }
+            break;
+        case '-':
+            e.preventDefault();
+            if (syncZoom) {
+                zoomImage('original', 0.8);
+            } else if (e.ctrlKey) {
+                zoomImage('original', 0.8);
+            } else {
+                zoomImage('edited', 0.8);
+            }
+            break;
+        case '0':
+            if (e.ctrlKey) {
+                e.preventDefault();
+                resetZoom('original');
+                resetZoom('edited');
+            }
+            break;
+        case 's':
+            if (e.ctrlKey) {
+                e.preventDefault();
+                toggleSyncZoom();
+            }
+            break;
+    }
+});
+</script>
+{% endblock %}

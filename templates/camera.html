@@ -1,0 +1,2587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>PhotoVault Camera</title>
+    
+    <!-- TensorFlow.js Libraries for AI Features -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet@2.2.2/dist/posenet.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/deeplab@0.2.1/dist/deeplab.min.js"></script>
+    
+    <!-- PhotoVault TensorFlow.js Manager -->
+    <script src="{{ url_for('static', filename='js/tensorflow-manager.js') }}"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+
+        .camera-app {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Camera Video */
+        .camera-viewport {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #111;
+        }
+
+        #cameraVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+        }
+
+        /* Top Controls */
+        .top-controls {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: env(safe-area-inset-top, 20px) 20px 20px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 15px;
+            z-index: 100;
+        }
+        
+        /* Floating Gallery Button */
+        .floating-gallery-btn {
+            position: fixed;
+            bottom: 120px;
+            left: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 3px solid rgba(255, 255, 255, 0.9);
+            color: white;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-size: 24px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            z-index: 150;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+            backdrop-filter: blur(10px);
+        }
+        
+        .floating-gallery-btn:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+            color: white;
+            text-decoration: none;
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+        }
+        
+        .floating-gallery-btn:active {
+            transform: scale(0.95);
+        }
+
+        .control-button {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            padding: 8px 16px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 70px;
+            justify-content: center;
+        }
+
+        .control-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
+        }
+
+        .exit-button {
+            background: rgba(220, 38, 127, 0.8);
+            border-color: rgba(220, 38, 127, 1);
+        }
+
+        .flash-button {
+            background: rgba(255, 193, 7, 0.8);
+            border-color: rgba(255, 193, 7, 1);
+        }
+
+        .flash-button.active {
+            background: rgba(255, 193, 7, 1);
+            box-shadow: 0 0 20px rgba(255, 193, 7, 0.4);
+        }
+
+        .multi-photo-button {
+            background: rgba(34, 139, 34, 0.8);
+            border-color: rgba(34, 139, 34, 1);
+            transition: all 0.3s ease;
+        }
+
+        .multi-photo-button.active {
+            background: rgba(34, 139, 34, 1);
+            box-shadow: 0 0 20px rgba(34, 139, 34, 0.4);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Removed tap-anywhere capture overlay */
+
+        /* SNAP Button */
+        .snap-button {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff4757, #ff3838);
+            border: 4px solid rgba(255, 255, 255, 0.9);
+            color: white;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(255, 71, 87, 0.4);
+        }
+
+        .snap-button:hover {
+            transform: translateX(-50%) scale(1.1);
+            box-shadow: 0 6px 25px rgba(255, 71, 87, 0.6);
+        }
+
+        .snap-button:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+
+        .snap-button:disabled {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.4);
+            cursor: not-allowed;
+        }
+
+        /* Multi-Photo Progress */
+        .multi-photo-progress {
+            position: absolute;
+            bottom: 140px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 15px 20px;
+            color: white;
+            text-align: center;
+            z-index: 100;
+            min-width: 200px;
+        }
+
+        .progress-text {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #4ade80;
+        }
+
+        .progress-counter {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80, #22c55e);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Zoom Controls */
+        .zoom-controls {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .zoom-btn {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .zoom-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.1);
+        }
+
+        .zoom-level {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Video Zoom */
+        #cameraVideo {
+            transition: transform 0.3s ease;
+            transform-origin: center center;
+        }
+
+        /* Flash Effect */
+        .flash-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        .flash-effect.active {
+            animation: flashAnimation 0.3s ease-out;
+        }
+
+        @keyframes flashAnimation {
+            0% { opacity: 0; }
+            30% { opacity: 0.9; }
+            100% { opacity: 0; }
+        }
+
+        /* Photo Preview */
+        .photo-preview {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            width: 70px;
+            height: 70px;
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 100;
+            display: none;
+        }
+
+        .photo-preview.visible {
+            display: block;
+        }
+
+        .photo-preview:hover {
+            transform: scale(1.1);
+            border-color: #fff;
+            box-shadow: 0 5px 25px rgba(255, 255, 255, 0.3);
+        }
+
+        .photo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Error/Permission States */
+        .permission-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+            padding: 20px;
+        }
+
+        .permission-content {
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .permission-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        .permission-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .permission-description {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .permission-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 15px 30px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .permission-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .permission-steps {
+            margin-top: 25px;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .permission-steps h4 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .permission-steps ol {
+            padding-left: 20px;
+        }
+
+        .permission-steps li {
+            margin: 8px 0;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .top-controls {
+                padding: max(env(safe-area-inset-top), 15px) 15px 15px;
+            }
+            
+            .control-button {
+                padding: 6px 12px;
+                font-size: 13px;
+                min-width: 60px;
+            }
+            
+            .capture-hint {
+                bottom: 20px;
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+        }
+
+        /* Force Landscape Mode */
+        @media (orientation: portrait) {
+            .landscape-warning {
+                display: flex !important;
+            }
+        }
+
+        .landscape-warning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+            flex-direction: column;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .rotate-icon {
+            font-size: 60px;
+            animation: rotatePhone 2s ease-in-out infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes rotatePhone {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+        }
+
+        /* Landscape Mode Optimization */
+        @media (orientation: landscape) {
+            .snap-button {
+                bottom: 25px;
+            }
+            
+            .photo-preview {
+                bottom: 15px;
+                right: 15px;
+                width: 60px;
+                height: 60px;
+            }
+            
+            .zoom-controls {
+                right: 15px;
+            }
+        }
+
+        /* Demo Mode Styles */
+        .demo-mode {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 250;
+        }
+
+        .demo-content {
+            text-align: center;
+            padding: 40px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            max-width: 500px;
+        }
+
+        .demo-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .demo-features {
+            text-align: left;
+            margin: 20px 0;
+        }
+
+        .demo-features li {
+            margin: 10px 0;
+            padding-left: 10px;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
+        .deployment-info {
+            background: rgba(255, 193, 7, 0.1);
+            border: 2px solid rgba(255, 193, 7, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .deployment-info h4 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Quad Split Overlay Styles */
+        .quad-split-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 50;
+            pointer-events: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 2px;
+        }
+
+        .quad-section {
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            background: rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            position: relative;
+            backdrop-filter: blur(1px);
+        }
+
+        .quad-section:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .quad-top-left {
+            border-top-left-radius: 0;
+        }
+
+        .quad-top-right {
+            border-top-right-radius: 0;
+        }
+
+        .quad-bottom-left {
+            border-bottom-left-radius: 0;
+        }
+
+        .quad-bottom-right {
+            border-bottom-right-radius: 0;
+        }
+
+        .quad-label {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 6px 12px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 0 0 8px 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .quad-top-right .quad-label {
+            border-radius: 0 0 0 8px;
+            right: 0;
+            left: auto;
+        }
+
+        .quad-bottom-left .quad-label {
+            border-radius: 0 8px 0 0;
+            bottom: 0;
+            top: auto;
+        }
+
+        .quad-bottom-right .quad-label {
+            border-radius: 8px 0 0 0;
+            bottom: 0;
+            top: auto;
+            right: 0;
+            left: auto;
+        }
+
+        /* Mode Selector Styles */
+        .mode-selector {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            padding: 4px 8px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        .mode-selector:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
+        }
+
+        .mode-selector.quad-mode {
+            background: rgba(34, 139, 34, 0.8);
+            border-color: rgba(34, 139, 34, 1);
+        }
+
+        .mode-selector.quad-mode:hover {
+            background: rgba(34, 139, 34, 1);
+        }
+
+        /* AI Control Buttons */
+        .ai-button {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .ai-button:hover {
+            background: rgba(102, 126, 234, 0.4);
+            border-color: rgba(102, 126, 234, 0.6);
+        }
+
+        .ai-button.active {
+            background: rgba(102, 126, 234, 0.8);
+            border-color: rgba(102, 126, 234, 1);
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+            animation: ai-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes ai-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* AI Overlay Canvases */
+        .ai-overlay-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 60;
+        }
+
+        /* AI Information Panel */
+        .ai-info-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            color: white;
+            max-width: 300px;
+            z-index: 100;
+            display: none;
+        }
+
+        .ai-info-panel.visible {
+            display: block;
+        }
+
+        .ai-info-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .ai-info-content {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .ai-info-item {
+            margin: 5px 0;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ai-info-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Composition Suggestions */
+        .composition-suggestions {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 193, 7, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            color: white;
+            max-width: 250px;
+            z-index: 100;
+            display: none;
+        }
+
+        .composition-suggestions.visible {
+            display: block;
+        }
+
+        .composition-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #ffd700;
+        }
+
+        .composition-suggestion {
+            font-size: 12px;
+            margin: 8px 0;
+            padding: 8px;
+            background: rgba(255, 193, 7, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid #ffd700;
+        }
+
+        /* AI Loading Indicator */
+        .ai-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            text-align: center;
+            z-index: 200;
+            display: none;
+        }
+
+        .ai-loading.visible {
+            display: block;
+        }
+
+        .ai-loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(102, 126, 234, 0.3);
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="camera-app" id="cameraApp">
+        <!-- Demo Mode (shown in artifact environment) -->
+        <div class="demo-mode" id="demoMode">
+            <div class="demo-content">
+                <div class="permission-icon">📱</div>
+                <div class="demo-title">PhotoVault Camera - UPDATED v2</div>
+                <div class="permission-description">
+                    Professional camera interface with tap-to-capture functionality
+                </div>
+                
+                <ul class="demo-features">
+                    <li>📸 <strong>Press SNAP button</strong> to capture photos</li>
+                    <li>🌟 <strong>Fullscreen mode</strong> with landscape optimization</li>
+                    <li>⚡ <strong>Flash control</strong> for better lighting</li>
+                    <li>🔍 <strong>Zoom controls</strong> with pinch-to-zoom</li>
+                    <li>🖼️ <strong>Photo preview</strong> thumbnail</li>
+                    <li>📱 <strong>Mobile responsive</strong> design</li>
+                    <li>🔐 <strong>Secure camera access</strong> handling</li>
+                </ul>
+
+                <div class="deployment-info">
+                    <h4>🚀 For Production Deployment:</h4>
+                    <ol style="padding-left: 20px; margin-top: 10px;">
+                        <li><strong>HTTPS Required:</strong> Camera API only works over secure connections</li>
+                        <li><strong>Save as:</strong> <code>templates/camera.html</code> in your Flask app</li>
+                        <li><strong>Add route:</strong> <code>@app.route('/camera')</code></li>
+                        <li><strong>Test on mobile:</strong> Works best on smartphones/tablets</li>
+                    </ol>
+                </div>
+
+                <button class="permission-button" onclick="window.location.reload()">
+                    📷 View Camera Code
+                </button>
+            </div>
+        </div>
+
+        <!-- Camera Viewport -->
+        <div class="camera-viewport">
+            <video id="cameraVideo" autoplay playsinline muted></video>
+            
+            <!-- Quad Split Overlay -->
+            <div class="quad-split-overlay hidden" id="quadSplitOverlay">
+                <div class="quad-section quad-top-left">
+                    <div class="quad-label">Top Left</div>
+                </div>
+                <div class="quad-section quad-top-right">
+                    <div class="quad-label">Top Right</div>
+                </div>
+                <div class="quad-section quad-bottom-left">
+                    <div class="quad-label">Bottom Left</div>
+                </div>
+                <div class="quad-section quad-bottom-right">
+                    <div class="quad-label">Bottom Right</div>
+                </div>
+            </div>
+            
+            <!-- AI Overlay Canvases -->
+            <canvas id="faceDetectionCanvas" class="ai-overlay-canvas" style="display: none;"></canvas>
+            <canvas id="objectDetectionCanvas" class="ai-overlay-canvas" style="display: none;"></canvas>
+            <canvas id="poseDetectionCanvas" class="ai-overlay-canvas" style="display: none;"></canvas>
+            <canvas id="compositionCanvas" class="ai-overlay-canvas" style="display: none;"></canvas>
+            <canvas id="smartFilterCanvas" class="ai-overlay-canvas" style="display: none;"></canvas>
+            
+            <!-- Zoom Controls -->
+            <div class="zoom-controls" id="zoomControls">
+                <button class="zoom-btn" id="zoomInBtn">+</button>
+                <div class="zoom-level" id="zoomLevel">1.0x</div>
+                <button class="zoom-btn" id="zoomOutBtn">-</button>
+            </div>
+        </div>
+
+        <!-- Top Controls -->
+        <div class="top-controls">
+            <button class="control-button ai-button" id="autoTagButton" title="Toggle Smart Auto-Tagging">
+                <span id="autoTagIcon">🏷️</span> <span id="autoTagText">Tags</span>
+            </button>
+            <button class="control-button ai-button" id="faceDetectionButton" title="Toggle Enhanced Face Detection">
+                <span id="faceDetectionIcon">👥</span> <span id="faceDetectionText">Faces</span>
+            </button>
+            <button class="control-button ai-button" id="smartFilterButton" title="Toggle Intelligent Photo Enhancement">
+                <span id="smartFilterIcon">✨</span> <span id="smartFilterText">Smart</span>
+            </button>
+            <button class="control-button ai-button" id="compositionButton" title="Toggle Smart Composition Analysis">
+                <span id="compositionIcon">🎯</span> <span id="compositionText">Compose</span>
+            </button>
+            <button class="control-button ai-button" id="poseDetectionButton" title="Toggle Pose Recognition">
+                <span id="poseDetectionIcon">🤸</span> <span id="poseDetectionText">Poses</span>
+            </button>
+            <button class="control-button" id="fullscreenButton" title="Toggle Fullscreen Mode">
+                <span id="fullscreenIcon">⛶</span> <span id="fullscreenText">Fullscreen</span>
+            </button>
+            <button class="control-button exit-button" id="exitButton">
+                <span>✕</span> Exit
+            </button>
+            <button class="control-button flash-button" id="flashButton">
+                <span>⚡</span> Flash
+            </button>
+        </div>
+        
+        <!-- AI Information Panel -->
+        <div class="ai-info-panel" id="aiInfoPanel">
+            <div class="ai-info-title">AI Detection Results</div>
+            <div class="ai-info-content" id="aiInfoContent">
+                <!-- Dynamic AI detection information will be displayed here -->
+            </div>
+        </div>
+
+        <!-- Composition Suggestions -->
+        <div class="composition-suggestions" id="compositionSuggestions">
+            <div class="composition-title">📸 Composition Tips</div>
+            <div id="compositionContent">
+                <!-- Dynamic composition suggestions will be displayed here -->
+            </div>
+        </div>
+
+        <!-- AI Loading Indicator -->
+        <div class="ai-loading" id="aiLoading">
+            <div class="ai-loading-spinner"></div>
+            <div id="aiLoadingText">Loading AI models...</div>
+        </div>
+
+        <!-- SNAP Button (moved above gallery button) -->
+        <button class="snap-button" id="snapButton" style="position: fixed; bottom: 200px; left: 20px; transform: none;">
+            <span id="snapText">📷 SNAP</span>
+        </button>
+
+        <!-- Floating Gallery Button -->
+        <a href="/dashboard" class="floating-gallery-btn" id="galleryBtn" title="Go to Gallery" aria-label="Go to Gallery">
+            🖼️
+        </a>
+
+        <!-- Multi-Photo Progress -->
+        <div class="multi-photo-progress hidden" id="multiPhotoProgress">
+            <div class="progress-text">Multi-Photo Mode</div>
+            <div class="progress-counter">
+                <span id="currentPhoto">1</span> / <span id="totalPhotos">4</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <!-- Photo Preview -->
+        <div class="photo-preview" id="photoPreview">
+            <img id="previewImage" alt="Last photo">
+        </div>
+
+        <!-- Flash Effect -->
+        <div class="flash-effect" id="flashEffect"></div>
+
+        <!-- Landscape Warning -->
+        <div class="landscape-warning" id="landscapeWarning">
+            <div class="rotate-icon">📱</div>
+            <h3>Please Rotate Your Device</h3>
+            <p>For the best camera experience, please rotate your device to landscape mode.</p>
+        </div>
+
+        <!-- Permission Screen -->
+        <div class="permission-screen hidden" id="permissionScreen">
+            <div class="permission-content">
+                <div class="permission-icon">📷</div>
+                <div class="permission-title">Camera Access Required</div>
+                <div class="permission-description">
+                    PhotoVault needs camera permission to capture photos
+                </div>
+                
+                <button class="permission-button" id="requestPermissionBtn">
+                    Grant Camera Access
+                </button>
+                
+                <div class="permission-steps">
+                    <h4>Manual Setup (if needed):</h4>
+                    <ol>
+                        <li>Look for a camera icon 📷 in your browser's address bar</li>
+                        <li>Click it and select "Always allow" for camera</li>
+                        <li>Refresh this page to try again</li>
+                        <li>On mobile: Check browser settings → Site permissions</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Canvas for Photo Capture -->
+    <canvas id="captureCanvas" style="display: none;"></canvas>
+
+    <script>
+        class PhotoVaultCamera {
+            constructor() {
+                this.isDemo = this.detectDemoEnvironment();
+                
+                if (this.isDemo) {
+                    this.showDemoMode();
+                    return;
+                }
+                
+                this.initializeCamera();
+            }
+
+            detectDemoEnvironment() {
+                // Detect if running in restricted environments that don't support camera
+                try {
+                    // Debug logging to understand the environment
+                    console.log('🔍 Camera Environment Debug:');
+                    console.log('  Protocol:', window.location.protocol);
+                    console.log('  Hostname:', window.location.hostname);
+                    console.log('  MediaDevices available:', !!navigator.mediaDevices);
+                    console.log('  getUserMedia available:', !!navigator.mediaDevices?.getUserMedia);
+                    
+                    // Check for missing MediaDevices API
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        console.log('❌ MediaDevices API not available');
+                        return true;
+                    }
+                    
+                    // Check for specific restricted environments (but not Replit)
+                    if (window.location.protocol === 'blob:' ||
+                        window.location.hostname.includes('claude.ai')) {
+                        console.log('❌ Blocked restricted environment detected');
+                        return true;
+                    }
+                    
+                    // Allow camera access in development environments like Replit
+                    // Only block if we're in a clearly restricted context
+                    const isHttps = window.location.protocol === 'https:';
+                    const isLocalhost = window.location.hostname === 'localhost' || 
+                                      window.location.hostname === '127.0.0.1';
+                    const isReplit = window.location.hostname.includes('replit') || 
+                                   window.location.hostname.includes('repl.co') ||
+                                   window.location.hostname.includes('replit.dev');
+                    
+                    console.log('  Is HTTPS:', isHttps);
+                    console.log('  Is Localhost:', isLocalhost);
+                    console.log('  Is Replit:', isReplit);
+                    
+                    // Allow if it's HTTPS, localhost, or Replit
+                    if (isHttps || isLocalhost || isReplit) {
+                        console.log('✅ Environment allowed for camera access');
+                        return false;
+                    }
+                    
+                    // Block for HTTP in production environments
+                    console.log('❌ Blocked: HTTP in production environment');
+                    return true;
+                } catch (e) {
+                    console.log('❌ Error in detection logic:', e);
+                    return true;
+                }
+            }
+
+            showDemoMode() {
+                document.getElementById('demoMode').style.display = 'flex';
+                console.log('PhotoVault Camera - Demo Mode Active');
+                console.log('Deploy to HTTPS server with camera permissions for full functionality');
+            }
+
+            async initializeCamera() {
+                this.video = document.getElementById('cameraVideo');
+                this.canvas = document.getElementById('captureCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.stream = null;
+                this.flashEnabled = false;
+                this.photos = [];
+                this.zoomLevel = 1.0;
+                this.maxZoom = 3.0;
+                this.minZoom = 1.0;
+                this.zoomStep = 0.2;
+                
+                // Multi-photo mode properties
+                this.multiPhotoMode = false;
+                this.isBurstCapture = false;
+                this.burstPhotosRemaining = 0;
+                this.burstPhotoCount = 4; // Number of photos to capture in burst mode
+                
+                // Quad split mode properties
+                this.captureMode = 'sequential'; // 'sequential' or 'quad-split'
+                this.quadSplitOverlay = null;
+                
+                // Initialize mode selector as hidden
+                this.initializeModeSelector();
+                
+                this.setupElements();
+                this.setupEventListeners();
+                this.enforceOrientation();
+                await this.requestCameraAccess();
+                
+                // Auto-enter fullscreen after camera is ready (best effort)
+                this.isFullscreenRequested = false;
+                setTimeout(() => {
+                    this.tryEnterFullscreen('auto');
+                }, 1000);
+            }
+
+            setupElements() {
+                this.flashEffect = document.getElementById('flashEffect');
+                this.photoPreview = document.getElementById('photoPreview');
+                this.previewImage = document.getElementById('previewImage');
+                this.permissionScreen = document.getElementById('permissionScreen');
+                
+                // Buttons
+                this.exitButton = document.getElementById('exitButton');
+                this.flashButton = document.getElementById('flashButton');
+                this.fullscreenButton = document.getElementById('fullscreenButton');
+                this.requestPermissionBtn = document.getElementById('requestPermissionBtn');
+                
+                // Multi-photo elements (removed mode buttons)
+                this.multiPhotoProgress = document.getElementById('multiPhotoProgress');
+                this.snapText = document.getElementById('snapText');
+                
+                // Quad split elements
+                this.quadSplitOverlay = document.getElementById('quadSplitOverlay');
+            }
+
+            setupEventListeners() {
+                // SNAP button to capture (prevent double-trigger on mobile)
+                let captureInProgress = false;
+                document.getElementById('snapButton').addEventListener('click', () => {
+                    if (!captureInProgress) {
+                        captureInProgress = true;
+                        // Simplified to single photo capture only
+                        this.capturePhoto().finally(() => {
+                            setTimeout(() => { captureInProgress = false; }, 500);
+                        });
+                    }
+                });
+                
+                // Zoom controls
+                document.getElementById('zoomInBtn').addEventListener('click', () => this.zoomIn());
+                document.getElementById('zoomOutBtn').addEventListener('click', () => this.zoomOut());
+                
+                // Pinch to zoom on video
+                this.setupPinchZoom();
+
+                // Control buttons
+                this.exitButton.addEventListener('click', () => this.exitCamera());
+                this.flashButton.addEventListener('click', () => this.toggleFlash());
+                this.fullscreenButton.addEventListener('click', () => this.toggleFullscreen());
+                this.requestPermissionBtn.addEventListener('click', () => this.requestCameraAccess());
+                
+                // Photo preview
+                this.photoPreview.addEventListener('click', () => this.openLastPhoto());
+
+                // Prevent context menu on video
+                this.video.addEventListener('contextmenu', (e) => e.preventDefault());
+                
+                // Fullscreen change listener
+                document.addEventListener('fullscreenchange', () => this.handleFullscreenChange());
+                document.addEventListener('webkitfullscreenchange', () => this.handleFullscreenChange());
+                document.addEventListener('mozfullscreenchange', () => this.handleFullscreenChange());
+                document.addEventListener('MSFullscreenChange', () => this.handleFullscreenChange());
+                
+                // User gesture fallback for fullscreen
+                this.setupFullscreenFallback();
+                
+                // Handle orientation changes
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(() => {
+                        // Refresh camera constraints for better orientation handling
+                        if (this.stream) {
+                            this.canvas.width = this.video.videoWidth;
+                            this.canvas.height = this.video.videoHeight;
+                        }
+                        // Re-check orientation for landscape warning
+                        this.enforceOrientation();
+                    }, 500);
+                });
+            }
+
+            async requestCameraAccess() {
+                try {
+                    this.permissionScreen.classList.add('hidden');
+                    
+                    const constraints = {
+                        video: {
+                            width: { ideal: 1920, min: 640 },
+                            height: { ideal: 1080, min: 480 },
+                            facingMode: { ideal: 'environment' }
+                        }
+                    };
+
+                    this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    this.video.srcObject = this.stream;
+
+                    this.video.onloadedmetadata = () => {
+                        this.video.play();
+                        this.canvas.width = this.video.videoWidth;
+                        this.canvas.height = this.video.videoHeight;
+                        
+                        // Hide demo mode
+                        document.getElementById('demoMode').style.display = 'none';
+                        
+                        console.log(`Camera started: ${this.video.videoWidth}x${this.video.videoHeight}`);
+                    };
+
+                } catch (error) {
+                    console.error('Camera access error:', error);
+                    this.showPermissionScreen(error);
+                }
+            }
+
+            showPermissionScreen(error) {
+                let title = 'Camera Access Required';
+                let description = 'PhotoVault needs camera permission to capture photos';
+
+                if (error.name === 'NotAllowedError') {
+                    title = 'Camera Permission Denied';
+                    description = 'Please allow camera access to continue';
+                } else if (error.name === 'NotFoundError') {
+                    title = 'No Camera Found';
+                    description = 'Please connect a camera device';
+                } else if (error.name === 'NotReadableError') {
+                    title = 'Camera is Busy';
+                    description = 'Close other apps using the camera';
+                }
+
+                document.querySelector('.permission-title').textContent = title;
+                document.querySelector('.permission-description').textContent = description;
+                this.permissionScreen.classList.remove('hidden');
+            }
+
+            async capturePhoto(event) {
+                if (!this.stream || this.video.readyState !== 4) {
+                    console.log('Camera not ready');
+                    return;
+                }
+
+                try {
+                    // Visual feedback
+                    this.flashEffect.classList.add('active');
+                    
+                    // Capture frame
+                    this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+                    const photoDataUrl = this.canvas.toDataURL('image/jpeg', 0.92);
+                    
+                    // Store photo
+                    const photo = {
+                        dataUrl: photoDataUrl,
+                        timestamp: new Date().toISOString(),
+                        id: Date.now()
+                    };
+                    
+                    this.photos.push(photo);
+                    this.updatePhotoPreview(photo);
+                    
+                    // Upload to server (optional)
+                    this.uploadPhoto(photoDataUrl);
+                    
+                    // Audio feedback
+                    this.playCaptureSound();
+                    
+                    console.log(`Photo captured: ${this.canvas.width}x${this.canvas.height}`);
+                    
+                } catch (error) {
+                    console.error('Capture error:', error);
+                } finally {
+                    setTimeout(() => {
+                        this.flashEffect.classList.remove('active');
+                    }, 300);
+                }
+            }
+
+            updatePhotoPreview(photo) {
+                this.previewImage.src = photo.dataUrl;
+                this.photoPreview.classList.add('visible');
+            }
+
+            async uploadPhoto(photoDataUrl) {
+                try {
+                    // Convert base64 to blob
+                    const response = await fetch(photoDataUrl);
+                    const blob = await response.blob();
+                    
+                    // Create form data
+                    const formData = new FormData();
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                    const filename = `camera-capture-${timestamp}.jpg`;
+                    formData.append('file', blob, filename);
+                    formData.append('source', 'camera');
+                    
+                    // Get CSRF token
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                    if (csrfToken) {
+                        formData.append('csrf_token', csrfToken);
+                    }
+
+                    const uploadResponse = await fetch('/api/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (uploadResponse.ok) {
+                        console.log('Photo uploaded successfully');
+                    } else {
+                        const errorData = await uploadResponse.json();
+                        console.log('Upload failed:', errorData.error || 'Unknown error');
+                    }
+                } catch (error) {
+                    console.log('Upload failed:', error.message);
+                    // Continue without upload
+                }
+            }
+
+            toggleFlash() {
+                this.flashEnabled = !this.flashEnabled;
+                this.flashButton.classList.toggle('active', this.flashEnabled);
+                
+                if (this.flashEnabled) {
+                    this.flashButton.innerHTML = '<span>⚡</span> ON';
+                } else {
+                    this.flashButton.innerHTML = '<span>⚡</span> Flash';
+                }
+            }
+
+            async toggleFullscreen() {
+                const isCurrentlyFullscreen = !!(document.fullscreenElement || 
+                                              document.webkitFullscreenElement || 
+                                              document.mozFullScreenElement || 
+                                              document.msFullscreenElement);
+                
+                try {
+                    if (isCurrentlyFullscreen) {
+                        await this.exitFullscreen();
+                        this.fullscreenButton.innerHTML = '<span id="fullscreenIcon">⛶</span> <span id="fullscreenText">Fullscreen</span>';
+                        this.fullscreenButton.classList.remove('active');
+                    } else {
+                        await this.tryEnterFullscreen('user_button');
+                        this.fullscreenButton.innerHTML = '<span id="fullscreenIcon">⛶</span> <span id="fullscreenText">Exit FS</span>';
+                        this.fullscreenButton.classList.add('active');
+                    }
+                } catch (error) {
+                    console.error('Error toggling fullscreen:', error);
+                }
+            }
+
+            toggleMultiPhotoMode() {
+                this.multiPhotoMode = !this.multiPhotoMode;
+                this.multiPhotoButton.classList.toggle('active', this.multiPhotoMode);
+                
+                // Update button appearance based on mode
+                if (this.multiPhotoMode) {
+                    document.getElementById('multiPhotoIcon').textContent = '📷📷📷📷';
+                    document.getElementById('multiPhotoText').textContent = 'Multi (x4)';
+                    if (this.captureMode === 'quad-split') {
+                        this.snapText.textContent = '📱 QUAD SPLIT (4x)';
+                    } else {
+                        this.snapText.textContent = '🚀 START MULTI (4x)';
+                    }
+                    // Show mode selector when multi-photo is enabled
+                    this.modeSelector.style.display = 'flex';
+                    // Show/hide quad overlay based on current mode
+                    this.updateQuadOverlay();
+                } else {
+                    document.getElementById('multiPhotoIcon').textContent = '📷';
+                    document.getElementById('multiPhotoText').textContent = 'Single';
+                    this.snapText.textContent = '📷 SNAP';
+                    // Hide mode selector when multi-photo is disabled
+                    this.modeSelector.style.display = 'none';
+                    // Hide quad overlay
+                    this.quadSplitOverlay.classList.add('hidden');
+                }
+                
+                console.log(`Multi-photo mode: ${this.multiPhotoMode ? 'ON' : 'OFF'}`);
+            }
+
+            toggleCaptureMode() {
+                // Switch between sequential and quad-split modes
+                this.captureMode = this.captureMode === 'sequential' ? 'quad-split' : 'sequential';
+                
+                // Update mode selector appearance
+                if (this.captureMode === 'quad-split') {
+                    this.modeSelector.classList.add('quad-mode');
+                    this.modeIcon.textContent = '📱';
+                    this.modeText.textContent = 'Quad Split';
+                    if (this.multiPhotoMode) {
+                        this.snapText.textContent = '📱 QUAD SPLIT (4x)';
+                    }
+                } else {
+                    this.modeSelector.classList.remove('quad-mode');
+                    this.modeIcon.textContent = '📷';
+                    this.modeText.textContent = 'Sequential';
+                    if (this.multiPhotoMode) {
+                        this.snapText.textContent = '🚀 START MULTI (4x)';
+                    }
+                }
+                
+                // Update quad overlay visibility
+                this.updateQuadOverlay();
+                
+                console.log(`Capture mode: ${this.captureMode}`);
+            }
+
+            updateQuadOverlay() {
+                // Show quad overlay only when multi-photo mode is on and quad-split is selected
+                if (this.multiPhotoMode && this.captureMode === 'quad-split') {
+                    this.quadSplitOverlay.classList.remove('hidden');
+                } else {
+                    this.quadSplitOverlay.classList.add('hidden');
+                }
+            }
+
+            async captureQuadSplit() {
+                if (!this.multiPhotoMode || this.captureMode !== 'quad-split') return;
+                
+                console.log('📱 Starting quad-split capture...');
+                
+                // Show progress indicator
+                this.multiPhotoProgress.classList.remove('hidden');
+                const progressText = this.multiPhotoProgress.querySelector('.progress-text');
+                progressText.textContent = 'Capturing Quad Split...';
+                progressText.style.color = '#4ade80';
+                
+                // Disable controls during capture
+                this.disableControlsDuringCapture(true);
+                
+                try {
+                    // Visual feedback
+                    this.triggerFlash();
+                    this.playCaptureSound();
+                    
+                    // Ensure we have valid video dimensions
+                    if (this.video.videoWidth === 0 || this.video.videoHeight === 0) {
+                        throw new Error('Video not ready for capture');
+                    }
+                    
+                    // Set canvas to match video dimensions
+                    this.canvas.width = this.video.videoWidth;
+                    this.canvas.height = this.video.videoHeight;
+                    
+                    console.log(`📐 Capturing at resolution: ${this.canvas.width}x${this.canvas.height}`);
+                    
+                    // Draw the full video frame to canvas
+                    this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+                    
+                    // Calculate quadrant dimensions
+                    const quadWidth = Math.floor(this.canvas.width / 2);
+                    const quadHeight = Math.floor(this.canvas.height / 2);
+                    
+                    // Define quadrant positions and names
+                    const quadrants = [
+                        { name: 'top-left', x: 0, y: 0 },
+                        { name: 'top-right', x: quadWidth, y: 0 },
+                        { name: 'bottom-left', x: 0, y: quadHeight },
+                        { name: 'bottom-right', x: quadWidth, y: quadHeight }
+                    ];
+                    
+                    const uploadPromises = [];
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                    
+                    // Create and upload each quadrant
+                    for (const [index, quad] of quadrants.entries()) {
+                        // Create a separate canvas for each quadrant
+                        const quadCanvas = document.createElement('canvas');
+                        quadCanvas.width = quadWidth;
+                        quadCanvas.height = quadHeight;
+                        const quadCtx = quadCanvas.getContext('2d');
+                        
+                        // Draw the quadrant from the main canvas
+                        quadCtx.drawImage(
+                            this.canvas,
+                            quad.x, quad.y, quadWidth, quadHeight,
+                            0, 0, quadWidth, quadHeight
+                        );
+                        
+                        // Convert to blob
+                        const blob = await new Promise((resolve, reject) => {
+                            quadCanvas.toBlob(resolve, 'image/jpeg', 0.9);
+                            setTimeout(() => reject(new Error('Quadrant capture timeout')), 5000);
+                        });
+                        
+                        if (!blob) {
+                            throw new Error(`Failed to create blob for quadrant ${quad.name}`);
+                        }
+                        
+                        // Create filename with quadrant identifier
+                        const filename = `quad-${quad.name}-${timestamp}.jpg`;
+                        
+                        // Upload each quadrant
+                        const uploadPromise = this.uploadQuadPhoto(blob, filename, quad.name);
+                        uploadPromises.push(uploadPromise);
+                        
+                        // Update progress
+                        const progressPercent = ((index + 1) / 4) * 100;
+                        document.getElementById('progressFill').style.width = `${progressPercent}%`;
+                        document.getElementById('currentPhoto').textContent = index + 1;
+                        
+                        console.log(`✅ Quadrant ${quad.name} prepared for upload (${(blob.size / 1024).toFixed(1)}KB)`);
+                    }
+                    
+                    // Wait for all uploads to complete
+                    const results = await Promise.all(uploadPromises);
+                    
+                    // Check if all uploads succeeded
+                    const allSuccessful = results.every(result => result.success);
+                    
+                    if (allSuccessful) {
+                        console.log('✅ All quad-split photos uploaded successfully!');
+                        progressText.textContent = '✅ Quad Split Complete!';
+                        progressText.style.color = '#10b981';
+                        
+                        // Show last captured quadrant as preview
+                        if (results.length > 0 && results[0].dataUrl) {
+                            this.updatePhotoPreview(results[0].dataUrl);
+                        }
+                    } else {
+                        throw new Error('Some quadrant uploads failed');
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Quad-split capture failed:', error);
+                    progressText.textContent = '❌ Capture Failed';
+                    progressText.style.color = '#ef4444';
+                } finally {
+                    this.disableControlsDuringCapture(false);
+                    
+                    // Hide progress indicator after delay
+                    setTimeout(() => {
+                        this.multiPhotoProgress.classList.add('hidden');
+                        const progressText = this.multiPhotoProgress.querySelector('.progress-text');
+                        progressText.textContent = 'Multi-Photo Mode';
+                        progressText.style.color = '#4ade80';
+                    }, 2000);
+                }
+            }
+
+            async uploadQuadPhoto(blob, filename, quadrantName) {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', blob, filename);
+                    formData.append('source', 'camera');
+                    formData.append('quadrant', quadrantName);
+                    
+                    // Get CSRF token
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                    if (csrfToken) {
+                        formData.append('csrf_token', csrfToken);
+                    }
+
+                    const uploadResponse = await fetch('/camera/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (uploadResponse.ok) {
+                        const result = await uploadResponse.json();
+                        console.log(`✅ Quadrant ${quadrantName} uploaded successfully`);
+                        return { 
+                            success: true, 
+                            filename: filename, 
+                            quadrant: quadrantName,
+                            dataUrl: URL.createObjectURL(blob)
+                        };
+                    } else {
+                        const errorData = await uploadResponse.json();
+                        console.error(`❌ Upload failed for ${quadrantName}:`, errorData.error || 'Unknown error');
+                        return { success: false, quadrant: quadrantName };
+                    }
+                } catch (error) {
+                    console.error(`❌ Upload failed for ${quadrantName}:`, error.message);
+                    return { success: false, quadrant: quadrantName };
+                }
+            }
+
+            triggerFlash() {
+                // Trigger visual flash effect
+                if (this.flashEffect) {
+                    this.flashEffect.classList.add('active');
+                    setTimeout(() => {
+                        this.flashEffect.classList.remove('active');
+                    }, 300);
+                }
+            }
+
+            updatePhotoPreview(dataUrl) {
+                // Update the photo preview with the captured image
+                if (this.previewImage && this.photoPreview) {
+                    this.previewImage.src = dataUrl;
+                    this.photoPreview.classList.add('visible');
+                    
+                    // Store the photo for later access
+                    this.photos.push({ dataUrl: dataUrl, timestamp: new Date() });
+                }
+            }
+
+            initializeModeSelector() {
+                // Initialize mode selector to be hidden by default
+                // It will be shown only when multi-photo mode is enabled
+                console.log('🔧 Initializing mode selector...');
+            }
+
+            async startBurstCapture() {
+                if (this.isBurstCapture) return;
+                
+                console.log('🚀 Starting guided multi-photo capture...');
+                this.isBurstCapture = true;
+                this.burstPhotosRemaining = this.burstPhotoCount;
+                
+                // Disable other controls during capture
+                this.disableControlsDuringCapture(true);
+                
+                // Show progress indicator
+                this.multiPhotoProgress.classList.remove('hidden');
+                this.updateMultiPhotoProgress();
+                
+                try {
+                    for (let i = 0; i < this.burstPhotoCount; i++) {
+                        console.log(`📸 Multi-photo ${i + 1}/${this.burstPhotoCount}`);
+                        
+                        // Update progress
+                        document.getElementById('currentPhoto').textContent = i + 1;
+                        const progressPercent = ((i + 1) / this.burstPhotoCount) * 100;
+                        document.getElementById('progressFill').style.width = `${progressPercent}%`;
+                        
+                        if (i === 0) {
+                            // First photo - capture immediately
+                            await this.capturePhoto();
+                        } else {
+                            // Subsequent photos - show countdown and instructions
+                            await this.showCountdownForNextPhoto(i + 1);
+                            
+                            // Check if capture was cancelled during countdown
+                            if (!this.isBurstCapture) break;
+                            
+                            // Capture the photo
+                            await this.capturePhoto();
+                        }
+                        
+                        // Short delay after each capture for feedback
+                        if (i < this.burstPhotoCount - 1) {
+                            await new Promise(resolve => setTimeout(resolve, 800));
+                        }
+                    }
+                    
+                    if (this.isBurstCapture) {
+                        console.log('✅ Multi-photo capture completed!');
+                        this.showMultiCaptureComplete();
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Multi-photo capture failed:', error);
+                } finally {
+                    this.isBurstCapture = false;
+                    this.burstPhotosRemaining = 0;
+                    this.disableControlsDuringCapture(false);
+                    
+                    // Hide progress indicator after delay
+                    setTimeout(() => {
+                        this.multiPhotoProgress.classList.add('hidden');
+                    }, 2000);
+                }
+            }
+
+            async showCountdownForNextPhoto(photoNumber) {
+                const progressText = this.multiPhotoProgress.querySelector('.progress-text');
+                const originalText = progressText.textContent;
+                
+                // Show instruction for next photo
+                progressText.textContent = `Position photo #${photoNumber}`;
+                progressText.style.color = '#fbbf24';
+                
+                // 3-second countdown
+                for (let countdown = 3; countdown >= 1; countdown--) {
+                    if (!this.isBurstCapture) return; // Check for cancellation
+                    
+                    progressText.textContent = `Position photo #${photoNumber} - ${countdown}s`;
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
+                // Ready to capture
+                progressText.textContent = `Capturing photo #${photoNumber}...`;
+                progressText.style.color = '#4ade80';
+            }
+
+            disableControlsDuringCapture(disable) {
+                // Disable/enable controls during multi-photo capture
+                this.flashButton.disabled = disable;
+                this.exitButton.disabled = disable;
+                this.multiPhotoButton.style.opacity = disable ? '0.5' : '1';
+                this.multiPhotoButton.style.pointerEvents = disable ? 'none' : 'auto';
+                
+                // Update snap button to show cancel option during capture
+                if (disable) {
+                    this.snapText.textContent = '❌ CANCEL';
+                    this.snapButton.onclick = () => this.cancelMultiCapture();
+                } else {
+                    this.restoreSnapButton();
+                }
+            }
+
+            cancelMultiCapture() {
+                console.log('❌ Multi-photo capture cancelled by user');
+                this.isBurstCapture = false;
+                
+                const progressText = this.multiPhotoProgress.querySelector('.progress-text');
+                progressText.textContent = 'Cancelled';
+                progressText.style.color = '#ef4444';
+                
+                setTimeout(() => {
+                    this.multiPhotoProgress.classList.add('hidden');
+                }, 1500);
+            }
+
+            restoreSnapButton() {
+                // Restore original snap button functionality
+                if (this.multiPhotoMode) {
+                    this.snapText.textContent = '🚀 START MULTI (4x)';
+                } else {
+                    this.snapText.textContent = '📷 SNAP';
+                }
+                
+                // Reset click handler (this will be overridden by the original event listener)
+                this.snapButton.onclick = null;
+            }
+
+            updateMultiPhotoProgress() {
+                document.getElementById('totalPhotos').textContent = this.burstPhotoCount;
+                document.getElementById('currentPhoto').textContent = '1';
+                document.getElementById('progressFill').style.width = '0%';
+            }
+
+            showMultiCaptureComplete() {
+                // Temporarily update progress text to show completion
+                const progressText = this.multiPhotoProgress.querySelector('.progress-text');
+                progressText.textContent = '✅ All Photos Captured!';
+                progressText.style.color = '#10b981';
+                
+                setTimeout(() => {
+                    progressText.textContent = 'Multi-Photo Mode';
+                    progressText.style.color = '#4ade80';
+                }, 1500);
+            }
+
+            openLastPhoto() {
+                if (this.photos.length > 0) {
+                    const lastPhoto = this.photos[this.photos.length - 1];
+                    window.open(lastPhoto.dataUrl, '_blank');
+                }
+            }
+
+            playCaptureSound() {
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.setValueAtTime(1200, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                    
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.1);
+                } catch (e) {
+                    console.log('Audio not available');
+                }
+            }
+
+
+            setupFullscreenFallback() {
+                // Fallback: Try fullscreen on first user interaction
+                const attemptFullscreen = (event) => {
+                    if (!this.isFullscreenRequested) {
+                        console.log('🎯 User gesture detected, attempting fullscreen');
+                        this.tryEnterFullscreen('user_gesture');
+                    }
+                };
+                
+                // Add listeners for various user gestures
+                this.video.addEventListener('click', attemptFullscreen, { once: true });
+                this.video.addEventListener('touchstart', attemptFullscreen, { once: true });
+                document.getElementById('snapButton').addEventListener('click', attemptFullscreen, { once: true });
+                this.requestPermissionBtn.addEventListener('click', attemptFullscreen, { once: true });
+                
+                // Also try on video play event
+                this.video.addEventListener('play', () => {
+                    if (!this.isFullscreenRequested) {
+                        setTimeout(() => this.tryEnterFullscreen('video_play'), 500);
+                    }
+                }, { once: true });
+            }
+            
+            async tryEnterFullscreen(trigger) {
+                if (this.isFullscreenRequested) return;
+                
+                try {
+                    this.isFullscreenRequested = true;
+                    const element = document.getElementById('cameraApp');
+                    
+                    if (element.requestFullscreen) {
+                        await element.requestFullscreen();
+                    } else if (element.webkitRequestFullscreen) {
+                        await element.webkitRequestFullscreen();
+                    } else if (element.mozRequestFullScreen) {
+                        await element.mozRequestFullScreen();
+                    } else if (element.msRequestFullscreen) {
+                        await element.msRequestFullscreen();
+                    }
+                    
+                    console.log(`✅ Entered fullscreen mode (${trigger})`);
+                    this.isFullscreen = true;
+                } catch (error) {
+                    console.log(`⚠️ Could not enter fullscreen (${trigger}):`, error.message);
+                    this.isFullscreenRequested = false; // Reset to allow retry
+                }
+            }
+            
+            async exitFullscreen() {
+                try {
+                    if (document.exitFullscreen) {
+                        await document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        await document.webkitExitFullscreen();
+                    } else if (document.mozCancelFullScreen) {
+                        await document.mozCancelFullScreen();
+                    } else if (document.msExitFullscreen) {
+                        await document.msExitFullscreen();
+                    }
+                    console.log('✅ Exited fullscreen mode');
+                } catch (error) {
+                    console.log('⚠️ Could not exit fullscreen:', error.message);
+                }
+            }
+            
+            handleFullscreenChange() {
+                const isFullscreen = !!(document.fullscreenElement || 
+                                      document.webkitFullscreenElement || 
+                                      document.mozFullScreenElement || 
+                                      document.msFullscreenElement);
+                
+                console.log('📱 Fullscreen state changed:', isFullscreen ? 'FULLSCREEN' : 'WINDOWED');
+                
+                // Update UI based on fullscreen state
+                if (isFullscreen) {
+                    document.body.style.cursor = 'none';
+                    // Hide cursor after 3 seconds of inactivity in fullscreen
+                    this.setupCursorHiding();
+                } else {
+                    document.body.style.cursor = 'default';
+                    this.clearCursorHiding();
+                }
+            }
+            
+            setupCursorHiding() {
+                let cursorTimeout;
+                
+                const hideCursor = () => {
+                    document.body.style.cursor = 'none';
+                };
+                
+                const showCursor = () => {
+                    document.body.style.cursor = 'default';
+                    clearTimeout(cursorTimeout);
+                    cursorTimeout = setTimeout(hideCursor, 3000);
+                };
+                
+                document.addEventListener('mousemove', showCursor);
+                document.addEventListener('click', showCursor);
+                
+                // Initial timeout
+                cursorTimeout = setTimeout(hideCursor, 3000);
+                
+                this.cursorControls = { showCursor, hideCursor, cursorTimeout };
+            }
+            
+            clearCursorHiding() {
+                if (this.cursorControls) {
+                    clearTimeout(this.cursorControls.cursorTimeout);
+                    document.removeEventListener('mousemove', this.cursorControls.showCursor);
+                    document.removeEventListener('click', this.cursorControls.showCursor);
+                    this.cursorControls = null;
+                }
+            }
+
+            exitCamera() {
+                if (this.stream) {
+                    this.stream.getTracks().forEach(track => track.stop());
+                }
+                
+                // Clear cursor hiding
+                this.clearCursorHiding();
+                
+                // Exit fullscreen before leaving
+                this.exitFullscreen().finally(() => {
+                    window.location.href = '/dashboard';
+                });
+            }
+
+            // Zoom functionality
+            zoomIn() {
+                if (this.zoomLevel < this.maxZoom) {
+                    this.zoomLevel = Math.min(this.maxZoom, this.zoomLevel + this.zoomStep);
+                    this.applyZoom();
+                }
+            }
+
+            zoomOut() {
+                if (this.zoomLevel > this.minZoom) {
+                    this.zoomLevel = Math.max(this.minZoom, this.zoomLevel - this.zoomStep);
+                    this.applyZoom();
+                }
+            }
+
+            applyZoom() {
+                if (this.video) {
+                    this.video.style.transform = `scale(${this.zoomLevel})`;
+                    document.getElementById('zoomLevel').textContent = `${this.zoomLevel.toFixed(1)}x`;
+                }
+            }
+
+            setupPinchZoom() {
+                let startDistance = 0;
+                let startZoom = 1.0;
+
+                this.video.addEventListener('touchstart', (e) => {
+                    if (e.touches.length === 2) {
+                        e.preventDefault();
+                        startDistance = this.getTouchDistance(e.touches[0], e.touches[1]);
+                        startZoom = this.zoomLevel;
+                    }
+                });
+
+                this.video.addEventListener('touchmove', (e) => {
+                    if (e.touches.length === 2) {
+                        e.preventDefault();
+                        const currentDistance = this.getTouchDistance(e.touches[0], e.touches[1]);
+                        const scale = currentDistance / startDistance;
+                        const newZoom = Math.min(this.maxZoom, Math.max(this.minZoom, startZoom * scale));
+                        
+                        this.zoomLevel = newZoom;
+                        this.applyZoom();
+                    }
+                });
+            }
+
+            getTouchDistance(touch1, touch2) {
+                return Math.sqrt(
+                    Math.pow(touch2.clientX - touch1.clientX, 2) +
+                    Math.pow(touch2.clientY - touch1.clientY, 2)
+                );
+            }
+
+            enforceOrientation() {
+                const checkOrientation = () => {
+                    const isPortrait = window.innerHeight > window.innerWidth;
+                    const warning = document.getElementById('landscapeWarning');
+                    if (warning) {
+                        warning.style.display = isPortrait ? 'flex' : 'none';
+                    }
+                };
+
+                checkOrientation();
+                window.addEventListener('resize', checkOrientation);
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(checkOrientation, 500);
+                });
+            }
+        }
+
+        // Enhanced PhotoVault Camera with AI Features
+        class PhotoVaultEnhancedAICamera extends PhotoVaultCamera {
+            constructor() {
+                super();
+                console.log('🤖 Initializing AI-Enhanced PhotoVault Camera');
+                
+                // AI Components
+                this.tensorflowManager = null;
+                this.activityRecognizer = null;
+                this.smartComposition = null;
+                
+                // AI Feature States
+                this.aiFeatures = {
+                    autoTag: false,
+                    faceDetection: false,
+                    smartFilter: false,
+                    composition: false,
+                    poseDetection: false
+                };
+                
+                // AI Processing
+                this.aiProcessingInterval = null;
+                this.lastProcessingTime = 0;
+                this.processingDelay = 100; // Process every 100ms for real-time feel
+                
+                // AI Elements
+                this.aiElements = {
+                    faceCanvas: document.getElementById('faceDetectionCanvas'),
+                    objectCanvas: document.getElementById('objectDetectionCanvas'),
+                    poseCanvas: document.getElementById('poseDetectionCanvas'),
+                    compositionCanvas: document.getElementById('compositionCanvas'),
+                    smartFilterCanvas: document.getElementById('smartFilterCanvas'),
+                    aiInfoPanel: document.getElementById('aiInfoPanel'),
+                    aiInfoContent: document.getElementById('aiInfoContent'),
+                    compositionSuggestions: document.getElementById('compositionSuggestions'),
+                    compositionContent: document.getElementById('compositionContent'),
+                    aiLoading: document.getElementById('aiLoading'),
+                    aiLoadingText: document.getElementById('aiLoadingText')
+                };
+                
+                // Initialize AI system
+                this.initializeAI();
+            }
+
+            async initializeAI() {
+                try {
+                    // Show loading indicator
+                    this.showAILoading('Initializing AI models...');
+                    
+                    // Initialize TensorFlow.js Manager
+                    this.tensorflowManager = new PhotoVaultTensorFlowManager();
+                    
+                    // Load core models (COCO-SSD and BlazeFace for immediate use)
+                    const modelsLoaded = await this.tensorflowManager.initializeModels(['cocoSSD', 'blazeFace']);
+                    
+                    if (modelsLoaded) {
+                        // Initialize AI helper classes
+                        this.activityRecognizer = new ActivityRecognizer(this.tensorflowManager);
+                        this.smartComposition = new SmartComposition(this.tensorflowManager);
+                        
+                        console.log('✅ AI system initialized successfully');
+                        this.setupAIEventListeners();
+                        this.hideAILoading();
+                        
+                        // Load additional models in background
+                        setTimeout(() => {
+                            this.tensorflowManager.initializeModels(['poseNet']);
+                        }, 2000);
+                    } else {
+                        throw new Error('Failed to load core AI models');
+                    }
+                } catch (error) {
+                    console.error('❌ AI initialization failed:', error);
+                    this.showAIError('AI features unavailable');
+                    setTimeout(() => this.hideAILoading(), 3000);
+                }
+            }
+
+            setupAIEventListeners() {
+                // Auto-tag button
+                document.getElementById('autoTagButton')?.addEventListener('click', () => {
+                    this.toggleAIFeature('autoTag');
+                });
+
+                // Face detection button
+                document.getElementById('faceDetectionButton')?.addEventListener('click', () => {
+                    this.toggleAIFeature('faceDetection');
+                });
+
+                // Smart filter button
+                document.getElementById('smartFilterButton')?.addEventListener('click', () => {
+                    this.toggleAIFeature('smartFilter');
+                });
+
+                // Composition analysis button
+                document.getElementById('compositionButton')?.addEventListener('click', () => {
+                    this.toggleAIFeature('composition');
+                });
+
+                // Pose detection button
+                document.getElementById('poseDetectionButton')?.addEventListener('click', () => {
+                    this.toggleAIFeature('poseDetection');
+                });
+            }
+
+            toggleAIFeature(featureName) {
+                this.aiFeatures[featureName] = !this.aiFeatures[featureName];
+                const button = document.getElementById(`${featureName}Button`);
+                
+                if (this.aiFeatures[featureName]) {
+                    button?.classList.add('active');
+                    this.startAIFeature(featureName);
+                } else {
+                    button?.classList.remove('active');
+                    this.stopAIFeature(featureName);
+                }
+                
+                console.log(`🔄 AI Feature ${featureName}: ${this.aiFeatures[featureName] ? 'ON' : 'OFF'}`);
+            }
+
+            startAIFeature(featureName) {
+                switch (featureName) {
+                    case 'autoTag':
+                        this.startObjectDetection();
+                        break;
+                    case 'faceDetection':
+                        this.startFaceDetection();
+                        break;
+                    case 'smartFilter':
+                        this.startSmartFiltering();
+                        break;
+                    case 'composition':
+                        this.startCompositionAnalysis();
+                        break;
+                    case 'poseDetection':
+                        this.startPoseDetection();
+                        break;
+                }
+                
+                // Start AI processing loop if not already running
+                if (!this.aiProcessingInterval) {
+                    this.startAIProcessingLoop();
+                }
+            }
+
+            stopAIFeature(featureName) {
+                switch (featureName) {
+                    case 'autoTag':
+                        this.aiElements.objectCanvas.style.display = 'none';
+                        break;
+                    case 'faceDetection':
+                        this.aiElements.faceCanvas.style.display = 'none';
+                        break;
+                    case 'smartFilter':
+                        this.aiElements.smartFilterCanvas.style.display = 'none';
+                        break;
+                    case 'composition':
+                        this.aiElements.compositionCanvas.style.display = 'none';
+                        this.aiElements.compositionSuggestions.classList.remove('visible');
+                        break;
+                    case 'poseDetection':
+                        this.aiElements.poseCanvas.style.display = 'none';
+                        break;
+                }
+                
+                // Stop AI processing if no features are active
+                const hasActiveFeatures = Object.values(this.aiFeatures).some(active => active);
+                if (!hasActiveFeatures && this.aiProcessingInterval) {
+                    clearInterval(this.aiProcessingInterval);
+                    this.aiProcessingInterval = null;
+                    this.aiElements.aiInfoPanel.classList.remove('visible');
+                }
+            }
+
+            startAIProcessingLoop() {
+                this.aiProcessingInterval = setInterval(async () => {
+                    if (!this.video || this.video.videoWidth === 0) return;
+                    
+                    const currentTime = Date.now();
+                    if (currentTime - this.lastProcessingTime < this.processingDelay) return;
+                    
+                    this.lastProcessingTime = currentTime;
+                    await this.processAIFrame();
+                }, this.processingDelay);
+            }
+
+            async processAIFrame() {
+                const results = {};
+                
+                try {
+                    // Process active AI features
+                    if (this.aiFeatures.autoTag) {
+                        results.objects = await this.tensorflowManager.detectObjects(this.video);
+                        this.drawObjectDetections(results.objects);
+                    }
+                    
+                    if (this.aiFeatures.faceDetection) {
+                        results.faces = await this.tensorflowManager.detectFaces(this.video);
+                        this.drawFaceDetections(results.faces);
+                    }
+                    
+                    if (this.aiFeatures.composition) {
+                        results.composition = await this.smartComposition.analyzeComposition(this.video);
+                        this.showCompositionSuggestions(results.composition);
+                    }
+                    
+                    if (this.aiFeatures.poseDetection && this.tensorflowManager.isModelLoaded('poseNet')) {
+                        results.poses = await this.tensorflowManager.detectPoses(this.video);
+                        this.drawPoseDetections(results.poses);
+                        
+                        // Activity recognition
+                        const activity = await this.activityRecognizer.recognizeActivity(this.video);
+                        results.activity = activity;
+                    }
+                    
+                    // Update AI info panel
+                    this.updateAIInfoPanel(results);
+                    
+                } catch (error) {
+                    console.error('AI processing error:', error);
+                }
+            }
+
+            drawObjectDetections(objects) {
+                const canvas = this.aiElements.objectCanvas;
+                const ctx = canvas.getContext('2d');
+                
+                // Set canvas size to match video
+                canvas.width = this.video.videoWidth;
+                canvas.height = this.video.videoHeight;
+                canvas.style.display = 'block';
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw object detections
+                objects.forEach(obj => {
+                    const [x, y, width, height] = obj.bbox;
+                    
+                    // Draw bounding box
+                    ctx.strokeStyle = '#00ff00';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(x, y, width, height);
+                    
+                    // Draw label background
+                    const label = `${obj.class} (${(obj.score * 100).toFixed(1)}%)`;
+                    ctx.font = '16px Arial';
+                    const textWidth = ctx.measureText(label).width;
+                    
+                    ctx.fillStyle = 'rgba(0, 255, 0, 0.8)';
+                    ctx.fillRect(x, y - 25, textWidth + 10, 25);
+                    
+                    // Draw label text
+                    ctx.fillStyle = '#000';
+                    ctx.fillText(label, x + 5, y - 5);
+                });
+            }
+
+            drawFaceDetections(faces) {
+                const canvas = this.aiElements.faceCanvas;
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = this.video.videoWidth;
+                canvas.height = this.video.videoHeight;
+                canvas.style.display = 'block';
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                faces.forEach(face => {
+                    const [x, y, width, height] = face.bbox;
+                    
+                    // Draw face bounding box
+                    ctx.strokeStyle = '#ff0000';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(x, y, width, height);
+                    
+                    // Draw landmarks if available
+                    if (face.landmarks) {
+                        ctx.fillStyle = '#ff0000';
+                        face.landmarks.forEach(landmark => {
+                            ctx.beginPath();
+                            ctx.arc(landmark[0], landmark[1], 3, 0, 2 * Math.PI);
+                            ctx.fill();
+                        });
+                    }
+                });
+            }
+
+            drawPoseDetections(poses) {
+                const canvas = this.aiElements.poseCanvas;
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = this.video.videoWidth;
+                canvas.height = this.video.videoHeight;
+                canvas.style.display = 'block';
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                poses.forEach(pose => {
+                    // Draw keypoints
+                    pose.keypoints.forEach(keypoint => {
+                        if (keypoint.score > 0.3) {
+                            ctx.beginPath();
+                            ctx.arc(keypoint.position.x, keypoint.position.y, 5, 0, 2 * Math.PI);
+                            ctx.fillStyle = '#ffff00';
+                            ctx.fill();
+                        }
+                    });
+                    
+                    // Draw skeleton connections
+                    this.drawPoseSkeleton(ctx, pose.keypoints);
+                });
+            }
+
+            drawPoseSkeleton(ctx, keypoints) {
+                const connections = [
+                    ['leftShoulder', 'rightShoulder'],
+                    ['leftShoulder', 'leftElbow'],
+                    ['leftElbow', 'leftWrist'],
+                    ['rightShoulder', 'rightElbow'],
+                    ['rightElbow', 'rightWrist'],
+                    ['leftShoulder', 'leftHip'],
+                    ['rightShoulder', 'rightHip'],
+                    ['leftHip', 'rightHip'],
+                    ['leftHip', 'leftKnee'],
+                    ['leftKnee', 'leftAnkle'],
+                    ['rightHip', 'rightKnee'],
+                    ['rightKnee', 'rightAnkle']
+                ];
+                
+                ctx.strokeStyle = '#ffff00';
+                ctx.lineWidth = 2;
+                
+                connections.forEach(([startPart, endPart]) => {
+                    const startPoint = keypoints.find(kp => kp.part === startPart);
+                    const endPoint = keypoints.find(kp => kp.part === endPart);
+                    
+                    if (startPoint && endPoint && startPoint.score > 0.3 && endPoint.score > 0.3) {
+                        ctx.beginPath();
+                        ctx.moveTo(startPoint.position.x, startPoint.position.y);
+                        ctx.lineTo(endPoint.position.x, endPoint.position.y);
+                        ctx.stroke();
+                    }
+                });
+            }
+
+            showCompositionSuggestions(composition) {
+                const suggestionsPanel = this.aiElements.compositionSuggestions;
+                const content = this.aiElements.compositionContent;
+                
+                if (composition.suggestions.length > 0) {
+                    suggestionsPanel.classList.add('visible');
+                    
+                    content.innerHTML = composition.suggestions.map(suggestion => `
+                        <div class="composition-suggestion">
+                            ${suggestion.message}
+                        </div>
+                    `).join('');
+                } else {
+                    suggestionsPanel.classList.remove('visible');
+                }
+            }
+
+            updateAIInfoPanel(results) {
+                const panel = this.aiElements.aiInfoPanel;
+                const content = this.aiElements.aiInfoContent;
+                
+                let hasInfo = false;
+                let infoHTML = '';
+                
+                if (results.objects && results.objects.length > 0) {
+                    hasInfo = true;
+                    infoHTML += `<div class="ai-info-item">🏷️ Objects: ${results.objects.length}</div>`;
+                }
+                
+                if (results.faces && results.faces.length > 0) {
+                    hasInfo = true;
+                    infoHTML += `<div class="ai-info-item">👥 Faces: ${results.faces.length}</div>`;
+                }
+                
+                if (results.poses && results.poses.length > 0) {
+                    hasInfo = true;
+                    infoHTML += `<div class="ai-info-item">🤸 Poses: ${results.poses.length}</div>`;
+                }
+                
+                if (results.activity && results.activity.activity !== 'unknown') {
+                    hasInfo = true;
+                    infoHTML += `<div class="ai-info-item">🎯 Activity: ${results.activity.activity}</div>`;
+                }
+                
+                if (results.composition) {
+                    hasInfo = true;
+                    infoHTML += `<div class="ai-info-item">📸 Score: ${results.composition.composition.score}/100</div>`;
+                }
+                
+                if (hasInfo) {
+                    content.innerHTML = infoHTML;
+                    panel.classList.add('visible');
+                } else {
+                    panel.classList.remove('visible');
+                }
+            }
+
+            startObjectDetection() {
+                this.aiElements.objectCanvas.style.display = 'block';
+            }
+
+            startFaceDetection() {
+                this.aiElements.faceCanvas.style.display = 'block';
+            }
+
+            startSmartFiltering() {
+                // Smart filtering implementation would go here
+                console.log('Smart filtering started');
+            }
+
+            startCompositionAnalysis() {
+                this.aiElements.compositionCanvas.style.display = 'block';
+            }
+
+            startPoseDetection() {
+                if (this.tensorflowManager.isModelLoaded('poseNet')) {
+                    this.aiElements.poseCanvas.style.display = 'block';
+                } else {
+                    console.log('Loading PoseNet model...');
+                    this.showAILoading('Loading pose detection model...');
+                    this.tensorflowManager.loadPoseNet().then(() => {
+                        this.hideAILoading();
+                        this.aiElements.poseCanvas.style.display = 'block';
+                    });
+                }
+            }
+
+            showAILoading(message) {
+                this.aiElements.aiLoadingText.textContent = message;
+                this.aiElements.aiLoading.classList.add('visible');
+            }
+
+            hideAILoading() {
+                this.aiElements.aiLoading.classList.remove('visible');
+            }
+
+            showAIError(message) {
+                this.aiElements.aiLoadingText.textContent = message;
+                // Keep loading indicator visible to show error
+            }
+
+            // Override capture method to include AI data
+            async capturePhotoWithAI() {
+                console.log('📸 Capturing photo with AI enhancements...');
+                
+                // Get current AI detection results
+                const aiData = {};
+                
+                if (this.aiFeatures.autoTag && this.tensorflowManager.isModelLoaded('cocoSSD')) {
+                    aiData.detectedObjects = await this.tensorflowManager.detectObjects(this.video);
+                }
+                
+                if (this.aiFeatures.faceDetection && this.tensorflowManager.isModelLoaded('blazeFace')) {
+                    aiData.detectedFaces = await this.tensorflowManager.detectFaces(this.video);
+                }
+                
+                if (this.aiFeatures.poseDetection && this.tensorflowManager.isModelLoaded('poseNet')) {
+                    const poses = await this.tensorflowManager.detectPoses(this.video);
+                    const activity = await this.activityRecognizer.recognizeActivity(this.video);
+                    aiData.poses = poses;
+                    aiData.activity = activity;
+                }
+                
+                if (this.aiFeatures.composition) {
+                    aiData.composition = await this.smartComposition.analyzeComposition(this.video);
+                }
+                
+                // Store AI data for upload
+                this.currentAIData = aiData;
+                
+                // Call original capture method and then send AI data
+                const result = await super.capturePhoto();
+                
+                // Send AI data to backend if capture was successful
+                if (result && this.currentAIData && Object.keys(this.currentAIData).length > 0) {
+                    await this.sendAIDataToBackend(result.photoId);
+                }
+                
+                return result;
+            }
+
+            async sendAIDataToBackend(photoId) {
+                try {
+                    // Send AI tags
+                    if (this.currentAIData.detectedObjects) {
+                        await fetch(`/api/photos/${photoId}/ai-tags`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content
+                            },
+                            body: JSON.stringify({ detectedObjects: this.currentAIData.detectedObjects })
+                        });
+                    }
+
+                    // Send AI faces
+                    if (this.currentAIData.detectedFaces) {
+                        await fetch(`/api/photos/${photoId}/ai-faces`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content
+                            },
+                            body: JSON.stringify({ detectedFaces: this.currentAIData.detectedFaces })
+                        });
+                    }
+
+                    // Send poses and activity
+                    if (this.currentAIData.poses || this.currentAIData.activity) {
+                        await fetch(`/api/photos/${photoId}/ai-poses`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content
+                            },
+                            body: JSON.stringify({ 
+                                poses: this.currentAIData.poses || [],
+                                activity: this.currentAIData.activity || {}
+                            })
+                        });
+                    }
+
+                    // Send composition analysis
+                    if (this.currentAIData.composition) {
+                        await fetch(`/api/photos/${photoId}/ai-composition`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content
+                            },
+                            body: JSON.stringify({ composition: this.currentAIData.composition })
+                        });
+                    }
+
+                    console.log('✅ AI data sent to backend successfully');
+                } catch (error) {
+                    console.error('❌ Failed to send AI data to backend:', error);
+                }
+            }
+
+            // Cleanup AI resources when exiting
+            exitCamera() {
+                // Stop AI processing
+                if (this.aiProcessingInterval) {
+                    clearInterval(this.aiProcessingInterval);
+                    this.aiProcessingInterval = null;
+                }
+                
+                // Dispose AI models to free memory
+                if (this.tensorflowManager) {
+                    this.tensorflowManager.disposeModels();
+                }
+                
+                // Call parent exit method
+                super.exitCamera();
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            const camera = new PhotoVaultEnhancedAICamera();
+            
+            // Override the original capturePhoto method to use AI-enhanced version
+            const originalCapturePhoto = camera.capturePhoto;
+            camera.capturePhoto = camera.capturePhotoWithAI.bind(camera);
+            
+            // Store reference to original method for fallback
+            camera.originalCapturePhoto = originalCapturePhoto;
+        });
+
+        // Handle visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                const video = document.getElementById('cameraVideo');
+                if (video && video.srcObject) {
+                    video.pause();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

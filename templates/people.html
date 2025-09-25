@@ -1,0 +1,302 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+-->
+
+{% extends "base.html" %}
+{% block title %}Manage People - PhotoVault{% endblock %}
+{% block extra_css %}
+<style>
+.person-card {
+    transition: transform 0.2s ease;
+}
+.person-card:hover {
+    transform: translateY(-2px);
+}
+.add-person-form {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-people"></i> Manage People
+                    </h4>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPersonModal">
+                        <i class="bi bi-person-plus"></i> Add New Person
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- Add Person Form Modal -->
+                    <div class="modal fade" id="addPersonModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form method="POST" action="{{ url_for('main.add_person') }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Add New Person</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label for="name" class="form-label">Name *</label>
+                                            <input type="text" class="form-control" name="name" required 
+                                                   placeholder="Enter full name">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="nickname" class="form-label">Nickname</label>
+                                            <input type="text" class="form-control" name="nickname" 
+                                                   placeholder="Enter nickname (optional)">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="relationship" class="form-label">Relationship</label>
+                                            <input type="text" class="form-control" name="relationship" 
+                                                   placeholder="e.g., Mother, Brother, Friend">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="birth_year" class="form-label">Birth Year</label>
+                                            <input type="number" class="form-control" name="birth_year" 
+                                                   min="1900" max="2025" placeholder="e.g., 1965">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="notes" class="form-label">Notes</label>
+                                            <textarea class="form-control" name="notes" rows="3" 
+                                                      placeholder="Additional notes about this person"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary">Add Person</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if people.items %}
+                    <div class="row">
+                        {% for person in people.items %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card person-card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title d-flex align-items-center">
+                                        <i class="bi bi-person-circle me-2"></i>
+                                        {{ person.name }}
+                                        {% if person.nickname %}
+                                        <small class="text-muted ms-1">"{{ person.nickname }}"</small>
+                                        {% endif %}
+                                    </h6>
+                                    
+                                    {% if person.relationship %}
+                                    <p class="card-text mb-1">
+                                        <i class="bi bi-heart"></i> {{ person.relationship }}
+                                    </p>
+                                    {% endif %}
+                                    
+                                    {% if person.birth_year %}
+                                    <p class="card-text mb-1">
+                                        <i class="bi bi-calendar"></i> Born {{ person.birth_year }}
+                                    </p>
+                                    {% endif %}
+                                    
+                                    <p class="card-text mb-2">
+                                        <i class="bi bi-camera"></i> 
+                                        {{ person.photo_count if person.photo_count else 0 }} photos
+                                    </p>
+                                    
+                                    {% if person.notes %}
+                                    <p class="card-text">
+                                        <small class="text-muted">{{ person.notes[:100] }}{% if person.notes|length > 100 %}...{% endif %}</small>
+                                    </p>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer">
+                                    <button class="btn btn-outline-primary btn-sm" 
+                                            onclick="editPerson({{ person.id }}, '{{ person.name }}', '{{ person.nickname or '' }}', '{{ person.relationship or '' }}', {{ person.birth_year or 'null' }}, '{{ person.notes or '' }}')">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm ms-2" 
+                                            onclick="deletePerson({{ person.id }}, '{{ person.name }}')">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if people.pages > 1 %}
+                    <nav aria-label="People pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if people.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('main.people', page=people.prev_num) }}">Previous</a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for page_num in people.iter_pages() %}
+                            {% if page_num %}
+                            {% if page_num != people.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('main.people', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+                            
+                            {% if people.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('main.people', page=people.next_num) }}">Next</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-people" style="font-size: 4rem; color: #6c757d;"></i>
+                        <h5 class="mt-3 text-muted">No people added yet</h5>
+                        <p class="text-muted">Add family members and friends to tag them in your photos</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPersonModal">
+                            <i class="bi bi-person-plus"></i> Add Your First Person
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Navigation -->
+            <div class="card mt-3">
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-house"></i> Back to Dashboard
+                        </a>
+                        <a href="{{ url_for('main.gallery') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-images"></i> Tag Photos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Person Modal -->
+<div class="modal fade" id="editPersonModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="editPersonForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Person</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Name *</label>
+                        <input type="text" class="form-control" name="name" id="edit_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_nickname" class="form-label">Nickname</label>
+                        <input type="text" class="form-control" name="nickname" id="edit_nickname">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_relationship" class="form-label">Relationship</label>
+                        <input type="text" class="form-control" name="relationship" id="edit_relationship">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_birth_year" class="form-label">Birth Year</label>
+                        <input type="number" class="form-control" name="birth_year" id="edit_birth_year" min="1900" max="2025">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_notes" class="form-label">Notes</label>
+                        <textarea class="form-control" name="notes" id="edit_notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Person</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editPerson(id, name, nickname, relationship, birth_year, notes) {
+    const form = document.getElementById('editPersonForm');
+    form.action = `{{ url_for('main.edit_person', person_id=0) }}`.replace('0', id);
+    
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_nickname').value = nickname;
+    document.getElementById('edit_relationship').value = relationship;
+    document.getElementById('edit_birth_year').value = birth_year || '';
+    document.getElementById('edit_notes').value = notes;
+    
+    new bootstrap.Modal(document.getElementById('editPersonModal')).show();
+}
+
+// Ensure CSRF token is fresh on form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const editForm = document.getElementById('editPersonForm');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            // Refresh CSRF token right before submission
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const csrfInput = this.querySelector('input[name="csrf_token"]');
+            
+            if (csrfToken && csrfInput) {
+                csrfInput.value = csrfToken;
+                console.log('CSRF token refreshed for edit form submission:', csrfToken.substring(0, 10) + '...');
+            } else {
+                console.error('CSRF token or input field not found');
+            }
+        });
+    }
+});
+
+function deletePerson(personId, personName) {
+    if (confirm(`Are you sure you want to delete ${personName}? This will also remove all their photo tags.`)) {
+        fetch(`/api/person/delete/${personId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`${personName} deleted successfully!`);
+                location.reload();
+            } else {
+                alert('Error deleting person: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting person. Please try again.');
+        });
+    }
+}
+</script>
+{% endblock %}

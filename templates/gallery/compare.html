@@ -1,0 +1,282 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Photo Comparison - PhotoVault{% endblock %}
+
+{% block extra_css %}
+<style>
+.comparison-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.comparison-item {
+    margin-bottom: 2rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.comparison-header {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.comparison-images {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    min-height: 300px;
+}
+
+.image-side {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.image-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    z-index: 2;
+}
+
+.image-side.original .image-label {
+    background: rgba(52, 58, 64, 0.8);
+}
+
+.image-side.edited .image-label {
+    background: rgba(40, 167, 69, 0.8);
+}
+
+.comparison-image {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.comparison-image:hover {
+    transform: scale(1.02);
+}
+
+.comparison-actions {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .comparison-images {
+        grid-template-columns: 1fr;
+    }
+    
+    .comparison-image {
+        height: 200px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-compare"></i> Photo Comparison</h2>
+            <p class="text-muted mb-0">Compare original and edited versions side-by-side</p>
+        </div>
+        <div>
+            <a href="{{ url_for('gallery.photos') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Gallery
+            </a>
+        </div>
+    </div>
+
+    {% if photos and photos.items %}
+        <div class="row">
+            {% for photo in photos.items %}
+            <div class="col-12 mb-4">
+                <div class="comparison-item">
+                    <div class="comparison-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">{{ photo.original_name }}</h5>
+                                <small class="text-muted">
+                                    Uploaded {{ photo.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                </small>
+                            </div>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('gallery.compare_single_photo', photo_id=photo.id) }}" 
+                                   class="btn btn-sm btn-outline-primary" title="Full comparison view">
+                                    <i class="bi bi-arrows-fullscreen"></i>
+                                </a>
+                                <a href="{{ url_for('gallery.view_photo', photo_id=photo.id) }}" 
+                                   class="btn btn-sm btn-outline-secondary" title="View photo details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="comparison-images">
+                        <div class="image-side original">
+                            <div class="image-label">
+                                <i class="bi bi-image"></i> Original
+                            </div>
+                            <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                                 alt="{{ photo.original_name }} - Original"
+                                 class="comparison-image"
+                                 onclick="viewFullSize('{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}', '{{ photo.original_name }} - Original')")
+                        </div>
+                        
+                        <div class="image-side edited">
+                            <div class="image-label">
+                                <i class="bi bi-magic"></i> Edited
+                            </div>
+                            {% if photo.edited_filename %}
+                                <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
+                                     alt="{{ photo.original_name }} - Edited"
+                                     class="comparison-image"
+                                     onclick="viewFullSize('{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}', '{{ photo.original_name }} - Edited')">
+                            {% else %}
+                                <div class="comparison-image d-flex align-items-center justify-content-center bg-light">
+                                    <div class="text-center text-muted">
+                                        <i class="bi bi-exclamation-triangle fs-1"></i>
+                                        <p class="mt-2">Edited version not available</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="comparison-actions">
+                        <a href="{{ url_for('gallery.compare_single_photo', photo_id=photo.id) }}" 
+                           class="btn btn-primary btn-sm">
+                            <i class="bi bi-zoom-in"></i> Detailed Comparison
+                        </a>
+                        <a href="{{ url_for('main.edit_photo', photo_id=photo.id) }}" 
+                           class="btn btn-warning btn-sm">
+                            <i class="bi bi-pencil"></i> Edit Photo
+                        </a>
+                        <a href="{{ url_for('gallery.view_photo', photo_id=photo.id) }}" 
+                           class="btn btn-info btn-sm">
+                            <i class="bi bi-info-circle"></i> Photo Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if photos.pages > 1 %}
+        <nav aria-label="Photo comparison pagination">
+            <ul class="pagination justify-content-center">
+                {% if photos.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('gallery.compare_photos', page=photos.prev_num) }}">
+                        <i class="bi bi-chevron-left"></i> Previous
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in photos.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != photos.page %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('gallery.compare_photos', page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% endif %}
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+                {% endif %}
+                {% endfor %}
+                
+                {% if photos.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('gallery.compare_photos', page=photos.next_num) }}">
+                        Next <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+    {% else %}
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="bi bi-images display-1 text-muted"></i>
+            </div>
+            <h4 class="text-muted">No Photos Available for Comparison</h4>
+            <p class="text-muted">You need photos with edited versions to use the comparison feature.</p>
+            <div class="mt-4">
+                <a href="{{ url_for('gallery.photos') }}" class="btn btn-primary me-2">
+                    <i class="bi bi-images"></i> View All Photos
+                </a>
+                <a href="{{ url_for('main.upload') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-upload"></i> Upload Photos
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Full Size Image Modal -->
+<div class="modal fade" id="fullSizeModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="fullSizeModalTitle">Full Size View</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="fullSizeImage" src="" alt="" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewFullSize(imageSrc, imageTitle) {
+    document.getElementById('fullSizeImage').src = imageSrc;
+    document.getElementById('fullSizeModalTitle').textContent = imageTitle;
+    
+    const modal = new bootstrap.Modal(document.getElementById('fullSizeModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

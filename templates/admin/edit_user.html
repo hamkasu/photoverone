@@ -1,0 +1,118 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+-->
+
+<!-- photovault/templates/admin/edit_user.html -->
+{% extends "base.html" %}
+{% block title %}Edit User - {{ user.username }} - PhotoVault{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Edit User: {{ user.username }}</h5>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb breadcrumb-sm mb-0">
+                            <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Admin Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('admin.user_detail', user_id=user.id) }}">{{ user.username }}</a></li>
+                            <li class="breadcrumb-item active">Edit</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   value="{{ user.username }}" required>
+                            <div class="form-text">Username must be unique.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   value="{{ user.email }}" required>
+                            <div class="form-text">Email must be unique and valid.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Current Status</h6>
+                                    <p class="mb-2">
+                                        <strong>User ID:</strong> {{ user.id }}
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Joined:</strong> {{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else 'N/A' }}
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Role:</strong> 
+                                        {% if user.is_superuser %}
+                                            <span class="badge bg-danger">Superuser</span>
+                                        {% elif user.is_admin %}
+                                            <span class="badge bg-warning">Admin</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">User</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('admin.user_detail', user_id=user.id) }}" class="btn btn-secondary me-md-2">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Additional Information Card -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Need to change more?</h6>
+                </div>
+                <div class="card-body">
+                    <p class="card-text text-muted">
+                        To change user roles (Admin/Superuser) or reset passwords, please go back to the 
+                        <a href="{{ url_for('admin.user_detail', user_id=user.id) }}">user detail page</a>.
+                    </p>
+                    
+                    {% if current_user.is_superuser and user.id != current_user.id and not user.is_superuser %}
+                    <div class="alert alert-warning" role="alert">
+                        <h6 class="alert-heading">Danger Zone</h6>
+                        <p class="mb-2">Irreversible actions are available on the user detail page:</p>
+                        <ul class="mb-0">
+                            <li>Reset user password</li>
+                            <li>Change user role</li>
+                            <li>Delete user account</li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.breadcrumb-sm {
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

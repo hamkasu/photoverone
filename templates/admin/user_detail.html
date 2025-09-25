@@ -1,0 +1,227 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+-->
+
+<!-- photovault/templates/admin/user_detail.html -->
+{% extends "base.html" %}
+{% block title %}User Details - {{ user.username }} - PhotoVault{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>User Details: {{ user.username }}</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Admin Dashboard</a></li>
+                    <li class="breadcrumb-item active">{{ user.username }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-primary me-2">
+                <i class="bi bi-pencil"></i> Edit User
+            </a>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- User Information Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">User Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>ID:</strong> {{ user.id }}</p>
+                    <p><strong>Username:</strong> {{ user.username }}</p>
+                    <p><strong>Email:</strong> {{ user.email }}</p>
+                    <p><strong>Joined:</strong> {{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else 'N/A' }}</p>
+                    <p><strong>Status:</strong> 
+                        {% if user.is_superuser %}
+                            <span class="badge bg-danger">Superuser</span>
+                        {% elif user.is_admin %}
+                            <span class="badge bg-warning">Admin</span>
+                        {% else %}
+                            <span class="badge bg-secondary">User</span>
+                        {% endif %}
+                    </p>
+                    
+                    <!-- Admin Actions -->
+                    {% if current_user.is_superuser and user.id != current_user.id %}
+                    <hr>
+                    <div class="d-grid gap-2">
+                        {% if not user.is_superuser %}
+                        <form method="post" action="{{ url_for('admin.toggle_admin', user_id=user.id) }}">
+                            <button type="submit" class="btn btn-warning btn-sm w-100" 
+                                    onclick="return confirm('Toggle admin status for {{ user.username }}?')">
+                                {% if user.is_admin %}Revoke Admin{% else %}Grant Admin{% endif %}
+                            </button>
+                        </form>
+                        <form method="post" action="{{ url_for('admin.toggle_superuser', user_id=user.id) }}">
+                            <button type="submit" class="btn btn-danger btn-sm w-100" 
+                                    onclick="return confirm('Toggle superuser status for {{ user.username }}?')">
+                                {% if user.is_superuser %}Revoke Superuser{% else %}Grant Superuser{% endif %}
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        <!-- Password Reset Form -->
+                        <button type="button" class="btn btn-info btn-sm w-100" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
+                            Reset Password
+                        </button>
+                        
+                        {% if not user.is_superuser %}
+                        <form method="post" action="{{ url_for('admin.delete_user', user_id=user.id) }}">
+                            <button type="submit" class="btn btn-danger btn-sm w-100" 
+                                    onclick="return confirm('Delete user {{ user.username }} and all their photos? This action cannot be undone!')">
+                                Delete User
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Card -->
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Photo Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <h4 class="text-primary">{{ user_stats.total_photos }}</h4>
+                            <p class="mb-0">Total Photos</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h4 class="text-success">{{ user_stats.edited_photos }}</h4>
+                            <p class="mb-0">Edited Photos</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h4 class="text-warning">{{ user_stats.original_photos }}</h4>
+                            <p class="mb-0">Original Only</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h4 class="text-info">{{ user_stats.total_size_mb }} MB</h4>
+                            <p class="mb-0">Total Storage</p>
+                        </div>
+                    </div>
+                    {% if user_stats.total_photos > 0 %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">Average file size: {{ user_stats.avg_file_size }} KB</small>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">Edit rate: {{ "%.1f"|format((user_stats.edited_photos / user_stats.total_photos * 100) if user_stats.total_photos > 0 else 0) }}%</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photos Gallery -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">User Photos ({{ user_stats.total_photos }})</h5>
+        </div>
+        <div class="card-body">
+            {% if photos %}
+            <div class="row">
+                {% for photo in photos %}
+                <div class="col-md-3 col-sm-4 col-6 mb-3">
+                    <div class="card h-100">
+                        {% set display_filename = photo.edited_filename if photo.edited_filename else photo.filename %}
+                        <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=display_filename) }}" 
+                             class="card-img-top" 
+                             alt="{{ photo.original_filename }}"
+                             style="height: 150px; object-fit: cover;">
+                        <div class="card-body p-2">
+                            <p class="card-text small mb-1">
+                                {{ photo.original_filename[:20] }}{% if photo.original_filename|length > 20 %}...{% endif %}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">{{ photo.uploaded_at.strftime('%m/%d/%y') }}</small>
+                                {% if photo.edited_filename %}
+                                    <span class="badge bg-success">Edited</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Original</span>
+                                {% endif %}
+                            </div>
+                            <div class="mt-2">
+                                <form method="post" action="{{ url_for('admin.delete_photo', photo_id=photo.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                            onclick="return confirm('Delete this photo?')"
+                                            title="Delete Photo">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                <a href="{{ url_for('photo.download', photo_id=photo.id) }}" 
+                                   class="btn btn-outline-primary btn-sm" title="Download">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted">This user hasn't uploaded any photos yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Password Reset Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('admin.reset_user_password', user_id=user.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Reset Password for {{ user.username }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" required minlength="6">
+                        <div class="form-text">Password must be at least 6 characters long.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Reset Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.card-img-top {
+    transition: transform 0.2s;
+}
+
+.card-img-top:hover {
+    transform: scale(1.05);
+}
+</style>
+{% endblock %}

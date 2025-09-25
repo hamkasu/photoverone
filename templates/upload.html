@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>PhotoVault - Upload Files</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .upload-area {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: #0056b3 !important;
+            background-color: #f8f9fa;
+        }
+        
+        .file-preview {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .file-item {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-lg">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">
+                                <i class="fas fa-upload me-2"></i>
+                                PhotoVault - Upload Files
+                            </h4>
+                            <a href="/dashboard" class="btn btn-light btn-sm">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Gallery
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <!-- Camera Option -->                      
+                        <div class="mb-4">
+                            <h5>📷 Want to use your camera instead?</h5>
+                            <p class="text-muted">Take photos directly with your device's camera</p>
+                            <a href="/camera/" class="btn btn-success">
+                                <i class="fas fa-camera me-2"></i>Open Camera
+                            </a>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <!-- File Upload Section -->
+                        <div class="mb-4">
+                            <h5>📁 Upload Your Files</h5>
+                            <div class="upload-area border-2 border-dashed border-primary rounded p-5 text-center">
+                                <input type="file" id="file-input" class="d-none" multiple accept="image/*">
+                                <label for="file-input" class="d-block cursor-pointer">
+                                    <i class="fas fa-cloud-upload-alt fa-4x text-primary mb-3"></i>
+                                    <h6 class="mb-2">Drag & drop your photos here</h6>
+                                    <p class="mb-1">or <strong>click to browse</strong></p>
+                                    <small class="text-muted">Supports: JPG, PNG, GIF, WEBP • Max: 16MB per file • Multiple files supported</small>
+                                </label>
+                            </div>
+                            
+                            <!-- File Preview Area -->
+                            <div id="file-previews" class="file-preview mt-3" style="display: none;">
+                                <h6>Selected Files:</h6>
+                                <div id="preview-list"></div>
+                            </div>
+                        </div>
+
+                        <!-- Upload Progress -->
+                        <div id="upload-progress" class="mb-4" style="display: none;">
+                            <h6>Upload Progress</h6>
+                            <div class="progress mb-2">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <div id="upload-status" class="small text-muted"></div>
+                        </div>
+
+                        <!-- Results -->
+                        <div id="upload-results"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        class PhotoVaultUploader {
+            constructor() {
+                console.log('🚀 Initializing PhotoVault File Upload');
+                
+                this.fileInput = document.getElementById('file-input');
+                this.previewArea = document.getElementById('file-previews');
+                this.previewList = document.getElementById('preview-list');
+                this.selectedFiles = [];
+                
+                this.setupFileUpload();
+            }
+
+            setupFileUpload() {
+                const uploadArea = document.querySelector('.upload-area');
+                
+                // File input change
+                this.fileInput.addEventListener('change', (e) => {
+                    const files = Array.from(e.target.files);
+                    if (files.length > 0) {
+                        this.selectedFiles = files;
+                        this.showFilePreview(files);
+                        this.uploadFiles(files);
+                    }
+                });
+                
+                // Drag and drop
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('border-success');
+                });
+                
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('border-success');
+                });
+                
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('border-success');
+                    
+                    const files = Array.from(e.dataTransfer.files);
+                    if (files.length > 0) {
+                        this.selectedFiles = files;
+                        this.showFilePreview(files);
+                        this.uploadFiles(files);
+                    }
+                });
+            }
+            
+            showFilePreview(files) {
+                this.previewArea.style.display = 'block';
+                this.previewList.innerHTML = '';
+                
+                files.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item d-flex justify-content-between align-items-center';
+                    
+                    fileItem.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-image text-primary me-2"></i>
+                            <div>
+                                <strong>${file.name}</strong>
+                                <br>
+                                <small class="text-muted">${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" onclick="uploader.removeFile(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    
+                    this.previewList.appendChild(fileItem);
+                });
+            }
+            
+            removeFile(index) {
+                this.selectedFiles.splice(index, 1);
+                if (this.selectedFiles.length === 0) {
+                    this.previewArea.style.display = 'none';
+                    this.fileInput.value = '';
+                } else {
+                    this.showFilePreview(this.selectedFiles);
+                }
+            }
+
+            async uploadFiles(files) {
+                const progressContainer = document.getElementById('upload-progress');
+                const progressBar = progressContainer.querySelector('.progress-bar');
+                const statusDiv = document.getElementById('upload-status');
+                const resultsDiv = document.getElementById('upload-results');
+                
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '0%';
+                statusDiv.textContent = 'Preparing upload...';
+                
+                // Get CSRF token
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                let successCount = 0;
+                let totalFiles = files.length;
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    try {
+                        statusDiv.textContent = `Uploading ${file.name}... (${i + 1}/${totalFiles})`;
+                        
+                        const response = await fetch('/api/upload', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: formData
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            successCount++;
+                            console.log(`✅ Upload successful: ${file.name}`);
+                        } else {
+                            console.error(`❌ Upload failed: ${file.name} - ${result.error}`);
+                        }
+                        
+                        // Update progress
+                        const progress = ((i + 1) / totalFiles) * 100;
+                        progressBar.style.width = `${progress}%`;
+                        
+                    } catch (error) {
+                        console.error(`❌ Upload error: ${file.name}`, error);
+                    }
+                }
+                
+                // Show final results
+                statusDiv.textContent = `Upload complete: ${successCount}/${totalFiles} files uploaded successfully`;
+                
+                if (successCount > 0) {
+                    resultsDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            Successfully uploaded ${successCount} file(s)!
+                        </div>
+                    `;
+                    
+                    // Reset file input
+                    this.fileInput.value = '';
+                }
+                
+                // Hide progress after 3 seconds
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                }, 3000);
+            }
+
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new PhotoVaultUploader();
+        });
+    </script>
+</body>
+</html>

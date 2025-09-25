@@ -1,0 +1,968 @@
+<!--
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+-->
+
+{% extends "base.html" %}
+
+{% block title %}{{ photo.original_name }} - PhotoVault{% endblock %}
+
+{% block extra_css %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/voice-memo.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0" id="photoTitle">{{ photo.original_name }}</h5>
+                    <!-- Enhanced Photo View Toolbar -->
+                    <div class="btn-toolbar" role="toolbar">
+                        <!-- File Operations Group -->
+                        <div class="btn-group btn-group-sm me-2" role="group">
+                            <button class="btn btn-outline-secondary" onclick="toggleRename()" title="Rename photo">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <a href="{{ url_for('main.editor', photo_id=photo.id) }}" 
+                               class="btn btn-outline-warning" title="Full editor with markup tools">
+                                <i class="bi bi-palette"></i>
+                            </a>
+                            <button class="btn btn-outline-info" onclick="showQuickAnnotation()" title="Quick annotation">
+                                <i class="bi bi-chat-square-text"></i>
+                            </button>
+                            <button class="btn btn-outline-primary" onclick="autoDetectPhotos()" title="Auto-detect photos" id="autoDetectBtn">
+                                <i class="bi bi-search"></i> Auto-Detect
+                            </button>
+                        </div>
+                        
+                        <!-- View Operations Group -->
+                        <div class="btn-group btn-group-sm me-2" role="group">
+                            <button class="btn btn-outline-primary" onclick="enterFullscreenMode()" title="Fullscreen view">
+                                <i class="bi bi-arrows-fullscreen"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="toggleImageInfo()" title="Toggle EXIF data">
+                                <i class="bi bi-info-circle"></i>
+                            </button>
+                            {% if photo.edited_filename %}
+                            <a href="{{ url_for('gallery.compare_single_photo', photo_id=photo.id) }}" 
+                               class="btn btn-outline-info" title="Compare versions">
+                                <i class="bi bi-compare"></i>
+                            </a>
+                            {% endif %}
+                            <button class="btn btn-outline-success" onclick="toggleZoomMode()" title="Zoom mode">
+                                <i class="bi bi-zoom-in"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Download & Export Group -->
+                        <div class="btn-group btn-group-sm me-2" role="group">
+                            <button type="button" class="btn btn-outline-success dropdown-toggle" 
+                                    data-bs-toggle="dropdown" title="Download & export options">
+                                <i class="bi bi-download"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                {% if photo.edited_filename %}
+                                <li><a class="dropdown-item" 
+                                       href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
+                                       download="{{ photo.original_name }}_edited">
+                                    <i class="bi bi-image"></i> Download Edited Version
+                                </a></li>
+                                <li><a class="dropdown-item" 
+                                       href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                                       download="{{ photo.original_name }}_original">
+                                    <i class="bi bi-camera"></i> Download Original Version
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" 
+                                       href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
+                                       target="_blank">
+                                    <i class="bi bi-box-arrow-up-right"></i> Open Edited in New Tab
+                                </a></li>
+                                <li><a class="dropdown-item" 
+                                       href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                                       target="_blank">
+                                    <i class="bi bi-box-arrow-up-right"></i> Open Original in New Tab
+                                </a></li>
+                                {% else %}
+                                <li><a class="dropdown-item" 
+                                       href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                                       download="{{ photo.original_name }}">
+                                    <i class="bi bi-download"></i> Download Photo
+                                </a></li>
+                                <li><a class="dropdown-item" 
+                                       href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                                       target="_blank">
+                                    <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
+                                </a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><button class="dropdown-item" onclick="sharePhoto()">
+                                    <i class="bi bi-share"></i> Share Photo
+                                </button></li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Delete Group -->
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-danger" onclick="deletePhoto({{ photo.id }})" title="Delete with options">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Rename Form (hidden by default) -->
+                    <div id="renameForm" class="p-3 border-bottom" style="display: none;">
+                        <form method="POST" action="{{ url_for('main.rename_photo', photo_id=photo.id) }}">
+                            <div class="input-group">
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="new_name" 
+                                       id="newName"
+                                       value="{{ photo.original_name }}" 
+                                       placeholder="Enter new photo name"
+                                       required>
+                                <button type="submit" class="btn btn-success" title="Save changes">
+                                    <i class="bi bi-check"></i>
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="toggleRename()" title="Cancel rename">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Display photo with fallback handling -->
+                    {% if photo.edited_filename %}
+                        <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
+                             class="img-fluid w-100" 
+                             alt="{{ photo.original_name }} (Edited)"
+                             style="max-height: 70vh; object-fit: contain;">
+                    {% else %}
+                        <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                             class="img-fluid w-100" 
+                             alt="{{ photo.original_name }}"
+                             style="max-height: 70vh; object-fit: contain;">
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Photo Details</h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">Original Name:</dt>
+                        <dd class="col-sm-7">{{ photo.original_name }}</dd>
+                        
+                        <dt class="col-sm-5">Uploaded:</dt>
+                        <dd class="col-sm-7">{{ photo.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+                        
+                        <dt class="col-sm-5">File Size:</dt>
+                        <dd class="col-sm-7">{{ "%.2f"|format(photo.file_size / 1024 / 1024) }} MB</dd>
+                        
+                        <dt class="col-sm-5">Dimensions:</dt>
+                        <dd class="col-sm-7">{{ photo.width }} × {{ photo.height }}</dd>
+                        
+                        {% if photo.edited_filename %}
+                        <dt class="col-sm-5">Status:</dt>
+                        <dd class="col-sm-7"><span class="badge bg-success">Edited</span></dd>
+                        {% else %}
+                        <dt class="col-sm-5">Status:</dt>
+                        <dd class="col-sm-7"><span class="badge bg-secondary">Original</span></dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+            
+            <!-- People Tagging -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-people"></i> People in Photo
+                    </h6>
+                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#tagPersonModal">
+                        <i class="bi bi-person-plus"></i> Tag Person
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if tagged_people %}
+                    <div class="mb-3">
+                        {% for tagged in tagged_people %}
+                        <span class="badge bg-primary me-2 mb-2 d-inline-flex align-items-center">
+                            <i class="bi bi-person-circle me-1"></i>
+                            {{ tagged.person.name }}
+                            {% if tagged.person.nickname %}
+                            <small class="ms-1">"{{ tagged.person.nickname }}"</small>
+                            {% endif %}
+                            <button type="button" class="btn-close btn-close-white ms-2" 
+                                    onclick="untagPerson({{ photo.id }}, {{ tagged.person.id }}, '{{ tagged.person.name }}')"
+                                    title="Remove tag"></button>
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-3">No people tagged in this photo yet</p>
+                    {% endif %}
+                    
+                    <!-- Quick tag buttons for recently used people -->
+                    {% if all_people %}
+                    <small class="text-muted">Quick tag:</small>
+                    <div class="mt-2">
+                        {% for person in all_people[:5] %}
+                        {% set is_already_tagged = false %}
+                        {% for tagged in tagged_people %}
+                        {% if tagged.person.id == person.id %}
+                        {% set is_already_tagged = true %}
+                        {% endif %}
+                        {% endfor %}
+                        {% if not is_already_tagged %}
+                        <button class="btn btn-outline-secondary btn-sm me-1 mb-1" 
+                                onclick="tagPersonQuick({{ photo.id }}, {{ person.id }}, '{{ person.name }}')">
+                            <i class="bi bi-plus"></i> {{ person.name }}
+                        </button>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Voice Memos Section -->
+            <div class="card mt-3">
+                <div id="voiceMemoContainer"></div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="/people" class="btn btn-outline-success">
+                            <i class="bi bi-people"></i> Manage People
+                        </a>
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-house"></i> Back to Dashboard
+                        </a>
+                        <a href="/gallery" class="btn btn-outline-secondary">
+                            <i class="bi bi-images"></i> Back to Gallery
+                        </a>
+                        {% if photo.edited_filename %}
+                        <a href="{{ url_for('gallery.compare_single_photo', photo_id=photo.id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-compare"></i> Compare Versions
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                           target="_blank" 
+                           class="btn btn-outline-info">
+                            <i class="bi bi-arrows-fullscreen"></i> View Full Size
+                        </a>
+                        <button class="btn btn-danger" onclick="deletePhoto({{ photo.id }})">
+                            <i class="bi bi-trash"></i> Delete Photo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tag Person Modal -->
+<div class="modal fade" id="tagPersonModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tag Person in Photo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% if all_people %}
+                <div class="mb-3">
+                    <label for="personSelect" class="form-label">Select Person</label>
+                    <select class="form-select" id="personSelect">
+                        <option value="">Choose a person...</option>
+                        {% for person in all_people %}
+                        {% set is_already_tagged = false %}
+                        {% for tagged in tagged_people %}
+                            {% if tagged.person.id == person.id %}
+                                {% set is_already_tagged = true %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if not is_already_tagged %}
+                        <option value="{{ person.id }}">
+                            {{ person.name }}
+                            {% if person.nickname %} "{{ person.nickname }}"{% endif %}
+                            {% if person.relationship %} ({{ person.relationship }}){% endif %}
+                        </option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                {% else %}
+                <div class="text-center">
+                    <p class="text-muted">No people available for tagging.</p>
+                    <a href="/people" class="btn btn-primary">
+                        <i class="bi bi-person-plus"></i> Add People First
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                {% if all_people %}
+                <button type="button" class="btn btn-primary" onclick="tagPersonFromModal({{ photo.id }})">
+                    <i class="bi bi-plus"></i> Tag Person
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Selective Deletion Modal -->
+<div class="modal fade" id="deletePhotoModal" tabindex="-1" aria-labelledby="deletePhotoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deletePhotoModalLabel">Delete Photo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>What would you like to delete for <strong>{{ photo.original_name }}</strong>?</p>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="deletionType" id="deleteBoth" value="both" checked>
+                    <label class="form-check-label" for="deleteBoth">
+                        <strong>Delete Both</strong> - Remove original and edited versions (cannot be undone)
+                    </label>
+                </div>
+                {% if photo.edited_filename %}
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="deletionType" id="deleteOriginal" value="original">
+                    <label class="form-check-label" for="deleteOriginal">
+                        <strong>Delete Original Only</strong> - Keep edited version as the main photo
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="deletionType" id="deleteEdited" value="edited">
+                    <label class="form-check-label" for="deleteEdited">
+                        <strong>Delete Edited Only</strong> - Keep original and remove edited version
+                    </label>
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeletePhoto()">
+                    <i class="bi bi-trash"></i> Delete Selected
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Helper function to get CSRF token
+function getCSRFToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content 
+        || document.querySelector('input[name="csrf_token"]')?.value;
+}
+
+// Helper function to show user feedback
+function showUserFeedback(message, type = 'info') {
+    // Create a toast notification or use existing alert system
+    if (type === 'error') {
+        alert('Error: ' + message);
+    } else if (type === 'success') {
+        // Could be enhanced with a proper toast notification system
+        alert(message);
+    } else {
+        alert(message);
+    }
+}
+
+function deletePhoto(photoId) {
+    // Show the selective deletion modal
+    const modal = new bootstrap.Modal(document.getElementById('deletePhotoModal'));
+    modal.show();
+}
+
+function confirmDeletePhoto() {
+    const selectedOption = document.querySelector('input[name="deletionType"]:checked');
+    const deletionType = selectedOption ? selectedOption.value : 'both';
+    
+    const csrfToken = getCSRFToken();
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+    };
+    
+    if (csrfToken) {
+        headers['X-CSRFToken'] = csrfToken;
+    }
+    
+    fetch(`/api/photos/{{ photo.id }}/delete`, {
+        method: 'DELETE',
+        headers: headers,
+        body: JSON.stringify({
+            deletion_type: deletionType
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showUserFeedback(data.message || 'Photo deleted successfully!', 'success');
+            window.location.href = '{{ url_for("main.dashboard") }}';
+        } else {
+            showUserFeedback('Error deleting photo: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Delete photo error:', error);
+        showUserFeedback('Error deleting photo. Please try again.', 'error');
+    })
+    .finally(() => {
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('deletePhotoModal'));
+        if (modal) modal.hide();
+    });
+}
+
+function toggleRename() {
+    const form = document.getElementById('renameForm');
+    const input = document.getElementById('newName');
+    
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        input.focus();
+        input.select();
+    } else {
+        form.style.display = 'none';
+    }
+}
+
+// People tagging functions
+function tagPersonQuick(photoId, personId, personName) {
+    tagPerson(photoId, personId, personName);
+}
+
+function tagPersonFromModal(photoId) {
+    const select = document.getElementById('personSelect');
+    const personId = select.value;
+    const personName = select.options[select.selectedIndex].text;
+    
+    if (!personId) {
+        showUserFeedback('Please select a person to tag', 'error');
+        return;
+    }
+    
+    tagPerson(photoId, personId, personName);
+    
+    // Hide modal after successful tagging
+    try {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('tagPersonModal'));
+        if (modal) {
+            modal.hide();
+        }
+    } catch (e) {
+        console.warn('Could not hide modal:', e);
+    }
+}
+
+function tagPerson(photoId, personId, personName) {
+    const csrfToken = getCSRFToken();
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+    };
+    
+    if (csrfToken) {
+        headers['X-CSRFToken'] = csrfToken;
+    }
+    
+    fetch(`/api/photo/${photoId}/tag_person`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+            person_id: personId,
+            manually_tagged: true
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showUserFeedback(`Successfully tagged ${personName}!`, 'success');
+            // Refresh to show updated tags
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showUserFeedback('Error tagging person: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Tag person error:', error);
+        showUserFeedback('Error tagging person. Please try again.', 'error');
+    });
+}
+
+function untagPerson(photoId, personId, personName) {
+    if (confirm(`Remove ${personName} from this photo?`)) {
+        const csrfToken = getCSRFToken();
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        };
+        
+        if (csrfToken) {
+            headers['X-CSRFToken'] = csrfToken;
+        }
+        
+        fetch(`/api/photo/${photoId}/untag_person/${personId}`, {
+            method: 'DELETE',
+            headers: headers
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showUserFeedback(`Successfully removed ${personName} from photo!`, 'success');
+                // Refresh to show updated tags
+                setTimeout(() => location.reload(), 500);
+            } else {
+                showUserFeedback('Error removing tag: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Untag person error:', error);
+            showUserFeedback('Error removing tag. Please try again.', 'error');
+        });
+    }
+}
+
+// Enhanced viewing and markup functions for single photo view
+function enterFullscreenMode() {
+    const photoImg = document.querySelector('.card-body img');
+    const photoTitle = document.getElementById('photoTitle').textContent;
+    
+    // Create fullscreen modal
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = '<div class="modal-dialog modal-fullscreen">' +
+        '<div class="modal-content bg-dark">' +
+            '<div class="modal-header border-0">' +
+                '<h5 class="modal-title text-white">' + photoTitle + '</h5>' +
+                '<div class="btn-group">' +
+                    '<button class="btn btn-outline-light btn-sm" onclick="viewZoomIn(this)" title="Zoom in">' +
+                        '<i class="bi bi-zoom-in"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-outline-light btn-sm" onclick="viewZoomOut(this)" title="Zoom out">' +
+                        '<i class="bi bi-zoom-out"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-outline-light btn-sm" onclick="viewResetZoom(this)" title="Reset zoom">' +
+                        '<i class="bi bi-aspect-ratio"></i>' +
+                    '</button>' +
+                    '<button class="btn btn-outline-light btn-sm" onclick="rotateImage(this)" title="Rotate">' +
+                        '<i class="bi bi-arrow-clockwise"></i>' +
+                    '</button>' +
+                '</div>' +
+                '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>' +
+            '</div>' +
+            '<div class="modal-body d-flex justify-content-center align-items-center p-2">' +
+                '<img src="' + photoImg.src + '" class="img-fluid" id="fullscreenImage" ' +
+                     'style="max-height: 90vh; max-width: 90vw; object-fit: contain; transition: transform 0.3s ease;">' +
+            '</div>' +
+            '<div class="modal-footer border-0 justify-content-center">' +
+                '<small class="text-white-50">Use mouse wheel to zoom, drag to pan</small>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    // Add pan and zoom functionality
+    const img = modal.querySelector('#fullscreenImage');
+    let isDragging = false;
+    let startX, startY, translateX = 0, translateY = 0;
+    
+    img.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
+    });
+    
+    img.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        const scale = img.dataset.scale || 1;
+        const rotation = img.dataset.rotation || 0;
+        img.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ') rotate(' + rotation + 'deg)';
+    });
+    
+    img.addEventListener('mouseup', function() { isDragging = false; });
+    img.addEventListener('mouseleave', function() { isDragging = false; });
+    
+    // Zoom with mouse wheel
+    img.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        const scale = parseFloat(img.dataset.scale || '1');
+        const newScale = e.deltaY > 0 ? Math.max(scale * 0.9, 0.1) : Math.min(scale * 1.1, 5);
+        img.dataset.scale = newScale;
+        const rotation = img.dataset.rotation || 0;
+        img.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + newScale + ') rotate(' + rotation + 'deg)';
+    });
+    
+    // Clean up modal after hiding
+    modal.addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(modal);
+    });
+}
+
+function viewZoomIn(button) {
+    const img = button.closest('.modal-content').querySelector('#fullscreenImage');
+    const currentScale = parseFloat(img.dataset.scale || '1');
+    const newScale = Math.min(currentScale * 1.2, 5);
+    img.dataset.scale = newScale;
+    const translateMatch = img.style.transform.match(/translate\(([^)]+)\)/);
+    const translateStr = translateMatch ? translateMatch[1] : '0px, 0px';
+    const rotation = img.dataset.rotation || 0;
+    img.style.transform = 'translate(' + translateStr + ') scale(' + newScale + ') rotate(' + rotation + 'deg)';
+}
+
+function viewZoomOut(button) {
+    const img = button.closest('.modal-content').querySelector('#fullscreenImage');
+    const currentScale = parseFloat(img.dataset.scale || '1');
+    const newScale = Math.max(currentScale / 1.2, 0.1);
+    img.dataset.scale = newScale;
+    const translateMatch = img.style.transform.match(/translate\(([^)]+)\)/);
+    const translateStr = translateMatch ? translateMatch[1] : '0px, 0px';
+    const rotation = img.dataset.rotation || 0;
+    img.style.transform = 'translate(' + translateStr + ') scale(' + newScale + ') rotate(' + rotation + 'deg)';
+}
+
+function viewResetZoom(button) {
+    const img = button.closest('.modal-content').querySelector('#fullscreenImage');
+    img.dataset.scale = '1';
+    img.dataset.rotation = '0';
+    img.style.transform = 'translate(0px, 0px) scale(1) rotate(0deg)';
+}
+
+function rotateImage(button) {
+    const img = button.closest('.modal-content').querySelector('#fullscreenImage');
+    const currentRotation = parseFloat(img.dataset.rotation || '0');
+    const newRotation = currentRotation + 90;
+    img.dataset.rotation = newRotation;
+    const translateMatch = img.style.transform.match(/translate\(([^)]+)\)/);
+    const translateStr = translateMatch ? translateMatch[1] : '0px, 0px';
+    const scale = img.dataset.scale || 1;
+    img.style.transform = 'translate(' + translateStr + ') scale(' + scale + ') rotate(' + newRotation + 'deg)';
+}
+
+function toggleImageInfo() {
+    const existingInfo = document.getElementById('imageInfoOverlay');
+    if (existingInfo) {
+        existingInfo.remove();
+        return;
+    }
+    
+    // Create EXIF overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'imageInfoOverlay';
+    overlay.className = 'position-fixed';
+    overlay.style.cssText = 'top: 20px; right: 20px; z-index: 1050; background: rgba(0,0,0,0.8); color: white; padding: 15px; border-radius: 8px; max-width: 300px; font-size: 12px;';
+    
+    overlay.innerHTML = '<div class="d-flex justify-content-between align-items-center mb-2">' +
+            '<strong>Photo Information</strong>' +
+            '<button class="btn btn-sm btn-outline-light" onclick="this.parentElement.parentElement.remove()">' +
+                '<i class="bi bi-x"></i>' +
+            '</button>' +
+        '</div>' +
+        '<div><strong>Size:</strong> {{ photo.width }}×{{ photo.height }}</div>' +
+        '<div><strong>File Size:</strong> {{ "%.2f"|format(photo.file_size / 1024 / 1024) }} MB</div>' +
+        '<div><strong>Uploaded:</strong> {{ photo.uploaded_at.strftime(\'%Y-%m-%d %H:%M\') }}</div>' +
+        '{% if photo.edited_filename %}<div><strong>Status:</strong> Edited Version</div>{% endif %}' +
+        '<div class="mt-2">' +
+            '<button class="btn btn-sm btn-outline-light" onclick="copyImageInfo()">' +
+                '<i class="bi bi-clipboard"></i> Copy Info' +
+            '</button>' +
+        '</div>';
+    
+    document.body.appendChild(overlay);
+}
+
+function toggleZoomMode() {
+    const img = document.querySelector('.card-body img');
+    if (img.classList.contains('zoom-active')) {
+        img.classList.remove('zoom-active');
+        img.style.cursor = 'default';
+        img.style.transform = 'scale(1)';
+        img.onclick = null;
+    } else {
+        img.classList.add('zoom-active');
+        img.style.cursor = 'zoom-in';
+        img.onclick = function() {
+            this.style.transform = this.style.transform === 'scale(2)' ? 'scale(1)' : 'scale(2)';
+            this.style.cursor = this.style.transform === 'scale(2)' ? 'zoom-out' : 'zoom-in';
+        };
+    }
+}
+
+function showQuickAnnotation() {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = '<div class="modal-dialog">' +
+        '<div class="modal-content">' +
+            '<div class="modal-header">' +
+                '<h5 class="modal-title">Quick Annotation</h5>' +
+                '<button type="button" class="btn-close" data-bs-dismiss="modal"></button>' +
+            '</div>' +
+            '<div class="modal-body">' +
+                '<div class="mb-3">' +
+                    '<label class="form-label">Add note or comment</label>' +
+                    '<textarea class="form-control" id="annotationText" rows="4" ' +
+                              'placeholder="Add your annotation, notes, or observations..."></textarea>' +
+                '</div>' +
+                '<div class="mb-3">' +
+                    '<label class="form-label">Tags (comma-separated)</label>' +
+                    '<input type="text" class="form-control" id="annotationTags" ' +
+                           'placeholder="nature, landscape, vacation">' +
+                '</div>' +
+                '<div class="mb-3">' +
+                    '<label class="form-label">Rating</label>' +
+                    '<div class="btn-group" role="group">' +
+                        '<input type="radio" class="btn-check" name="annRating" id="rate1" value="1">' +
+                        '<label class="btn btn-outline-warning" for="rate1">★</label>' +
+                        '<input type="radio" class="btn-check" name="annRating" id="rate2" value="2">' +
+                        '<label class="btn btn-outline-warning" for="rate2">★★</label>' +
+                        '<input type="radio" class="btn-check" name="annRating" id="rate3" value="3">' +
+                        '<label class="btn btn-outline-warning" for="rate3">★★★</label>' +
+                        '<input type="radio" class="btn-check" name="annRating" id="rate4" value="4">' +
+                        '<label class="btn btn-outline-warning" for="rate4">★★★★</label>' +
+                        '<input type="radio" class="btn-check" name="annRating" id="rate5" value="5">' +
+                        '<label class="btn btn-outline-warning" for="rate5">★★★★★</label>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="modal-footer">' +
+                '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>' +
+                '<button type="button" class="btn btn-primary" onclick="saveAnnotation()">Save Annotation</button>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    modal.addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(modal);
+    });
+}
+
+function saveAnnotation() {
+    const textEl = document.getElementById('annotationText');
+    const tagsEl = document.getElementById('annotationTags');
+    const ratingEl = document.querySelector('input[name="annRating"]:checked');
+    
+    const text = textEl ? textEl.value : '';
+    const tags = tagsEl ? tagsEl.value : '';
+    const rating = ratingEl ? ratingEl.value : null;
+    
+    // Here you would save to backend - for now show confirmation
+    alert('Annotation saved!\nText: ' + text + '\nTags: ' + tags + '\nRating: ' + (rating || 'None'));
+    
+    // Close modal
+    const modals = document.querySelectorAll('.modal.show');
+    modals.forEach(function(modal) {
+        const bsModal = bootstrap.Modal.getInstance(modal);
+        if (bsModal) bsModal.hide();
+    });
+}
+
+function sharePhoto() {
+    const photoTitle = document.getElementById('photoTitle').textContent;
+    const url = window.location.href;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'PhotoVault - ' + photoTitle,
+            text: 'Check out this photo: ' + photoTitle,
+            url: url
+        });
+    } else {
+        // Fallback - copy to clipboard
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function() {
+                alert('Photo link copied to clipboard!');
+            }).catch(function() {
+                alert('Could not copy link. Please copy manually: ' + url);
+            });
+        } else {
+            alert('Share URL: ' + url);
+        }
+    }
+}
+
+function copyImageInfo() {
+    const info = 'Photo: {{ photo.original_name }}\nSize: {{ photo.width }}×{{ photo.height }}\nFile Size: {{ "%.2f"|format(photo.file_size / 1024 / 1024) }} MB\nUploaded: {{ photo.uploaded_at.strftime(\'%Y-%m-%d %H:%M\') }}';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(info).then(function() {
+            alert('Photo information copied to clipboard!');
+        }).catch(function() {
+            alert('Could not copy information.');
+        });
+    } else {
+        alert('Photo Information:\n' + info);
+    }
+}
+
+// Auto-detect photos functionality
+function autoDetectPhotos() {
+    const btn = document.getElementById('autoDetectBtn');
+    const originalContent = btn.innerHTML;
+    
+    // Show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Detecting...';
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(`/api/photos/{{ photo.id }}/auto-detect`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.extracted_count > 0) {
+                const message = `Success! Detected ${data.detected_count} potential photos and extracted ${data.extracted_count} photos.\n\nThe extracted photos have been added to your gallery. You can find them by scrolling down or searching for "auto_extract" in your photos.`;
+                alert(message);
+                
+                // Optional: Show extracted photos preview
+                showExtractedPhotos(data.extracted_photos);
+            } else {
+                alert('No photos were detected in this image. Try with an image that contains multiple distinct photos, like a photo album page or collage.');
+            }
+        } else {
+            alert('Auto-detection failed: ' + (data.error || 'Unknown error occurred'));
+        }
+    })
+    .catch(error => {
+        console.error('Auto-detection error:', error);
+        alert('Auto-detection failed due to a network error. Please try again.');
+    })
+    .finally(() => {
+        // Restore button state
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+    });
+}
+
+function showExtractedPhotos(extractedPhotos) {
+    if (!extractedPhotos || extractedPhotos.length === 0) return;
+    
+    // Create a modal or sidebar showing extracted photos
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'extractedPhotosModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-images"></i> Extracted Photos (${extractedPhotos.length})
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        ${extractedPhotos.map((photo, index) => `
+                            <div class="col-md-4 mb-3">
+                                <div class="card">
+                                    <img src="${photo.thumbnail_url || photo.photo_url}" 
+                                         class="card-img-top" alt="Extracted photo ${index + 1}"
+                                         style="height: 150px; object-fit: cover;">
+                                    <div class="card-body p-2">
+                                        <p class="card-text small">
+                                            <strong>Confidence:</strong> ${Math.round(photo.confidence * 100)}%<br>
+                                            <strong>Size:</strong> ${photo.width}×${photo.height}
+                                        </p>
+                                        <div class="btn-group btn-group-sm w-100">
+                                            <a href="${photo.photo_url}" class="btn btn-outline-primary btn-sm" target="_blank">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                            <a href="/photo/${photo.id}" class="btn btn-outline-secondary btn-sm">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="/gallery" class="btn btn-primary">Go to Gallery</a>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    
+    // Remove modal from DOM when closed
+    modal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(modal);
+    });
+}
+</script>
+
+<!-- Voice Memo Functionality -->
+<script src="{{ url_for('static', filename='js/voice-memo.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize voice memo recorder for this photo
+    const voiceMemoRecorder = new VoiceMemoRecorder({{ photo.id }}, 'voiceMemoContainer');
+});
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Additional voice memo related scripts if needed -->
+{% endblock %}
