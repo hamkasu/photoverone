@@ -48,27 +48,38 @@ class PhotoDetector:
             logger.error(f"Image file not found: {image_path}")
             return []
             
+        image = None
         try:
-            # Load image
-            image = cv2.imread(image_path)
+            # Load image with memory management
+            image = cv2.imread(image_path, cv2.IMREAD_COLOR)
             if image is None:
                 logger.error(f"Could not load image: {image_path}")
                 return []
                 
             logger.info(f"Starting photo detection on {image_path}")
             
+            # Check image size to prevent memory issues - reject instead of resize
+            height, width = image.shape[:2]
+            if height * width > 25000000:  # ~25MP limit for detection
+                logger.error(f"Image too large for processing: {width}x{height} pixels. Maximum supported: 25MP")
+                return []
+            
             # Get image dimensions
             height, width = image.shape[:2]
             original_area = width * height
             
             # Preprocess image for edge detection
-            processed = self._preprocess_image(image)
-            
-            # Find contours (potential photo boundaries)
-            contours = self._find_contours(processed)
-            
-            # Filter and validate potential photos
-            detected_photos = []
+            try:
+                processed = self._preprocess_image(image)
+                
+                # Find contours (potential photo boundaries)
+                contours = self._find_contours(processed)
+                
+                # Filter and validate potential photos
+                detected_photos = []
+            except Exception as e:
+                logger.error(f"Image preprocessing failed: {e}")
+                return []
             
             for i, contour in enumerate(contours):
                 # Get bounding rectangle
@@ -97,12 +108,28 @@ class PhotoDetector:
             # Sort by confidence
             detected_photos.sort(key=lambda p: p['confidence'], reverse=True)
             
+            # Limit number of detected photos to prevent excessive memory usage
+            max_detections = 10
+            if len(detected_photos) > max_detections:
+                detected_photos = detected_photos[:max_detections]
+                logger.info(f"Limited detections to {max_detections} highest confidence photos")
+            
             logger.info(f"Detected {len(detected_photos)} potential photos in {image_path}")
             return detected_photos
             
+        except MemoryError:
+            logger.error(f"Out of memory during photo detection for {image_path}")
+            return []
         except Exception as e:
             logger.error(f"Photo detection failed for {image_path}: {e}")
             return []
+        finally:
+            # Ensure memory cleanup
+            if 'image' in locals() and image is not None:
+                try:
+                    del image
+                except:
+                    pass
     
     def _preprocess_image(self, image: np.ndarray) -> np.ndarray:
         """Preprocess image for better edge detection"""
@@ -207,11 +234,18 @@ class PhotoDetector:
         if not OPENCV_AVAILABLE:
             return []
             
+        image = None
         try:
-            # Load original image
-            image = cv2.imread(image_path)
+            # Load original image with memory management
+            image = cv2.imread(image_path, cv2.IMREAD_COLOR)
             if image is None:
                 logger.error(f"Could not load image: {image_path}")
+                return []
+            
+            # Check image size for extraction
+            height, width = image.shape[:2]
+            if height * width > 30000000:  # Limit for extraction (slightly higher)
+                logger.error(f"Image too large for extraction: {width}x{height} pixels")
                 return []
                 
             # Create output directory if it doesn't exist
@@ -239,8 +273,12 @@ class PhotoDetector:
                     output_filename = f"{base_filename}_photo_{i+1:02d}_conf{photo['confidence']:.2f}.jpg"
                     output_path = os.path.join(output_dir, output_filename)
                     
-                    # Save extracted photo
-                    cv2.imwrite(output_path, extracted_region)
+                    # Save extracted photo with quality control
+                    success = cv2.imwrite(output_path, extracted_region, 
+                                        [cv2.IMWRITE_JPEG_QUALITY, 95])
+                    if not success:
+                        logger.error(f"Failed to save extracted photo: {output_path}")
+                        continue
                     
                     extracted_info = {
                         'original_region': photo,
@@ -261,9 +299,19 @@ class PhotoDetector:
             logger.info(f"Successfully extracted {len(extracted_photos)} photos from {image_path}")
             return extracted_photos
             
+        except MemoryError:
+            logger.error(f"Out of memory during photo extraction for {image_path}")
+            return []
         except Exception as e:
             logger.error(f"Photo extraction failed for {image_path}: {e}")
             return []
+        finally:
+            # Ensure memory cleanup
+            if 'image' in locals() and image is not None:
+                try:
+                    del image
+                except:
+                    pass
 
 # Global instance
 photo_detector = PhotoDetector()

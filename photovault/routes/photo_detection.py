@@ -82,6 +82,26 @@ def upload_for_detection():
         
         file_path = file_path_or_error
         
+        # Check image size before processing to prevent memory issues
+        try:
+            from PIL import Image as PILImage
+            with PILImage.open(file_path) as img:
+                width, height = img.size
+                # Limit image size to prevent memory exhaustion
+                max_pixels = 25000000  # ~25MP limit to match detection logic
+                if width * height > max_pixels:
+                    delete_file_enhanced(file_path)
+                    return jsonify({
+                        'success': False,
+                        'error': f'Image too large ({width}x{height} pixels). Maximum supported size is 25 megapixels.'
+                    }), 400
+        except Exception as e:
+            delete_file_enhanced(file_path)
+            return jsonify({
+                'success': False,
+                'error': f'Could not process image: {str(e)}'
+            }), 400
+        
         # Detect photos in the uploaded image
         detected_photos = detect_photos_in_image(file_path)
         
@@ -199,11 +219,12 @@ def extract_detected_photos_api():
         
         # Save extracted photos to database
         saved_photos = []
+        from photovault.models import Photo
+        from photovault.extensions import db
+        from photovault.utils.file_handler import get_image_dimensions
+        from PIL import Image
+        
         try:
-            from photovault.models import Photo
-            from photovault.extensions import db
-            from photovault.utils.file_handler import get_image_dimensions
-            from PIL import Image
             
             for extracted_photo in extracted_photos:
                 file_path_full = extracted_photo['file_path']
@@ -243,7 +264,10 @@ def extract_detected_photos_api():
             
         except Exception as e:
             logger.error(f"Failed to save extracted photos to database: {e}")
-            db.session.rollback()
+            try:
+                db.session.rollback()
+            except Exception:
+                pass  # Session might already be closed
             # Don't fail the entire operation, photos are still extracted to disk
         
         # Clean up the temporary original file and token
