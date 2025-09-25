@@ -13,7 +13,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128))
-    is_active = db.Column(db.Boolean, default=True)
+    is_active = db.Column(db.Boolean, default=True)  # ← ADD THIS LINE
     is_admin = db.Column(db.Boolean, default=False)
     is_superuser = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -126,6 +126,7 @@ class PhotoTag(db.Model):
     
     def __repr__(self):
         return f'<PhotoTag {self.photo_id}-{self.person_id}>'
+
 
 class VoiceMemo(db.Model):
     """Voice memo model for audio recordings attached to photos"""
