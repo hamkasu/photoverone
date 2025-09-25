@@ -3,19 +3,15 @@
 from flask import Flask
 from photovault.extensions import db, login_manager, migrate, csrf
 from photovault.config import config
+from config import get_config
 import os
 
 def _create_superuser_if_needed(app):
     """Create superuser account from environment variables if no superuser exists"""
     from photovault.models import User
     
-    try:
-        # Check if any superuser already exists
-        if User.query.filter_by(is_superuser=True).first():
-            return
-    except Exception as e:
-        # Tables don't exist yet (likely during migration), skip superuser creation
-        app.logger.info(f"Skipping superuser creation - tables not ready: {str(e)}")
+    # Check if any superuser already exists
+    if User.query.filter_by(is_superuser=True).first():
         return
         
     # Get superuser credentials from environment variables
@@ -58,8 +54,7 @@ def create_app(config_class=None):
     
     # Configuration
     if config_class is None:
-        config_name = os.environ.get('FLASK_CONFIG') or 'development'
-        config_class = config.get(config_name, config['default'])
+        config_class = get_config()
     
     if isinstance(config_class, str):
         config_class = config.get(config_class, config['default'])
