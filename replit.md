@@ -15,6 +15,9 @@ PhotoVault by Calmic Sdn Bhd is a professional photo management platform built w
 - Set up development workflow on port 5000 with proper host binding (0.0.0.0)
 - Configured production deployment with Gunicorn for autoscale deployment target
 - Verified application is running and accessible through Replit proxy
+- **Fixed Railway deployment compatibility**: Updated App Storage detection logic to properly handle non-Replit environments
+- **Resolved image serving issues**: Fixed path conversion logic to correctly map App Storage paths to local filesystem when deployed outside Replit
+- **Cross-platform compatibility**: Application now works seamlessly in both Replit (with App Storage) and external platforms like Railway (with local filesystem)
 
 # User Preferences
 
