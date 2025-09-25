@@ -1,6 +1,6 @@
 # PhotoVault Dependencies
 # Python 3.11 Compatibility
-setuptools>=68.0.0
+setuptools>=70.0.0
 
 # Core Flask Framework
 Flask==3.0.3
@@ -45,59 +45,3 @@ sendgrid==6.12.5
 
 # Replit Services
 replit-object-storage==1.0.2
-alembic
-blinker
-click
-email-validator
-exifread
-flask
-flask-login
-flask-migrate
-flask-sqlalchemy
-flask-wtf
-gunicorn
-itsdangerous
-jinja2
-markupsafe
-numpy
-opencv-contrib-python-headless
-opencv-python-headless
-pillow
-psycopg2-binary
-python-decouple
-python-dotenv
-replit-object-storage
-requests
-scikit-image
-sendgrid
-sqlalchemy
-werkzeug
-wtforms
-alembic
-blinker
-click
-email-validator
-exifread
-flask
-flask-login
-flask-migrate
-flask-sqlalchemy
-flask-wtf
-gunicorn
-itsdangerous
-jinja2
-markupsafe
-numpy
-opencv-contrib-python-headless
-opencv-python-headless
-pillow
-psycopg2-binary
-python-decouple
-python-dotenv
-replit-object-storage
-requests
-scikit-image
-sendgrid
-sqlalchemy
-werkzeug
-wtforms
