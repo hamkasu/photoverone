@@ -72,6 +72,7 @@ class Photo(db.Model):
     # Enhancement settings
     auto_enhanced = db.Column(db.Boolean, default=False)  # Whether auto-enhancement was applied
     enhancement_settings = db.Column(db.Text)  # JSON of enhancement parameters applied
+    processing_notes = db.Column(db.Text)  # Notes about processing applied to this photo
     
     # User-added metadata
     description = db.Column(db.Text)  # User description of the photo

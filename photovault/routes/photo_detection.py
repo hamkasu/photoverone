@@ -263,12 +263,28 @@ def extract_detected_photos_api():
             logger.info(f"Successfully saved {len(saved_photos)} extracted photos to database for user {current_user.id}")
             
         except Exception as e:
-            logger.error(f"Failed to save extracted photos to database: {e}")
+            logger.error(f"Database save failed for extracted photos: {e}")
             try:
                 db.session.rollback()
             except Exception:
                 pass  # Session might already be closed
-            # Don't fail the entire operation, photos are still extracted to disk
+            
+            # Clean up extracted files since database save failed
+            for extracted_photo in extracted_photos:
+                try:
+                    if os.path.exists(extracted_photo['file_path']):
+                        os.remove(extracted_photo['file_path'])
+                except Exception:
+                    pass
+            
+            # Clean up the temporary original file and token
+            delete_file_enhanced(file_path)
+            del _temp_files[token]
+            
+            return jsonify({
+                'success': False,
+                'error': f'Failed to save extracted photos to database: {str(e)}'
+            }), 500
         
         # Clean up the temporary original file and token
         delete_file_enhanced(file_path)
