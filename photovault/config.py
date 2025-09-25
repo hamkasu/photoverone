@@ -110,6 +110,7 @@ class ProductionConfig(Config):
     
     # Railway-compatible security settings
     SESSION_COOKIE_SECURE = os.environ.get('HTTPS', 'true').lower() == 'true'
+    SESSION_COOKIE_SAMESITE = 'Lax'  # Required for Railway HTTPS environment
     WTF_CSRF_SSL_STRICT = os.environ.get('HTTPS', 'true').lower() == 'true'
     
     # Production logging
@@ -121,8 +122,9 @@ class ProductionConfig(Config):
         
         # Critical security checks
         if not (os.environ.get('SECRET_KEY') or os.environ.get('RAILWAY_SECRET_KEY')):
-            app.logger.critical('SECURITY RISK: SECRET_KEY not provided! Generated random key for this session only. '
-                              'Set SECRET_KEY environment variable immediately! User sessions will not persist across restarts.')
+            app.logger.critical('CRITICAL: SECRET_KEY not provided! Generated random key for this session only. '
+                              'User sessions WILL NOT persist across Railway restarts. '
+                              'Set SECRET_KEY environment variable in Railway dashboard immediately!')
         
         # Fail-fast if no database configured in production
         if not app.config.get('SQLALCHEMY_DATABASE_URI'):
