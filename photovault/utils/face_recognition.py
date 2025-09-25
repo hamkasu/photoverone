@@ -349,8 +349,22 @@ class FaceRecognizer:
         """Check if face recognition is available"""
         return self.opencv_available
 
-# Global instance
-face_recognizer = FaceRecognizer()
+# Global instance - lazy loaded
+_face_recognizer_instance = None
+
+def get_face_recognizer():
+    """Get the global FaceRecognizer instance (lazy loaded)"""
+    global _face_recognizer_instance
+    if _face_recognizer_instance is None:
+        _face_recognizer_instance = FaceRecognizer()
+    return _face_recognizer_instance
+
+# For backward compatibility - use property to make it truly lazy
+class _FaceRecognizerProxy:
+    def __getattr__(self, name):
+        return getattr(get_face_recognizer(), name)
+
+face_recognizer = _FaceRecognizerProxy()
 
 def recognize_face_in_photo(image_path: str, face_box: Dict) -> Optional[Dict]:
     """
