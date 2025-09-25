@@ -144,9 +144,9 @@ def register():
         def create_user():
             user = User(
                 username=username,
-                email=email,
-                password_hash=generate_password_hash(password)
+                email=email
             )
+            user.set_password(password)
             db.session.add(user)
             db.session.commit()
             return user
