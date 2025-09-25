@@ -23,19 +23,29 @@ class FaceRecognizer:
         self.face_cascade = None
         self.encodings_cache = {}
         self.encodings_file = Path(__file__).parent / 'face_encodings.pkl'
+        self._initialized = False
         
         try:
             import cv2
-            self._initialize_recognizer()
-            self._load_encodings_cache()
-            logger.info("Face recognition initialized successfully")
+            logger.info("Face recognition ready for lazy initialization")
         except ImportError:
             self.opencv_available = False
             logger.warning("OpenCV not available - face recognition disabled")
+    
+    def _ensure_initialized(self):
+        """Lazy initialization - only initialize when first used"""
+        if self._initialized or not self.opencv_available:
+            return
+        
+        try:
+            self._initialize_recognizer()
+            self._load_encodings_cache()
+            self._initialized = True
+            logger.info("Face recognition initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize face recognition: {e}")
             self.opencv_available = False
-    
+
     def _initialize_recognizer(self):
         """Initialize face recognition models"""
         try:
@@ -99,6 +109,7 @@ class FaceRecognizer:
         Returns:
             Face encoding as numpy array or None if extraction fails
         """
+        self._ensure_initialized()
         if not self.opencv_available:
             return None
         
