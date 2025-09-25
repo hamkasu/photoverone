@@ -94,7 +94,12 @@ class ProductionConfig(Config):
     SECRET_KEY = _secret_key
     
     # Handle Railway's DATABASE_URL format (postgresql:// vs postgres://)
-    database_url = os.environ.get('DATABASE_URL') or os.environ.get('RAILWAY_DATABASE_URL')
+    # Railway may use different variable names, check multiple sources
+    database_url = (os.environ.get('DATABASE_URL') or 
+                   os.environ.get('RAILWAY_DATABASE_URL') or 
+                   os.environ.get('POSTGRES_URL') or 
+                   os.environ.get('DATABASE_PRIVATE_URL'))
+    
     if database_url and database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
     
@@ -128,8 +133,16 @@ class ProductionConfig(Config):
         
         # Fail-fast if no database configured in production
         if not app.config.get('SQLALCHEMY_DATABASE_URI'):
-            app.logger.critical('DATABASE_URL environment variable must be set for production. '
-                              'Set DATABASE_URL or ALLOW_SQLITE_IN_PROD=1 to use SQLite (data loss risk).')
+            # Check if we're running on Railway by looking for Railway-specific env vars
+            is_railway = bool(os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RAILWAY_PROJECT_ID'))
+            
+            if is_railway:
+                app.logger.critical('DATABASE_URL not found for Railway deployment. '
+                                  'Please set DATABASE_URL or POSTGRES_URL in Railway environment. '
+                                  'Alternative: Set ALLOW_SQLITE_IN_PROD=1 for SQLite (data loss risk).')
+            else:
+                app.logger.critical('DATABASE_URL environment variable must be set for production. '
+                                  'Set DATABASE_URL or ALLOW_SQLITE_IN_PROD=1 to use SQLite (data loss risk).')
             raise RuntimeError('DATABASE_URL environment variable must be set for production')
         
         if 'sqlite' in app.config.get('SQLALCHEMY_DATABASE_URI', ''):
