@@ -13,6 +13,8 @@ PhotoVault by Calmic Sdn Bhd is a professional photo management platform built w
 - **Development Workflow**: Configured and started "PhotoVault Frontend" workflow on port 5000
 - **Application Status**: Verified application is running successfully and serving HTTP requests with proper static file handling
 - **Production Deployment**: Configured autoscale deployment with Gunicorn for production use
+- **Critical Bug Fix**: Fixed Railway deployment login error by adding missing `is_active` field to User model to match database migration schema
+- **Database Schema Alignment**: Resolved mismatch between SQLAlchemy models and Alembic migrations for seamless Railway deployment
 - **Previous Migration Notes**: 
   - Fixed Railway deployment compatibility with App Storage detection logic
   - Resolved image serving issues for cross-platform compatibility
