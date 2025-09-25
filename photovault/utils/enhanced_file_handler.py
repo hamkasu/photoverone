@@ -166,25 +166,12 @@ def get_image_info_enhanced(file_path):
         dict: Image information or None if error
     """
     try:
-        # Check if it's an App Storage path and App Storage is available
-        if (file_path.startswith('users/') or file_path.startswith('uploads/')) and app_storage.is_available():
+        # Check if it's an App Storage path
+        if file_path.startswith('users/') or file_path.startswith('uploads/'):
             # Use App Storage
             return app_storage.get_image_info(file_path)
         else:
-            # Use local file system - treat App Storage paths as local paths when App Storage unavailable
-            if file_path.startswith('users/') or file_path.startswith('uploads/'):
-                # Convert App Storage path to local path by stripping the storage namespace
-                from flask import current_app
-                upload_folder = current_app.config.get('UPLOAD_FOLDER', 'photovault/uploads')
-                # Strip the leading 'users/' or 'uploads/' prefix 
-                path_parts = file_path.split('/', 1)
-                if len(path_parts) > 1:
-                    local_relative_path = path_parts[1]  # e.g., '123/photo.jpg'
-                    local_path = os.path.join(upload_folder, local_relative_path)
-                    file_path = local_path
-                else:
-                    file_path = os.path.join(upload_folder, file_path)
-            
+            # Use local file system
             with Image.open(file_path) as image:
                 return {
                     'width': image.width,
@@ -210,25 +197,12 @@ def get_file_content(file_path):
         tuple: (success, file_bytes_or_error_message)
     """
     try:
-        # Check if it's an App Storage path and App Storage is available
-        if (file_path.startswith('users/') or file_path.startswith('uploads/')) and app_storage.is_available():
+        # Check if it's an App Storage path
+        if file_path.startswith('users/') or file_path.startswith('uploads/'):
             # Use App Storage
             return app_storage.download_file(file_path)
         else:
-            # Use local file system - treat App Storage paths as local paths when App Storage unavailable
-            if file_path.startswith('users/') or file_path.startswith('uploads/'):
-                # Convert App Storage path to local path by stripping the storage namespace
-                from flask import current_app
-                upload_folder = current_app.config.get('UPLOAD_FOLDER', 'photovault/uploads')
-                # Strip the leading 'users/' or 'uploads/' prefix 
-                path_parts = file_path.split('/', 1)
-                if len(path_parts) > 1:
-                    local_relative_path = path_parts[1]  # e.g., '123/photo.jpg'
-                    local_path = os.path.join(upload_folder, local_relative_path)
-                    file_path = local_path
-                else:
-                    file_path = os.path.join(upload_folder, file_path)
-                
+            # Use local file system
             if os.path.exists(file_path):
                 with open(file_path, 'rb') as f:
                     content = f.read()
@@ -251,26 +225,13 @@ def file_exists_enhanced(file_path):
         bool: True if file exists, False otherwise
     """
     try:
-        # Check if it's an App Storage path and App Storage is available
-        if (file_path.startswith('users/') or file_path.startswith('uploads/')) and app_storage.is_available():
+        # Check if it's an App Storage path
+        if file_path.startswith('users/') or file_path.startswith('uploads/'):
             # Use App Storage
             return app_storage.file_exists(file_path)
         else:
-            # Use local file system - treat App Storage paths as local paths when App Storage unavailable
-            if file_path.startswith('users/') or file_path.startswith('uploads/'):
-                # Convert App Storage path to local path by stripping the storage namespace
-                from flask import current_app
-                upload_folder = current_app.config.get('UPLOAD_FOLDER', 'photovault/uploads')
-                # Strip the leading 'users/' or 'uploads/' prefix 
-                path_parts = file_path.split('/', 1)
-                if len(path_parts) > 1:
-                    local_relative_path = path_parts[1]  # e.g., '123/photo.jpg'
-                    local_path = os.path.join(upload_folder, local_relative_path)
-                    return os.path.exists(local_path)
-                else:
-                    return os.path.exists(os.path.join(upload_folder, file_path))
-            else:
-                return os.path.exists(file_path)
+            # Use local file system
+            return os.path.exists(file_path)
             
     except Exception as e:
         logger.error(f"Error checking file existence {file_path}: {str(e)}")

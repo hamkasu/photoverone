@@ -23,29 +23,19 @@ class FaceRecognizer:
         self.face_cascade = None
         self.encodings_cache = {}
         self.encodings_file = Path(__file__).parent / 'face_encodings.pkl'
-        self._initialized = False
         
         try:
             import cv2
-            logger.info("Face recognition ready for lazy initialization")
+            self._initialize_recognizer()
+            self._load_encodings_cache()
+            logger.info("Face recognition initialized successfully")
         except ImportError:
             self.opencv_available = False
             logger.warning("OpenCV not available - face recognition disabled")
-    
-    def _ensure_initialized(self):
-        """Lazy initialization - only initialize when first used"""
-        if self._initialized or not self.opencv_available:
-            return
-        
-        try:
-            self._initialize_recognizer()
-            self._load_encodings_cache()
-            self._initialized = True
-            logger.info("Face recognition initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize face recognition: {e}")
             self.opencv_available = False
-
+    
     def _initialize_recognizer(self):
         """Initialize face recognition models"""
         try:
@@ -109,7 +99,6 @@ class FaceRecognizer:
         Returns:
             Face encoding as numpy array or None if extraction fails
         """
-        self._ensure_initialized()
         if not self.opencv_available:
             return None
         
@@ -349,22 +338,8 @@ class FaceRecognizer:
         """Check if face recognition is available"""
         return self.opencv_available
 
-# Global instance - lazy loaded
-_face_recognizer_instance = None
-
-def get_face_recognizer():
-    """Get the global FaceRecognizer instance (lazy loaded)"""
-    global _face_recognizer_instance
-    if _face_recognizer_instance is None:
-        _face_recognizer_instance = FaceRecognizer()
-    return _face_recognizer_instance
-
-# For backward compatibility - use property to make it truly lazy
-class _FaceRecognizerProxy:
-    def __getattr__(self, name):
-        return getattr(get_face_recognizer(), name)
-
-face_recognizer = _FaceRecognizerProxy()
+# Global instance
+face_recognizer = FaceRecognizer()
 
 def recognize_face_in_photo(image_path: str, face_box: Dict) -> Optional[Dict]:
     """
