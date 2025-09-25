@@ -3,7 +3,6 @@
 from flask import Flask
 from photovault.extensions import db, login_manager, migrate, csrf
 from photovault.config import config
-from config import get_config
 import os
 
 def _create_superuser_if_needed(app):
@@ -59,7 +58,8 @@ def create_app(config_class=None):
     
     # Configuration
     if config_class is None:
-        config_class = get_config()
+        config_name = os.environ.get('FLASK_CONFIG') or 'development'
+        config_class = config.get(config_name, config['default'])
     
     if isinstance(config_class, str):
         config_class = config.get(config_class, config['default'])
