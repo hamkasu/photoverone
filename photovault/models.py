@@ -16,8 +16,6 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True)  # ← ADD THIS LINE
     is_admin = db.Column(db.Boolean, default=False)
     is_superuser = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     photos = db.relationship('Photo', backref='user', lazy='dynamic', cascade='all, delete-orphan')
@@ -172,3 +170,4 @@ class VoiceMemo(db.Model):
     
     def __repr__(self):
         return f'<VoiceMemo {self.filename} for Photo {self.photo_id}>'
+
