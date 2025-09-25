@@ -65,9 +65,7 @@ Thumbs.db
 secret_key.txt
 config_local.py
 
-# Replit specific
-.replit
-replit.nix
+# Note: Keep replit config files
 
 # Temporary files
 *.tmp
