@@ -72,6 +72,10 @@ CALMIC SDN BHD - "Committed to Excellence"
                 <a href="{{ url_for('gallery.compare_photos') }}" class="btn btn-outline-info">
                     <i class="bi bi-compare"></i> Compare
                 </a>
+                <a href="{{ url_for('gallery.download_all_images') }}" class="btn btn-outline-warning" 
+                   onclick="return confirm('Download all photos as ZIP file? This may take a moment for large collections.')">
+                    <i class="bi bi-download"></i> Download All
+                </a>
             </div>
         </div>
     </div>

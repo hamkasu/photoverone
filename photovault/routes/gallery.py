@@ -2,9 +2,14 @@
 PhotoVault Gallery Routes
 Simple gallery blueprint for photo management
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, send_file, abort, current_app, Response
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, send_file, abort, current_app, Response, after_this_request
 from flask_login import login_required, current_user
+from werkzeug.utils import secure_filename
 import os
+import zipfile
+import io
+import tempfile
+from datetime import datetime
 from photovault.utils.enhanced_file_handler import get_file_content, file_exists_enhanced
 
 # Create the gallery blueprint
@@ -179,6 +184,101 @@ def compare_single_photo(photo_id):
     except Exception as e:
         flash('Photo not found or database not ready.', 'error')
         return redirect(url_for('gallery.dashboard'))
+
+@gallery_bp.route('/download-all')
+@login_required
+def download_all_images():
+    """Download all user images as a ZIP file (secure implementation)"""
+    try:
+        from photovault.models import Photo
+        
+        # Get all photos for the current user
+        photos = Photo.query.filter_by(user_id=current_user.id).all()
+        
+        if not photos:
+            flash('No photos found to download.', 'warning')
+            return redirect(url_for('gallery.photos'))
+        
+        # Create ZIP file in memory to avoid temp file management issues
+        memory_file = io.BytesIO()
+        
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            added_files = set()  # Track added files to avoid duplicates
+            
+            for photo in photos:
+                try:
+                    # Get file content from App Storage first, then local
+                    file_content = None
+                    
+                    # Use original_name if available, otherwise filename, but sanitize it
+                    raw_filename = photo.original_name or photo.filename
+                    # SECURITY: Sanitize filename to prevent zip-slip attacks
+                    safe_filename = secure_filename(raw_filename)
+                    # SECURITY: Strip any remaining path separators
+                    safe_filename = safe_filename.replace('/', '_').replace('\\', '_')
+                    
+                    # If sanitization removed too much, use a fallback name
+                    if not safe_filename or safe_filename == '':
+                        safe_filename = f"photo_{photo.id}.jpg"
+                    
+                    # Try App Storage path first
+                    app_storage_path = f"users/{current_user.id}/{photo.filename}"
+                    if file_exists_enhanced(app_storage_path):
+                        success, content = get_file_content(app_storage_path)
+                        if success:
+                            file_content = content
+                    
+                    # Fallback to local file system
+                    if file_content is None and photo.file_path and os.path.exists(photo.file_path):
+                        with open(photo.file_path, 'rb') as f:
+                            file_content = f.read()
+                    
+                    # Add to ZIP if we have content
+                    if file_content:
+                        # Ensure unique filename in ZIP
+                        base_name = safe_filename
+                        counter = 1
+                        while base_name in added_files:
+                            name, ext = os.path.splitext(safe_filename)
+                            if not ext:  # If no extension, add one
+                                ext = '.jpg'
+                            base_name = f"{name}_{counter}{ext}"
+                            counter += 1
+                        
+                        # SECURITY: Final check - ensure no path traversal in ZIP entry name
+                        zip_entry_name = os.path.basename(base_name)
+                        zipf.writestr(zip_entry_name, file_content)
+                        added_files.add(base_name)
+                        current_app.logger.info(f"Added {zip_entry_name} to ZIP archive")
+                
+                except Exception as e:
+                    current_app.logger.warning(f"Could not add photo {photo.filename} to ZIP: {str(e)}")
+                    continue
+        
+        # Check if we have any content
+        if len(added_files) == 0:
+            flash('No photos could be packaged for download.', 'error')
+            return redirect(url_for('gallery.photos'))
+        
+        # Prepare the file for download
+        memory_file.seek(0)
+        zip_filename = f"PhotoVault_{secure_filename(current_user.username)}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+        
+        current_app.logger.info(f"Sending ZIP download: {zip_filename} ({len(added_files)} photos)")
+        flash(f'Downloading {len(added_files)} photos as {zip_filename}', 'success')
+        
+        # Send the ZIP file directly from memory
+        return send_file(
+            memory_file,
+            as_attachment=True,
+            download_name=zip_filename,
+            mimetype='application/zip'
+        )
+            
+    except Exception as e:
+        current_app.logger.error(f"Error creating ZIP download for user {current_user.id}: {str(e)}")
+        flash('Error creating download archive. Please try again.', 'error')
+        return redirect(url_for('gallery.photos'))
 
 @gallery_bp.route('/uploads/<int:user_id>/<path:filename>')
 @login_required
