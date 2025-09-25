@@ -8,6 +8,9 @@ from photovault import create_app
 from config import get_config
 
 # Create app at module level for WSGI compatibility (Railway backup)
+# Force production config if running on Railway/production environment
+if os.environ.get('RAILWAY_ENVIRONMENT_NAME') or os.environ.get('PORT'):
+    os.environ['FLASK_CONFIG'] = 'production'
 config_class = get_config()
 app = create_app(config_class)
 
