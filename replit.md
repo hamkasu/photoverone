@@ -13,12 +13,17 @@ PhotoVault by Calmic Sdn Bhd is a professional photo management platform built w
 - **Development Workflow**: Configured and started "PhotoVault Frontend" workflow on port 5000
 - **Application Status**: Verified application is running successfully and serving HTTP requests with proper static file handling
 - **Production Deployment**: Configured autoscale deployment with Gunicorn for production use
-- **Critical Bug Fix**: Fixed Railway deployment login error by adding missing `is_active` field to User model to match database migration schema
-- **Database Schema Alignment**: Resolved mismatch between SQLAlchemy models and Alembic migrations for seamless Railway deployment
-- **Previous Migration Notes**: 
+- **Critical Railway Container Crash Fix**: Fixed photo detection feature causing Railway container crashes by:
+  - Implementing memory management with 25MP size limit for detection and 30MP for extraction
+  - Removing problematic image resizing that broke coordinate alignment between detection and extraction
+  - Adding proper cleanup of OpenCV image objects and database sessions
+  - Improving error handling to prevent resource leaks
+  - Rejecting oversized images with clear user error messages instead of processing them
+- **Previous Bug Fixes**: 
+  - Fixed Railway deployment login error by adding missing `is_active` field to User model
+  - Resolved database schema alignment between SQLAlchemy models and Alembic migrations
   - Fixed Railway deployment compatibility with App Storage detection logic
   - Resolved image serving issues for cross-platform compatibility
-  - Application works seamlessly in both Replit and external platforms like Railway
 
 # User Preferences
 
