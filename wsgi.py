@@ -22,12 +22,30 @@ from photovault import create_app
 from config import ProductionConfig
 
 # Create the application using the production configuration
-app = create_app(ProductionConfig)
-
-# Log configuration for deployment verification
-print(f"PhotoVault WSGI: Environment = {os.environ.get('FLASK_ENV', 'production')}")
-print(f"PhotoVault WSGI: Debug = {app.debug}")
-print(f"PhotoVault WSGI: Config = {app.config.__class__.__name__}")
+try:
+    app = create_app(ProductionConfig)
+    
+    # Log configuration for deployment verification
+    print(f"PhotoVault WSGI: Environment = {os.environ.get('FLASK_ENV', 'production')}")
+    print(f"PhotoVault WSGI: Debug = {app.debug}")
+    print(f"PhotoVault WSGI: Config = {app.config.__class__.__name__}")
+    print(f"PhotoVault WSGI: Database URI set = {'Yes' if app.config.get('SQLALCHEMY_DATABASE_URI') else 'No'}")
+    
+    # Test basic app creation
+    with app.app_context():
+        from photovault.extensions import db
+        try:
+            # Simple database connectivity test
+            db.session.execute(db.text('SELECT 1'))
+            print("PhotoVault WSGI: Database connectivity test PASSED")
+        except Exception as db_error:
+            print(f"PhotoVault WSGI: Database connectivity test FAILED: {db_error}")
+            
+except Exception as e:
+    print(f"PhotoVault WSGI: CRITICAL - App creation failed: {e}")
+    import traceback
+    traceback.print_exc()
+    raise
 
 if __name__ == "__main__":
     # This will only run in development mode

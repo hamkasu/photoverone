@@ -4,7 +4,7 @@ providers = ["python"]
 cmd = "python release.py"
 
 [start]
-cmd = "gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 4 --worker-class sync --timeout 120 --keep-alive 2 --max-requests 1000 --max-requests-jitter 100"
+cmd = "gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 1 --worker-class sync --timeout 120 --log-level debug --access-logfile - --error-logfile -"
 
 [variables]
 NIXPACKS_PYTHON_VERSION = "3.11"
