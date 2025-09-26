@@ -1288,7 +1288,12 @@ def enhance_photo_api(photo_id):
         # Create thumbnail for enhanced version
         thumbnail_filename = f"{base_name}_enhanced_{timestamp}_{unique_id}_thumb.jpg"
         thumbnail_path = os.path.join(user_upload_dir, thumbnail_filename)
-        create_thumbnail(enhanced_filepath, thumbnail_path)
+        success, result = create_thumbnail(enhanced_filepath)
+        if not success:
+            logger.error(f"Failed to create thumbnail: {result}")
+            thumbnail_path = None
+        else:
+            thumbnail_path = result
         
         # Update photo record with enhanced version info
         photo.edited_filename = enhanced_filename
