@@ -65,8 +65,10 @@ class Config:
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(os.path.dirname(os.path.abspath(__file__)), 'photovault_dev.db')
+    SQLALCHEMY_DATABASE_URI = (os.environ.get('RAILWAY_DATABASE_URL') or 
+                              os.environ.get('DEV_DATABASE_URL') or 
+                              os.environ.get('DATABASE_URL') or 
+                              'sqlite:///' + os.path.join(os.path.dirname(os.path.abspath(__file__)), 'photovault_dev.db'))
     
     # Replit-compatible session settings for development
     SESSION_COOKIE_SECURE = False  # Must be False for HTTP in development
