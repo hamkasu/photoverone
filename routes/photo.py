@@ -467,21 +467,41 @@ def delete_photo(photo_id):
         # Handle selective file deletion
         if deletion_type in ['original', 'both']:
             # Delete original file
-            if photo.file_path and os.path.exists(photo.file_path):
-                os.remove(photo.file_path)
-                files_deleted.append('original')
+            if photo.file_path:
+                try:
+                    if os.path.exists(photo.file_path):
+                        os.remove(photo.file_path)
+                        files_deleted.append('original')
+                        logger.info(f"Deleted original file: {photo.file_path}")
+                    else:
+                        logger.warning(f"Original file not found (will continue with database cleanup): {photo.file_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to delete original file {photo.file_path}: {str(e)}")
             
             # Delete thumbnail (always tied to original)
-            if photo.thumbnail_path and os.path.exists(photo.thumbnail_path):
-                os.remove(photo.thumbnail_path)
+            if photo.thumbnail_path:
+                try:
+                    if os.path.exists(photo.thumbnail_path):
+                        os.remove(photo.thumbnail_path)
+                        logger.info(f"Deleted thumbnail: {photo.thumbnail_path}")
+                    else:
+                        logger.warning(f"Thumbnail not found (will continue): {photo.thumbnail_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to delete thumbnail {photo.thumbnail_path}: {str(e)}")
         
         if deletion_type in ['edited', 'both']:
             # Delete edited version if it exists
             if photo.edited_filename:
                 edited_path = os.path.join(current_app.config['UPLOAD_FOLDER'], str(photo.user_id), photo.edited_filename)
-                if os.path.exists(edited_path):
-                    os.remove(edited_path)
-                    files_deleted.append('edited')
+                try:
+                    if os.path.exists(edited_path):
+                        os.remove(edited_path)
+                        files_deleted.append('edited')
+                        logger.info(f"Deleted edited file: {edited_path}")
+                    else:
+                        logger.warning(f"Edited file not found (will continue): {edited_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to delete edited file {edited_path}: {str(e)}")
         
         # Handle database updates and associations based on deletion type
         from photovault.models import VoiceMemo, VaultPhoto, PhotoPerson, StoryPhoto
@@ -492,8 +512,15 @@ def delete_photo(photo_id):
             # Delete associated voice memos
             voice_memos = VoiceMemo.query.filter_by(photo_id=photo.id).all()
             for memo in voice_memos:
-                if memo.file_path and os.path.exists(memo.file_path):
-                    os.remove(memo.file_path)
+                if memo.file_path:
+                    try:
+                        if os.path.exists(memo.file_path):
+                            os.remove(memo.file_path)
+                            logger.info(f"Deleted voice memo file: {memo.file_path}")
+                        else:
+                            logger.warning(f"Voice memo file not found: {memo.file_path}")
+                    except Exception as e:
+                        logger.warning(f"Failed to delete voice memo file {memo.file_path}: {str(e)}")
                 db.session.delete(memo)
             
             # Delete associated vault photo shares
