@@ -13,7 +13,7 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 41659
+localPort = 39727
 externalPort = 3001
 
 [[ports]]
@@ -84,15 +84,15 @@ args = "PhotoVault Frontend"
 name = "PhotoVault Frontend"
 author = "agent"
 
-[workflows.workflow.metadata]
-outputType = "webview"
-
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "SECRET_KEY=tOllZDAG-qAdYfGCawiKGMIvRC5wECFDDOgPbmg-KjU FLASK_ENV=development FLASK_CONFIG=development python3 main.py"
 waitForPort = 5000
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [deployment]
 deploymentTarget = "autoscale"
-run = ["gunicorn", "--bind=0.0.0.0:5000", "--reuse-port", "main:app"]
+run = ["gunicorn", "--bind=0.0.0.0:5000", "--reuse-port", "--workers=2", "--timeout=60", "--max-requests=1000", "main:app"]
 build = ["python", "-m", "flask", "db", "upgrade"]
