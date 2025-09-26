@@ -6,8 +6,10 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"]
 )
 
-# In auth.py routes:
-@auth_bp.route('/login', methods=['GET', 'POST'])
-@limiter.limit("5 per minute")  # Prevent brute force
-def login():
-    # ... existing code
+# Configuration for rate limiting in auth routes
+# Usage example for auth.py routes:
+# @auth_bp.route('/login', methods=['GET', 'POST'])
+# @limiter.limit("5 per minute")  # Prevent brute force
+# def login():
+#     # ... existing code
+#     pass
