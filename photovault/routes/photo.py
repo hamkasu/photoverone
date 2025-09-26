@@ -361,8 +361,8 @@ def list_photos():
                 'height': photo.height,
                 'upload_source': photo.upload_source,
                 'created_at': photo.created_at.isoformat(),
-                'url': url_for('gallery.uploaded_file', filename=photo.file_path, _external=True),
-                'thumbnail_url': url_for('gallery.uploaded_file', filename=photo.thumbnail_path, _external=True) if photo.thumbnail_path else None
+                'url': url_for('gallery.uploaded_file', user_id=current_user.id, filename=photo.filename, _external=True),
+                'thumbnail_url': url_for('gallery.uploaded_file', user_id=current_user.id, filename=os.path.basename(photo.thumbnail_path), _external=True) if photo.thumbnail_path else None
             }
             photo_list.append(photo_data)
         
@@ -450,8 +450,8 @@ def annotate_photo(photo_id):
             'success': True,
             'message': 'Annotated photo saved successfully',
             'edited_filename': edited_filename,
-            'thumbnail_url': url_for('gallery.uploaded_file', filename=f'{current_user.id}/{thumbnail_filename}') if thumbnail_path else None,
-            'edited_url': url_for('gallery.uploaded_file', filename=f'{current_user.id}/{edited_filename}')
+            'thumbnail_url': url_for('gallery.uploaded_file', user_id=current_user.id, filename=thumbnail_filename) if thumbnail_path else None,
+            'edited_url': url_for('gallery.uploaded_file', user_id=current_user.id, filename=edited_filename)
         })
         
     except Exception as e:
@@ -1815,8 +1815,8 @@ def auto_detect_photos(photo_id):
                     'confidence': extracted['confidence'],
                     'width': width,
                     'height': height,
-                    'thumbnail_url': url_for('gallery.uploaded_file', filename=f'{current_user.id}/{os.path.basename(thumbnail_path)}') if thumbnail_path else None,
-                    'photo_url': url_for('gallery.uploaded_file', filename=f'{current_user.id}/{final_filename}')
+                    'thumbnail_url': url_for('gallery.uploaded_file', user_id=current_user.id, filename=os.path.basename(thumbnail_path)) if thumbnail_path else None,
+                    'photo_url': url_for('gallery.uploaded_file', user_id=current_user.id, filename=final_filename)
                 })
                 
             except Exception as e:
