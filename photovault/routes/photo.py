@@ -1245,9 +1245,16 @@ def enhance_photo_api(photo_id):
         if photo.user_id != current_user.id:
             return jsonify({'success': False, 'error': 'Access denied'}), 403
         
+        # Construct full file path (handle relative paths from extracted photos)
+        user_upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(current_user.id))
+        if os.path.isabs(photo.file_path):
+            full_file_path = photo.file_path
+        else:
+            full_file_path = os.path.join(user_upload_dir, photo.file_path)
+        
         # Check image size to prevent blocking on large files
-        if os.path.exists(photo.file_path):
-            file_size = os.path.getsize(photo.file_path)
+        if os.path.exists(full_file_path):
+            file_size = os.path.getsize(full_file_path)
             # Limit enhancement to files under 10MB for performance
             if file_size > 10 * 1024 * 1024:  # 10MB
                 return jsonify({
@@ -1266,7 +1273,6 @@ def enhance_photo_api(photo_id):
         enhanced_filename = f"{base_name}_enhanced_{timestamp}_{unique_id}.jpg"
         
         # Create user upload directory
-        user_upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(current_user.id))
         os.makedirs(user_upload_dir, exist_ok=True)
         
         # Enhanced image path
@@ -1274,7 +1280,7 @@ def enhance_photo_api(photo_id):
         
         # Apply enhancements using the backend OpenCV system
         output_path, applied_settings = enhancer.auto_enhance_photo(
-            photo.file_path, 
+            full_file_path, 
             enhanced_filepath, 
             enhancement_settings
         )
