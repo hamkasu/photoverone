@@ -45,3 +45,30 @@ sendgrid==6.12.5
 
 # Replit Services
 replit-object-storage==1.0.2
+alembic
+blinker
+click
+email-validator
+exifread
+Flask
+Flask-Login
+Flask-Migrate
+Flask-SQLAlchemy
+Flask-WTF
+gunicorn
+itsdangerous
+Jinja2
+MarkupSafe
+numpy
+opencv-contrib-python-headless
+opencv-python-headless
+Pillow
+psycopg2-binary
+python-decouple
+python-dotenv
+replit-object-storage
+requests
+scikit-image
+sendgrid
+SQLAlchemy
+WTForms
