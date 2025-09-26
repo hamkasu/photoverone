@@ -194,7 +194,9 @@ def uploaded_file(user_id, filename):
         
         # Handle thumbnail files by checking for original file
         original_filename = filename
-        if filename.endswith('_thumb.jpg') or filename.endswith('_thumb.png') or filename.endswith('_thumb.jpeg'):
+        is_thumbnail_request = filename.endswith('_thumb.jpg') or filename.endswith('_thumb.png') or filename.endswith('_thumb.jpeg')
+        
+        if is_thumbnail_request:
             # Extract original filename by removing _thumb suffix
             base_name = filename.rsplit('_thumb.', 1)[0]
             
@@ -211,13 +213,22 @@ def uploaded_file(user_id, filename):
                     if os.path.exists(os.path.join(current_app.config.get('UPLOAD_FOLDER', 'photovault/uploads'), str(user_id), base_name + ext)):
                         original_filename = base_name + ext
                         break
+                else:
+                    # If original file not found for thumbnail, return placeholder
+                    current_app.logger.warning(f"Thumbnail requested for missing original file: {filename}")
+                    return redirect(url_for('static', filename='img/placeholder.png'))
         
         photo = Photo.query.filter_by(user_id=user_id).filter(
             (Photo.filename == original_filename) | (Photo.edited_filename == original_filename)
         ).first()
         
         if not photo:
-            abort(404)
+            # If photo record not found but it's a thumbnail request, serve placeholder
+            if is_thumbnail_request:
+                current_app.logger.warning(f"Photo record not found for thumbnail: {filename}")
+                return redirect(url_for('static', filename='img/placeholder.png'))
+            else:
+                abort(404)
             
         # Try to serve from App Storage first, then fallback to local filesystem
         
@@ -240,6 +251,10 @@ def uploaded_file(user_id, filename):
             else:
                 # App Storage exists check passed but download failed
                 current_app.logger.error(f"App Storage download failed for {app_storage_path}: {file_content}")
+                # If it's a thumbnail request, serve placeholder instead of 404
+                if is_thumbnail_request:
+                    current_app.logger.warning(f"Serving placeholder for failed thumbnail: {filename}")
+                    return redirect(url_for('static', filename='img/placeholder.png'))
                 abort(404)
         
         # Fallback to local filesystem
@@ -277,11 +292,28 @@ def uploaded_file(user_id, filename):
                 return send_file(file_to_serve)
             else:
                 current_app.logger.error(f"File not found: {file_to_serve} (from photo.file_path: {file_path})")
+                # If it's a thumbnail request, serve placeholder instead of 404
+                if is_thumbnail_request:
+                    current_app.logger.warning(f"Serving placeholder for missing thumbnail file: {file_to_serve}")
+                    return redirect(url_for('static', filename='img/placeholder.png'))
                 abort(404)
         else:
             # No stored file_path, use filename from URL
-            return send_from_directory(uploads_dir, filename)
+            file_path = os.path.join(uploads_dir, filename)
+            if os.path.exists(file_path):
+                return send_from_directory(uploads_dir, filename)
+            else:
+                current_app.logger.error(f"File not found in uploads directory: {file_path}")
+                # If it's a thumbnail request, serve placeholder instead of 404
+                if is_thumbnail_request:
+                    current_app.logger.warning(f"Serving placeholder for missing thumbnail: {filename}")
+                    return redirect(url_for('static', filename='img/placeholder.png'))
+                abort(404)
         
     except Exception as e:
         current_app.logger.error(f"Error serving file {filename} for user {user_id}: {e}")
+        # If it's a thumbnail request and we hit an exception, serve placeholder instead of 404
+        if 'is_thumbnail_request' in locals() and is_thumbnail_request:
+            current_app.logger.warning(f"Serving placeholder due to exception for thumbnail: {filename}")
+            return redirect(url_for('static', filename='img/placeholder.png'))
         abort(404)

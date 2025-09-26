@@ -119,6 +119,7 @@ CALMIC SDN BHD - "Committed to Excellence"
                              alt="{{ photo.original_name }}"
                              onclick="showPhotoPreview({{ photo.id }})"
                              style="cursor: pointer;"
+                             onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/placeholder.png') }}'; this.onclick=null; this.style.cursor='default';"
                              data-full-src="{% if photo.edited_filename %}{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}{% else %}{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}{% endif %}">
                     {% elif photo.edited_filename %}
                         <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
@@ -126,6 +127,7 @@ CALMIC SDN BHD - "Committed to Excellence"
                              alt="{{ photo.original_name }} (Edited)"
                              onclick="showPhotoPreview({{ photo.id }})"
                              style="cursor: pointer;"
+                             onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/placeholder.png') }}'; this.onclick=null; this.style.cursor='default';"
                              data-full-src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}">
                     {% else %}
                         <img src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
@@ -133,6 +135,7 @@ CALMIC SDN BHD - "Committed to Excellence"
                              alt="{{ photo.original_name }}"
                              onclick="showPhotoPreview({{ photo.id }})"
                              style="cursor: pointer;"
+                             onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/placeholder.png') }}'; this.onclick=null; this.style.cursor='default';"
                              data-full-src="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}">
                     {% endif %}
                 </div>

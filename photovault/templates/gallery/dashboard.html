@@ -85,6 +85,7 @@ CALMIC SDN BHD - "Committed to Excellence"
                                      class="img-fluid rounded mb-2" 
                                      alt="{{ photo.original_name }}"
                                      style="height: 200px; width: 100%; object-fit: cover; cursor: pointer;"
+                                     onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/placeholder.png') }}'; this.style.cursor='default';"
                                      onclick="showDashboardPreview('{{ photo.id }}', '{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}', '{{ photo.original_name }}')">
                             {% else %}
                                 <i class="fas fa-image fa-2x text-muted mb-2"></i>
