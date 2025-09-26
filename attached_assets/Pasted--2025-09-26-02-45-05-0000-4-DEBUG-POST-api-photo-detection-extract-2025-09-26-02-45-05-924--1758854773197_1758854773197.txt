@@ -1,0 +1,85 @@
+[2025-09-26 02:45:05 +0000] [4] [DEBUG] POST /api/photo-detection/extract
+[2025-09-26 02:45:05,924] INFO in photo_detection: Extracted photo 1: f4acdefe_photo_01_conf0.84.jpg
+2025-09-26 02:45:05,924 INFO: Extracted photo 1: f4acdefe_photo_01_conf0.84.jpg [in /app/photovault/utils/photo_detection.py:293]
+INFO:photovault.utils.photo_detection:Extracted photo 1: f4acdefe_photo_01_conf0.84.jpg
+2025-09-26 02:45:05,925 INFO: Extracted photo 2: f4acdefe_photo_02_conf0.31.jpg [in /app/photovault/utils/photo_detection.py:293]
+[2025-09-26 02:45:05,925] INFO in photo_detection: Extracted photo 2: f4acdefe_photo_02_conf0.31.jpg
+INFO:photovault.utils.photo_detection:Extracted photo 2: f4acdefe_photo_02_conf0.31.jpg
+[2025-09-26 02:45:05,925] INFO in photo_detection: Successfully extracted 2 photos from /app/photovault/uploads/1/f4acdefe.jpg
+2025-09-26 02:45:05,925 INFO: Successfully extracted 2 photos from /app/photovault/uploads/1/f4acdefe.jpg [in /app/photovault/utils/photo_detection.py:299]
+INFO:photovault.utils.photo_detection:Successfully extracted 2 photos from /app/photovault/uploads/1/f4acdefe.jpg
+[2025-09-26 02:45:05,941] INFO in photo_detection: Successfully saved 2 extracted photos to database for user 1
+2025-09-26 02:45:05,941 INFO: Successfully saved 2 extracted photos to database for user 1 [in /app/photovault/routes/photo_detection.py:263]
+INFO:photovault.routes.photo_detection:Successfully saved 2 extracted photos to database for user 1
+[2025-09-26 02:45:05,942] INFO in enhanced_file_handler: Deleted local file: /app/photovault/uploads/1/f4acdefe.jpg
+2025-09-26 02:45:05,942 INFO: Deleted local file: /app/photovault/uploads/1/f4acdefe.jpg [in /app/photovault/utils/enhanced_file_handler.py:150]
+INFO:photovault.utils.enhanced_file_handler:Deleted local file: /app/photovault/uploads/1/f4acdefe.jpg
+[2025-09-26 02:45:05,942] INFO in photo_detection: Successfully extracted 2 photos for user 1
+INFO:photovault.routes.photo_detection:Successfully extracted 2 photos for user 1
+100.64.0.2 - - [26/Sep/2025:02:45:05 +0000] "POST /api/photo-detection/extract HTTP/1.1" 200 342 "https://photoverone-production-c5dd.up.railway.app/photo-detection" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:08 +0000] [4] [DEBUG] GET /advanced-enhancement
+100.64.0.2 - - [26/Sep/2025:02:45:08 +0000] "GET /advanced-enhancement HTTP/1.1" 200 34490 "https://photoverone-production-c5dd.up.railway.app/photo-detection" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:08 +0000] [4] [DEBUG] GET /static/css/style.css
+100.64.0.2 - - [26/Sep/2025:02:45:08 +0000] "GET /static/css/style.css HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/advanced-enhancement" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:08 +0000] [4] [DEBUG] GET /static/img/calmic-logo.png
+100.64.0.2 - - [26/Sep/2025:02:45:08 +0000] "GET /static/img/calmic-logo.png HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/advanced-enhancement" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:08 +0000] [4] [DEBUG] GET /uploads/1/f4acdefe_photo_02_conf0.31.jpg
+2025-09-26 02:45:05,942 INFO: Successfully extracted 2 photos for user 1 [in /app/photovault/routes/photo_detection.py:293]
+100.64.0.2 - - [26/Sep/2025:02:45:08 +0000] "GET /uploads/1/f4acdefe_photo_02_conf0.31.jpg HTTP/1.1" 200 0 "https://photoverone-production-c5dd.up.railway.app/advanced-enhancement" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:08 +0000] [4] [DEBUG] GET /uploads/1/f4acdefe_photo_01_conf0.84.jpg
+100.64.0.2 - - [26/Sep/2025:02:45:08 +0000] "GET /uploads/1/f4acdefe_photo_01_conf0.84.jpg HTTP/1.1" 200 0 "https://photoverone-production-c5dd.up.railway.app/advanced-enhancement" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:08 +0000] [4] [DEBUG] GET /uploads/1/eb5c2f44_photo_02_conf0.31.jpg
+[2025-09-26 02:45:08,565] ERROR in gallery: File not found: /app/photovault/uploads/1/extracted_photos/eb5c2f44_photo_02_conf0.31.jpg (from photo.file_path: extracted_photos/eb5c2f44_photo_02_conf0.31.jpg)
+2025-09-26 02:45:08,565 ERROR: File not found: /app/photovault/uploads/1/extracted_photos/eb5c2f44_photo_02_conf0.31.jpg (from photo.file_path: extracted_photos/eb5c2f44_photo_02_conf0.31.jpg) [in /app/photovault/routes/gallery.py:279]
+ERROR:photovault:File not found: /app/photovault/uploads/1/extracted_photos/eb5c2f44_photo_02_conf0.31.jpg (from photo.file_path: extracted_photos/eb5c2f44_photo_02_conf0.31.jpg)
+[2025-09-26 02:45:08,565] ERROR in gallery: Error serving file eb5c2f44_photo_02_conf0.31.jpg for user 1: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-09-26 02:45:08,565 ERROR: Error serving file eb5c2f44_photo_02_conf0.31.jpg for user 1: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again. [in /app/photovault/routes/gallery.py:286]
+ERROR:photovault:Error serving file eb5c2f44_photo_02_conf0.31.jpg for user 1: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+100.64.0.2 - - [26/Sep/2025:02:45:08 +0000] "GET /uploads/1/eb5c2f44_photo_02_conf0.31.jpg HTTP/1.1" 404 207 "https://photoverone-production-c5dd.up.railway.app/advanced-enhancement" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:08 +0000] [4] [DEBUG] GET /uploads/1/eb5c2f44_photo_01_conf0.84.jpg
+[2025-09-26 02:45:08,573] ERROR in gallery: File not found: /app/photovault/uploads/1/extracted_photos/eb5c2f44_photo_01_conf0.84.jpg (from photo.file_path: extracted_photos/eb5c2f44_photo_01_conf0.84.jpg)
+2025-09-26 02:45:08,573 ERROR: File not found: /app/photovault/uploads/1/extracted_photos/eb5c2f44_photo_01_conf0.84.jpg (from photo.file_path: extracted_photos/eb5c2f44_photo_01_conf0.84.jpg) [in /app/photovault/routes/gallery.py:279]
+ERROR:photovault:File not found: /app/photovault/uploads/1/extracted_photos/eb5c2f44_photo_01_conf0.84.jpg (from photo.file_path: extracted_photos/eb5c2f44_photo_01_conf0.84.jpg)
+[2025-09-26 02:45:08,573] ERROR in gallery: Error serving file eb5c2f44_photo_01_conf0.84.jpg for user 1: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-09-26 02:45:08,573 ERROR: Error serving file eb5c2f44_photo_01_conf0.84.jpg for user 1: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again. [in /app/photovault/routes/gallery.py:286]
+ERROR:photovault:Error serving file eb5c2f44_photo_01_conf0.84.jpg for user 1: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+100.64.0.2 - - [26/Sep/2025:02:45:08 +0000] "GET /uploads/1/eb5c2f44_photo_01_conf0.84.jpg HTTP/1.1" 404 207 "https://photoverone-production-c5dd.up.railway.app/advanced-enhancement" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:08 +0000] [4] [DEBUG] GET /uploads/1/357b5a77_photo_02_conf0.31.jpg
+[2025-09-26 02:45:08,581] ERROR in gallery: File not found: /app/photovault/uploads/1/extracted_photos/357b5a77_photo_02_conf0.31.jpg (from photo.file_path: extracted_photos/357b5a77_photo_02_conf0.31.jpg)
+2025-09-26 02:45:08,581 ERROR: File not found: /app/photovault/uploads/1/extracted_photos/357b5a77_photo_02_conf0.31.jpg (from photo.file_path: extracted_photos/357b5a77_photo_02_conf0.31.jpg) [in /app/photovault/routes/gallery.py:279]
+ERROR:photovault:File not found: /app/photovault/uploads/1/extracted_photos/357b5a77_photo_02_conf0.31.jpg (from photo.file_path: extracted_photos/357b5a77_photo_02_conf0.31.jpg)
+[2025-09-26 02:45:08,581] ERROR in gallery: Error serving file 357b5a77_photo_02_conf0.31.jpg for user 1: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-09-26 02:45:08,581 ERROR: Error serving file 357b5a77_photo_02_conf0.31.jpg for user 1: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again. [in /app/photovault/routes/gallery.py:286]
+ERROR:photovault:Error serving file 357b5a77_photo_02_conf0.31.jpg for user 1: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+100.64.0.2 - - [26/Sep/2025:02:45:08 +0000] "GET /uploads/1/357b5a77_photo_02_conf0.31.jpg HTTP/1.1" 404 207 "https://photoverone-production-c5dd.up.railway.app/advanced-enhancement" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:08 +0000] [4] [DEBUG] GET /uploads/1/357b5a77_photo_01_conf0.84.jpg
+[2025-09-26 02:45:08,590] ERROR in gallery: File not found: /app/photovault/uploads/1/extracted_photos/357b5a77_photo_01_conf0.84.jpg (from photo.file_path: extracted_photos/357b5a77_photo_01_conf0.84.jpg)
+2025-09-26 02:45:08,590 ERROR: File not found: /app/photovault/uploads/1/extracted_photos/357b5a77_photo_01_conf0.84.jpg (from photo.file_path: extracted_photos/357b5a77_photo_01_conf0.84.jpg) [in /app/photovault/routes/gallery.py:279]
+ERROR:photovault:File not found: /app/photovault/uploads/1/extracted_photos/357b5a77_photo_01_conf0.84.jpg (from photo.file_path: extracted_photos/357b5a77_photo_01_conf0.84.jpg)
+[2025-09-26 02:45:08,590] ERROR in gallery: Error serving file 357b5a77_photo_01_conf0.84.jpg for user 1: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-09-26 02:45:08,590 ERROR: Error serving file 357b5a77_photo_01_conf0.84.jpg for user 1: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again. [in /app/photovault/routes/gallery.py:286]
+ERROR:photovault:Error serving file 357b5a77_photo_01_conf0.84.jpg for user 1: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+100.64.0.2 - - [26/Sep/2025:02:45:08 +0000] "GET /uploads/1/357b5a77_photo_01_conf0.84.jpg HTTP/1.1" 404 207 "https://photoverone-production-c5dd.up.railway.app/advanced-enhancement" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:08 +0000] [4] [DEBUG] GET /static/favicon.ico
+100.64.0.2 - - [26/Sep/2025:02:45:08 +0000] "GET /static/favicon.ico HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/advanced-enhancement" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:10 +0000] [4] [DEBUG] GET /photos/5/enhance
+100.64.0.2 - - [26/Sep/2025:02:45:10 +0000] "GET /photos/5/enhance HTTP/1.1" 200 41131 "https://photoverone-production-c5dd.up.railway.app/advanced-enhancement" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:10 +0000] [4] [DEBUG] GET /static/css/style.css
+100.64.0.2 - - [26/Sep/2025:02:45:10 +0000] "GET /static/css/style.css HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/5/enhance" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:10 +0000] [4] [DEBUG] GET /static/img/calmic-logo.png
+100.64.0.2 - - [26/Sep/2025:02:45:10 +0000] "GET /static/img/calmic-logo.png HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/5/enhance" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:10 +0000] [4] [DEBUG] GET /uploads/1/f4acdefe_photo_01_conf0.84.jpg
+100.64.0.2 - - [26/Sep/2025:02:45:10 +0000] "GET /uploads/1/f4acdefe_photo_01_conf0.84.jpg HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/5/enhance" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:10 +0000] [4] [DEBUG] GET /static/favicon.ico
+100.64.0.2 - - [26/Sep/2025:02:45:10 +0000] "GET /static/favicon.ico HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/5/enhance" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-26 02:45:12 +0000] [4] [DEBUG] POST /api/photos/5/enhance
+[2025-09-26 02:45:12,341] INFO in image_enhancement: Starting auto-enhancement for: /app/photovault/uploads/1/extracted_photos/f4acdefe_photo_01_conf0.84.jpg
+2025-09-26 02:45:12,341 INFO: Starting auto-enhancement for: /app/photovault/uploads/1/extracted_photos/f4acdefe_photo_01_conf0.84.jpg [in /app/photovault/utils/image_enhancement.py:55]
+INFO:photovault.utils.image_enhancement:Starting auto-enhancement for: /app/photovault/uploads/1/extracted_photos/f4acdefe_photo_01_conf0.84.jpg
+[2025-09-26 02:45:12,500] INFO in image_enhancement: Auto-enhancement completed: /app/photovault/uploads/1/f4acdefe_photo_01_conf0.84_enhanced_20250926_024512_d163205d.jpg
+2025-09-26 02:45:12,500 INFO: Auto-enhancement completed: /app/photovault/uploads/1/f4acdefe_photo_01_conf0.84_enhanced_20250926_024512_d163205d.jpg [in /app/photovault/utils/image_enhancement.py:105]
+INFO:photovault.utils.image_enhancement:Auto-enhancement completed: /app/photovault/uploads/1/f4acdefe_photo_01_conf0.84_enhanced_20250926_024512_d163205d.jpg
+[2025-09-26 02:45:12,501] ERROR in photo: Error enhancing photo 5: create_thumbnail() missing 1 required positional argument: 'thumbnail_path'
+2025-09-26 02:45:12,501 ERROR: Error enhancing photo 5: create_thumbnail() missing 1 required positional argument: 'thumbnail_path' [in /app/photovault/routes/photo.py:1318]
+ERROR:photovault.routes.photo:Error enhancing photo 5: create_thumbnail() missing 1 required positional argument: 'thumbnail_path'
+100.64.0.2 - - [26/Sep/2025:02:45:12 +0000] "POST /api/photos/5/enhance HTTP/1.1" 500 52 "https://photoverone-production-c5dd.up.railway.app/photos/5/enhance" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
