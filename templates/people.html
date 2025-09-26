@@ -276,12 +276,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function deletePerson(personId, personName) {
     if (confirm(`Are you sure you want to delete ${personName}? This will also remove all their photo tags.`)) {
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        };
+        
+        if (csrfToken) {
+            headers['X-CSRFToken'] = csrfToken;
+        }
+        
         fetch(`/api/person/delete/${personId}`, {
             method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+            headers: headers
         })
         .then(response => response.json())
         .then(data => {

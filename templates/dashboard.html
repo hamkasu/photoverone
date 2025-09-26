@@ -391,12 +391,20 @@ function confirmDeletePhoto() {
     const selectedOption = document.querySelector('input[name="deletionType"]:checked');
     const deletionType = selectedOption ? selectedOption.value : 'both';
     
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+    };
+    
+    if (csrfToken) {
+        headers['X-CSRFToken'] = csrfToken;
+    }
+    
     fetch(`/api/photos/${currentPhotoIdToDelete}/delete`, {
         method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
+        headers: headers,
         body: JSON.stringify({
             deletion_type: deletionType
         })
