@@ -74,8 +74,8 @@ def get_image_info(file_path):
         logger.error(f"Failed to get image info: {str(e)}")
         return None
 
-def create_thumbnail(original_path, thumbnail_path):
-    """Create thumbnail for uploaded image"""
+def create_thumbnail_local(original_path, thumbnail_path):
+    """Create thumbnail for uploaded image with specified path"""
     try:
         with Image.open(original_path) as img:
             # Convert to RGB if necessary (for PNG with transparency, etc.)
@@ -131,7 +131,7 @@ def process_uploaded_file(file, upload_source='file'):
             raise ValueError(f"Image dimensions too large. Max: {MAX_IMAGE_DIMENSION}px")
         
         # Create thumbnail
-        thumbnail_created = create_thumbnail(file_path, thumbnail_path)
+        thumbnail_created = create_thumbnail_local(file_path, thumbnail_path)
         
         # Prepare file metadata
         file_metadata = {
