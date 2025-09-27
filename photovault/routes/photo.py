@@ -442,7 +442,19 @@ def annotate_photo(photo_id):
         photo.thumbnail_path = thumbnail_path
         photo.updated_at = datetime.utcnow()
         
-        db.session.commit()
+        # Ensure database transaction is committed properly
+        try:
+            db.session.commit()
+            # Verify the update was successful by refreshing from database
+            db.session.refresh(photo)
+            logger.info(f"Annotated photo database update verified: {photo.id}, edited_filename: {photo.edited_filename}")
+        except Exception as commit_error:
+            logger.error(f"Database commit failed for annotated photo {photo_id}: {commit_error}")
+            db.session.rollback()
+            return jsonify({
+                'success': False,
+                'error': 'Failed to save annotation to database'
+            }), 500
         
         logger.info(f"Successfully saved annotated photo for user {current_user.id}, photo {photo_id}")
         
@@ -568,6 +580,17 @@ def delete_photo(photo_id):
         elif deletion_type == 'original':
             # Promote edited version to be the new original
             if photo.edited_filename and photo.edited_path:
+                # Log this action for troubleshooting gallery issues
+                logger.info(f"Promoting edited version to original for photo {photo.id}: {photo.edited_filename} -> {photo.filename}")
+                
+                # Delete the original file first
+                try:
+                    if os.path.exists(photo.file_path):
+                        os.remove(photo.file_path)
+                        logger.info(f"Deleted original file: {photo.file_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to delete original file {photo.file_path}: {str(e)}")
+                
                 # Update database to use edited version as the main photo
                 photo.filename = photo.edited_filename
                 photo.file_path = photo.edited_path
@@ -588,9 +611,12 @@ def delete_photo(photo_id):
                     photo.thumbnail_path = None
                 
                 # Clear edited fields since it's now the original
+                # NOTE: This will move the photo from edited gallery back to originals gallery
                 photo.edited_filename = None
                 photo.edited_path = None
                 photo.updated_at = datetime.utcnow()
+                
+                logger.info(f"Photo {photo.id} promoted: edited version is now the original, will appear in originals gallery")
         
         db.session.commit()
         
@@ -1301,7 +1327,19 @@ def enhance_photo_api(photo_id):
         photo.thumbnail_path = thumbnail_path
         photo.updated_at = datetime.utcnow()
         
-        db.session.commit()
+        # Ensure database transaction is committed properly
+        try:
+            db.session.commit()
+            # Verify the update was successful by refreshing from database
+            db.session.refresh(photo)
+            logger.info(f"Enhanced photo database update verified: {photo.id}, edited_filename: {photo.edited_filename}")
+        except Exception as commit_error:
+            logger.error(f"Database commit failed for enhanced photo {photo_id}: {commit_error}")
+            db.session.rollback()
+            return jsonify({
+                'success': False,
+                'error': 'Failed to save enhancement to database'
+            }), 500
         
         logger.info(f"Successfully enhanced photo for user {current_user.id}, photo {photo_id}")
         
@@ -1853,4 +1891,50 @@ def auto_detect_photos(photo_id):
         return jsonify({
             'success': False,
             'error': 'Failed to auto-detect photos'
+        }), 500
+
+@photo_bp.route('/api/photos/debug/gallery-state', methods=['GET'])
+@login_required  
+def debug_gallery_state():
+    """Debug endpoint to check photo database state for gallery troubleshooting"""
+    try:
+        from photovault.models import Photo
+        
+        # Get all user photos with counts
+        all_photos = Photo.query.filter_by(user_id=current_user.id).all()
+        
+        # Categorize photos
+        originals = [p for p in all_photos if not p.edited_filename]
+        edited = [p for p in all_photos if p.edited_filename]
+        
+        # Build debug info
+        debug_info = {
+            'user_id': current_user.id,
+            'total_photos': len(all_photos),
+            'original_count': len(originals),
+            'edited_count': len(edited),
+            'photos': []
+        }
+        
+        # Add detailed photo info
+        for photo in all_photos:
+            debug_info['photos'].append({
+                'id': photo.id,
+                'filename': photo.filename,
+                'edited_filename': photo.edited_filename,
+                'has_edited': bool(photo.edited_filename),
+                'created_at': photo.created_at.isoformat() if photo.created_at else None,
+                'updated_at': photo.updated_at.isoformat() if photo.updated_at else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'debug_info': debug_info
+        })
+        
+    except Exception as e:
+        logger.error(f"Debug gallery state failed: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to get debug info'
         }), 500

@@ -1,0 +1,46 @@
+[2025-09-27 04:02:12 +0000] [4] [DEBUG] GET /uploads/1/9e1f907f_photo_01_conf0.84_edited_20250927_040051_71ac3dd7.jpg
+100.64.0.4 - - [27/Sep/2025:04:02:12 +0000] "GET /uploads/1/9e1f907f_photo_01_conf0.84_edited_20250927_040051_71ac3dd7.jpg HTTP/1.1" 200 45168 "https://photoverone-production-c5dd.up.railway.app/photos/edited" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:12 +0000] [4] [DEBUG] GET /static/favicon.ico
+100.64.0.4 - - [27/Sep/2025:04:02:12 +0000] "GET /static/favicon.ico HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/edited" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:13 +0000] [4] [DEBUG] GET /photos/originals
+100.64.0.4 - - [27/Sep/2025:04:02:13 +0000] "GET /photos/originals HTTP/1.1" 200 23506 "https://photoverone-production-c5dd.up.railway.app/photos/edited" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:13 +0000] [4] [DEBUG] GET /static/css/style.css
+100.64.0.4 - - [27/Sep/2025:04:02:13 +0000] "GET /static/css/style.css HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/originals" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:13 +0000] [4] [DEBUG] GET /static/img/calmic-logo.png
+100.64.0.4 - - [27/Sep/2025:04:02:13 +0000] "GET /static/img/calmic-logo.png HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/originals" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:13 +0000] [4] [DEBUG] GET /uploads/1/9e1f907f_photo_02_conf0.31.jpg
+100.64.0.4 - - [27/Sep/2025:04:02:13 +0000] "GET /uploads/1/9e1f907f_photo_02_conf0.31.jpg HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/originals" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:13 +0000] [4] [DEBUG] GET /static/favicon.ico
+100.64.0.4 - - [27/Sep/2025:04:02:13 +0000] "GET /static/favicon.ico HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/originals" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:15 +0000] [4] [DEBUG] GET /photos
+100.64.0.4 - - [27/Sep/2025:04:02:15 +0000] "GET /photos HTTP/1.1" 200 48629 "https://photoverone-production-c5dd.up.railway.app/photos/originals" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:15 +0000] [4] [DEBUG] GET /static/css/style.css
+100.64.0.4 - - [27/Sep/2025:04:02:15 +0000] "GET /static/css/style.css HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:15 +0000] [4] [DEBUG] GET /static/img/calmic-logo.png
+100.64.0.4 - - [27/Sep/2025:04:02:15 +0000] "GET /static/img/calmic-logo.png HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:15 +0000] [4] [DEBUG] GET /uploads/1/9e1f907f_photo_02_conf0.31.jpg
+100.64.0.4 - - [27/Sep/2025:04:02:15 +0000] "GET /uploads/1/9e1f907f_photo_02_conf0.31.jpg HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:15 +0000] [4] [DEBUG] GET /uploads/1/9e1f907f_photo_01_conf0.84_edited_20250927_040051_71ac3dd7_thumb.jpg
+100.64.0.4 - - [27/Sep/2025:04:02:15 +0000] "GET /uploads/1/9e1f907f_photo_01_conf0.84_edited_20250927_040051_71ac3dd7_thumb.jpg HTTP/1.1" 200 5690 "https://photoverone-production-c5dd.up.railway.app/photos" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:15 +0000] [4] [DEBUG] GET /static/favicon.ico
+100.64.0.4 - - [27/Sep/2025:04:02:15 +0000] "GET /static/favicon.ico HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:18 +0000] [4] [DEBUG] GET /photos/originals
+100.64.0.4 - - [27/Sep/2025:04:02:18 +0000] "GET /photos/originals HTTP/1.1" 200 23506 "https://photoverone-production-c5dd.up.railway.app/photos" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:18 +0000] [4] [DEBUG] GET /static/css/style.css
+100.64.0.4 - - [27/Sep/2025:04:02:18 +0000] "GET /static/css/style.css HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/originals" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:18 +0000] [4] [DEBUG] GET /static/img/calmic-logo.png
+100.64.0.4 - - [27/Sep/2025:04:02:18 +0000] "GET /static/img/calmic-logo.png HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/originals" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:18 +0000] [4] [DEBUG] GET /uploads/1/9e1f907f_photo_02_conf0.31.jpg
+100.64.0.4 - - [27/Sep/2025:04:02:18 +0000] "GET /uploads/1/9e1f907f_photo_02_conf0.31.jpg HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/originals" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:18 +0000] [4] [DEBUG] GET /static/favicon.ico
+100.64.0.4 - - [27/Sep/2025:04:02:18 +0000] "GET /static/favicon.ico HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/originals" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:20 +0000] [4] [DEBUG] GET /photos/edited
+100.64.0.4 - - [27/Sep/2025:04:02:20 +0000] "GET /photos/edited HTTP/1.1" 200 24189 "https://photoverone-production-c5dd.up.railway.app/photos/originals" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:20 +0000] [4] [DEBUG] GET /static/css/style.css
+100.64.0.4 - - [27/Sep/2025:04:02:20 +0000] "GET /static/css/style.css HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/edited" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:20 +0000] [4] [DEBUG] GET /static/img/calmic-logo.png
+100.64.0.4 - - [27/Sep/2025:04:02:20 +0000] "GET /static/img/calmic-logo.png HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/edited" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:20 +0000] [4] [DEBUG] GET /uploads/1/9e1f907f_photo_01_conf0.84_edited_20250927_040051_71ac3dd7.jpg
+100.64.0.4 - - [27/Sep/2025:04:02:20 +0000] "GET /uploads/1/9e1f907f_photo_01_conf0.84_edited_20250927_040051_71ac3dd7.jpg HTTP/1.1" 200 45168 "https://photoverone-production-c5dd.up.railway.app/photos/edited" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"
+[2025-09-27 04:02:20 +0000] [4] [DEBUG] GET /static/favicon.ico
+100.64.0.4 - - [27/Sep/2025:04:02:20 +0000] "GET /static/favicon.ico HTTP/1.1" 304 0 "https://photoverone-production-c5dd.up.railway.app/photos/edited" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0"

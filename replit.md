@@ -2,7 +2,7 @@
 
 PhotoVault by Calmic Sdn Bhd is a professional photo management platform built with Flask. Its purpose is to provide secure storage, advanced editing, and comprehensive organization of photographs. It aims to deliver an enterprise-grade solution for personal and professional photo archiving, featuring robust security, role-based access control, user management, and administrative tools. The platform seeks to offer an efficient and secure environment for managing photo collections.
 
-## Recent Changes (September 26, 2025)
+## Recent Changes (September 27, 2025)
 - **Fresh GitHub Import Setup Complete**: Successfully imported PhotoVault project from GitHub and fully configured for Replit environment
 - **Python Environment**: Installed Python 3.11 and all required dependencies from requirements.txt including Flask 3.0.3, SQLAlchemy, OpenCV, and image processing libraries
 - **PostgreSQL Database**: Created new Replit PostgreSQL database with proper DATABASE_URL configuration and all required environment variables (PGHOST, PGPORT, PGUSER, PGDATABASE)
@@ -17,6 +17,8 @@ PhotoVault by Calmic Sdn Bhd is a professional photo management platform built w
 - **Application Status**: Verified application is running successfully and serving HTTP requests including homepage, static CSS, images, and favicon. Application fully functional.
 - **Production Deployment**: Configured autoscale deployment with Gunicorn production server (2 workers, 60s timeout, 1000 max requests) for live deployment on Replit platform
 - **Import Process Complete**: PhotoVault application fully configured and ready for development and production use in Replit environment
+- **Gallery Issue Diagnosis & Fix**: Identified and resolved the issue where enhanced photos were appearing in the originals gallery instead of the edited gallery. Root cause was the "Delete Original Only" feature that promotes edited versions to originals. Added comprehensive logging and improved database transaction handling for enhancement and annotation features.
+- **Enhanced Database Reliability**: Added robust transaction handling with verification and rollback capabilities for photo enhancement and annotation operations to prevent data consistency issues in production environments.
 - **Critical Railway Container Crash Fix**: Fixed photo detection feature causing Railway container crashes by:
   - Implementing memory management with 25MP size limit for detection and 30MP for extraction
   - Removing problematic image resizing that broke coordinate alignment between detection and extraction
