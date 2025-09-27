@@ -276,26 +276,46 @@ def forgot_password():
             flash('Please enter a valid email address.', 'error')
             return render_template('auth/forgot_password.html')
         
-        # Find user by email
-        user = User.query.filter_by(email=email).first()
+        # Find user by email with retry logic for SSL disconnections
+        try:
+            user = safe_db_query(
+                lambda: User.query.filter_by(email=email).first(),
+                operation_name="user lookup by email"
+            )
+        except TransientDBError:
+            # If database is still failing after retries, show generic error
+            flash('Service temporarily unavailable. Please try again in a moment.', 'error')
+            return render_template('auth/forgot_password.html')
         
         if user:
             try:
-                # Clean up old tokens for this user
-                old_tokens = PasswordResetToken.query.filter_by(user_id=user.id).all()
-                for token in old_tokens:
-                    db.session.delete(token)
+                # Clean up old tokens for this user with retry logic
+                def create_reset_token():
+                    old_tokens = PasswordResetToken.query.filter_by(user_id=user.id).all()
+                    for token in old_tokens:
+                        db.session.delete(token)
+                    
+                    # Create new reset token
+                    reset_token = PasswordResetToken(user.id)
+                    db.session.add(reset_token)
+                    db.session.commit()
+                    return reset_token
                 
-                # Create new reset token
-                reset_token = PasswordResetToken(user.id)
-                db.session.add(reset_token)
-                db.session.commit()
+                reset_token = safe_db_query(
+                    create_reset_token,
+                    operation_name="password reset token creation"
+                )
                 
                 # Send reset email
                 email_sent = send_password_reset_email(user, reset_token.token)
                 if not email_sent:
                     current_app.logger.warning(f"Failed to send reset email to user {user.id}")
                 
+            except TransientDBError:
+                # Database still failing after retries
+                current_app.logger.error("Database connection failed during password reset token creation")
+                flash('Service temporarily unavailable. Please try again in a moment.', 'error')
+                return render_template('auth/forgot_password.html')
             except Exception as e:
                 db.session.rollback()
                 current_app.logger.error(f"Password reset error: {str(e)}")
