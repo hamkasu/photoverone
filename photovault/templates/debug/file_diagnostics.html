@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}File Diagnostics - PhotoVault{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="bi bi-tools"></i> File Integrity Diagnostics</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <button id="runDiagnostics" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Check File Integrity
+                        </button>
+                        <span id="diagnosticsLoading" class="ms-2 d-none">
+                            <i class="bi bi-hourglass-split"></i> Checking files...
+                        </span>
+                    </div>
+                    
+                    <div id="diagnosticsResults" class="mt-4" style="display: none;">
+                        <!-- Results will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const runBtn = document.getElementById('runDiagnostics');
+    const loading = document.getElementById('diagnosticsLoading');
+    const results = document.getElementById('diagnosticsResults');
+    
+    runBtn.addEventListener('click', function() {
+        runBtn.disabled = true;
+        loading.classList.remove('d-none');
+        results.style.display = 'none';
+        
+        fetch('/api/photos/debug/file-integrity')
+            .then(response => response.json())
+            .then(data => {
+                runBtn.disabled = false;
+                loading.classList.add('d-none');
+                
+                if (data.success) {
+                    displayResults(data.integrity_report);
+                } else {
+                    results.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i> Error: ${data.error}
+                        </div>
+                    `;
+                    results.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                runBtn.disabled = false;
+                loading.classList.add('d-none');
+                results.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Network error: ${error.message}
+                    </div>
+                `;
+                results.style.display = 'block';
+            });
+    });
+    
+    function displayResults(report) {
+        let html = `
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h4>${report.healthy_files}</h4>
+                            <small>Healthy Files</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <h4>${report.corrupted_files}</h4>
+                            <small>Corrupted Files</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body text-center">
+                            <h4>${report.missing_files}</h4>
+                            <small>Missing Files</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h4>${report.total_photos}</h4>
+                            <small>Total Photos</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        if (report.issues_found.length > 0) {
+            html += `
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-exclamation-triangle"></i> Issues Found (${report.issues_found.length})</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Photo ID</th>
+                                        <th>Filename</th>
+                                        <th>Source</th>
+                                        <th>Issues</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+            
+            report.issues_found.forEach(photo => {
+                html += `
+                    <tr>
+                        <td>${photo.photo_id}</td>
+                        <td>${photo.filename}</td>
+                        <td><span class="badge bg-secondary">${photo.upload_source}</span></td>
+                        <td>
+                            ${photo.issues.map(issue => `<span class="badge bg-warning me-1">${issue}</span>`).join('')}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="recoverPhoto(${photo.photo_id})">
+                                <i class="bi bi-arrow-clockwise"></i> Recover
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle"></i> All files appear to be healthy! No issues detected.
+                </div>
+            `;
+        }
+        
+        results.innerHTML = html;
+        results.style.display = 'block';
+    }
+    
+    // Global function for recovery
+    window.recoverPhoto = function(photoId) {
+        if (confirm('Attempt to recover this photo? This will try to validate and fix any issues.')) {
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Recovering...';
+            btn.disabled = true;
+            
+            fetch(`/api/photos/${photoId}/recover`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                if (data.success) {
+                    alert('Recovery completed! Actions taken: ' + data.actions_taken.join(', '));
+                    // Refresh the diagnostics
+                    document.getElementById('runDiagnostics').click();
+                } else {
+                    alert('Recovery failed: ' + data.error);
+                }
+            })
+            .catch(error => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                alert('Recovery failed: ' + error.message);
+            });
+        }
+    };
+});
+</script>
+{% endblock %}

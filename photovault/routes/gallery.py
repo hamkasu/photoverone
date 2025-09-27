@@ -180,6 +180,17 @@ def compare_single_photo(photo_id):
         flash('Photo not found or database not ready.', 'error')
         return redirect(url_for('gallery.dashboard'))
 
+@gallery_bp.route('/debug/file-diagnostics')
+@login_required
+def file_diagnostics():
+    """Debug page for file integrity diagnostics"""
+    # Temporarily allow all users for debugging (remove after fixing the issue)
+    # if not current_user.is_admin:
+    #     flash('Access denied. Admin privileges required.', 'error')
+    #     return redirect(url_for('gallery.dashboard'))
+    
+    return render_template('debug/file_diagnostics.html')
+
 @gallery_bp.route('/uploads/<int:user_id>/<path:filename>')
 @login_required
 def uploaded_file(user_id, filename):

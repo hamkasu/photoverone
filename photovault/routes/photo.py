@@ -1938,3 +1938,265 @@ def debug_gallery_state():
             'success': False,
             'error': 'Failed to get debug info'
         }), 500
+
+def analyze_image_content(file_path):
+    """
+    Analyze image content to detect corruption, dark images, or other issues
+    
+    Returns:
+        dict: Analysis results with status, luminance, and any issues found
+    """
+    try:
+        from photovault.utils.enhanced_file_handler import get_file_content
+        from PIL import Image, ImageStat
+        import tempfile
+        
+        # Download file content for analysis
+        success, file_data = get_file_content(file_path)
+        if not success:
+            return {'status': 'corrupted', 'error': 'Cannot read file from storage'}
+        
+        # Create temporary file for analysis
+        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
+            temp_file.write(file_data)
+            temp_file.flush()
+            
+            try:
+                # Try to open and analyze the image
+                with Image.open(temp_file.name) as img:
+                    # Basic validity check
+                    width, height = img.size
+                    if width <= 0 or height <= 0:
+                        return {'status': 'corrupted', 'error': 'Invalid image dimensions'}
+                    
+                    # Convert to RGB for analysis
+                    if img.mode != 'RGB':
+                        img = img.convert('RGB')
+                    
+                    # Calculate image statistics
+                    stat = ImageStat.Stat(img)
+                    
+                    # Calculate mean luminance (brightness)
+                    # Use standard luminance formula: 0.299*R + 0.587*G + 0.114*B
+                    mean_r, mean_g, mean_b = stat.mean
+                    luminance = 0.299 * mean_r + 0.587 * mean_g + 0.114 * mean_b
+                    
+                    # Calculate standard deviation to detect uniformity
+                    std_r, std_g, std_b = stat.stddev
+                    avg_std = (std_r + std_g + std_b) / 3
+                    
+                    # Check for various corruption patterns
+                    if luminance < 10:  # Very dark image
+                        return {'status': 'dark', 'luminance': luminance, 'std_dev': avg_std}
+                    elif avg_std < 5:  # Very uniform (potentially corrupted)
+                        return {'status': 'suspicious', 'warning': f'Very uniform image (std dev: {avg_std:.2f})', 'luminance': luminance}
+                    elif luminance > 250:  # Very bright (overexposed/corrupted)
+                        return {'status': 'suspicious', 'warning': f'Very bright image (luminance: {luminance:.2f})', 'luminance': luminance}
+                    else:
+                        return {'status': 'healthy', 'luminance': luminance, 'std_dev': avg_std, 'dimensions': f'{width}x{height}'}
+                        
+            except Exception as img_error:
+                return {'status': 'corrupted', 'error': f'Cannot decode image: {str(img_error)}'}
+            finally:
+                # Clean up temp file
+                try:
+                    os.unlink(temp_file.name)
+                except:
+                    pass
+                    
+    except Exception as e:
+        return {'status': 'corrupted', 'error': f'Analysis failed: {str(e)}'}
+
+@photo_bp.route('/api/photos/debug/file-integrity', methods=['GET'])
+@login_required  
+def debug_file_integrity():
+    """Debug endpoint to check file integrity and identify corrupted images"""
+    try:
+        from photovault.models import Photo
+        from photovault.utils.enhanced_file_handler import file_exists_enhanced, get_file_size_enhanced
+        
+        # Get all user photos
+        all_photos = Photo.query.filter_by(user_id=current_user.id).all()
+        
+        results = {
+            'user_id': current_user.id,
+            'total_photos': len(all_photos),
+            'issues_found': [],
+            'healthy_files': 0,
+            'corrupted_files': 0,
+            'missing_files': 0
+        }
+        
+        for photo in all_photos:
+            file_status = {
+                'photo_id': photo.id,
+                'filename': photo.filename,
+                'file_path': photo.file_path,
+                'upload_source': getattr(photo, 'upload_source', 'unknown'),
+                'issues': []
+            }
+            
+            # Check if main file exists
+            if photo.file_path:
+                if file_exists_enhanced(photo.file_path):
+                    # Check file size
+                    file_size = get_file_size_enhanced(photo.file_path)
+                    if file_size == 0:
+                        file_status['issues'].append('File exists but is empty (0 bytes)')
+                        results['corrupted_files'] += 1
+                    elif file_size < 1000:  # Suspiciously small image
+                        file_status['issues'].append(f'File suspiciously small ({file_size} bytes)')
+                        results['corrupted_files'] += 1
+                    else:
+                        # Deep image analysis - check if image data is corrupted
+                        image_analysis = analyze_image_content(photo.file_path)
+                        if image_analysis['status'] == 'corrupted':
+                            file_status['issues'].append(f"Image corrupted: {image_analysis['error']}")
+                            results['corrupted_files'] += 1
+                        elif image_analysis['status'] == 'dark':
+                            file_status['issues'].append(f"Image appears dark/black (luminance: {image_analysis['luminance']:.2f})")
+                            results['corrupted_files'] += 1
+                        elif image_analysis['status'] == 'suspicious':
+                            file_status['issues'].append(f"Image suspicious: {image_analysis['warning']}")
+                            results['corrupted_files'] += 1
+                        else:
+                            results['healthy_files'] += 1
+                            file_status['luminance'] = image_analysis.get('luminance', 'unknown')
+                else:
+                    file_status['issues'].append('Main file missing from storage')
+                    results['missing_files'] += 1
+            else:
+                file_status['issues'].append('No file path recorded in database')
+                results['missing_files'] += 1
+            
+            # Check thumbnail
+            if photo.thumbnail_path:
+                if not file_exists_enhanced(photo.thumbnail_path):
+                    file_status['issues'].append('Thumbnail missing')
+            
+            # Check edited version if exists
+            if photo.edited_filename and photo.edited_path:
+                if not file_exists_enhanced(photo.edited_path):
+                    file_status['issues'].append('Edited version missing')
+            
+            # Add to results if there are issues
+            if file_status['issues']:
+                results['issues_found'].append(file_status)
+        
+        return jsonify({
+            'success': True,
+            'integrity_report': results
+        })
+        
+    except Exception as e:
+        logger.error(f"File integrity check failed: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to check file integrity'
+        }), 500
+
+
+@photo_bp.route('/api/photos/<int:photo_id>/recover', methods=['POST'])
+@login_required
+def recover_corrupted_photo(photo_id):
+    """Attempt to recover a corrupted photo by regenerating thumbnail and validating file"""
+    try:
+        from photovault.models import Photo
+        from photovault.utils.enhanced_file_handler import file_exists_enhanced, get_file_size_enhanced
+        from PIL import Image
+        import tempfile
+        
+        # Get the photo and verify ownership
+        photo = Photo.query.get_or_404(photo_id)
+        if photo.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        recovery_actions = []
+        
+        # Check if file exists and is readable
+        if not photo.file_path or not file_exists_enhanced(photo.file_path):
+            return jsonify({
+                'success': False,
+                'error': 'Cannot recover: original file is missing from storage'
+            }), 404
+        
+        # Check file size
+        file_size = get_file_size_enhanced(photo.file_path)
+        if file_size == 0:
+            return jsonify({
+                'success': False,
+                'error': 'Cannot recover: file exists but is empty (0 bytes)'
+            }), 400
+        
+        # Try to validate image by opening it
+        try:
+            # For App Storage files, we need to download temporarily to validate
+            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
+                # Download file content for validation
+                from photovault.utils.enhanced_file_handler import get_file_content
+                success, file_data = get_file_content(photo.file_path)
+                
+                if not success:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Cannot read file from storage'
+                    }), 400
+                
+                temp_file.write(file_data)
+                temp_file.flush()
+                
+                # Try to open with PIL to validate
+                with Image.open(temp_file.name) as img:
+                    width, height = img.size
+                    
+                    # Update database with actual dimensions if they're wrong
+                    if photo.width != width or photo.height != height:
+                        photo.width = width
+                        photo.height = height
+                        recovery_actions.append(f'Updated dimensions to {width}x{height}')
+                
+                # Clean up temp file
+                os.unlink(temp_file.name)
+                
+        except Exception as img_error:
+            return jsonify({
+                'success': False,
+                'error': f'Image file is corrupted and cannot be opened: {str(img_error)}'
+            }), 400
+        
+        # Regenerate thumbnail if missing or corrupted
+        if not photo.thumbnail_path or not file_exists_enhanced(photo.thumbnail_path):
+            try:
+                from photovault.utils.file_handler import create_thumbnail
+                success, thumbnail_result = create_thumbnail(photo.file_path)
+                if success:
+                    photo.thumbnail_path = thumbnail_result
+                    recovery_actions.append('Regenerated thumbnail')
+                else:
+                    recovery_actions.append(f'Failed to regenerate thumbnail: {thumbnail_result}')
+            except Exception as thumb_error:
+                recovery_actions.append(f'Thumbnail regeneration failed: {str(thumb_error)}')
+        
+        # Update database
+        photo.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        recovery_actions.append('Database record updated')
+        
+        logger.info(f"Photo {photo_id} recovery completed: {', '.join(recovery_actions)}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Photo recovery completed',
+            'actions_taken': recovery_actions,
+            'file_size': file_size,
+            'dimensions': f"{photo.width}x{photo.height}"
+        })
+        
+    except Exception as e:
+        logger.error(f"Photo recovery failed for {photo_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Recovery failed due to unexpected error'
+        }), 500
