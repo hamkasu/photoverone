@@ -92,6 +92,9 @@ CALMIC SDN BHD - "Committed to Excellence"
                             <button type="button" class="btn btn-outline-secondary" onclick="clearAllSelection()">
                                 <i class="bi bi-x-square"></i> Clear
                             </button>
+                            <button type="button" class="btn btn-primary" onclick="bulkDownloadPhotos()" id="bulkDownloadBtn" disabled>
+                                <i class="bi bi-download"></i> Download Selected
+                            </button>
                             <button type="button" class="btn btn-danger" onclick="bulkDeletePhotos()" id="bulkDeleteBtn" disabled>
                                 <i class="bi bi-trash"></i> Delete Selected
                             </button>
@@ -419,6 +422,7 @@ function updateSelection() {
     const bulkActionsBar = document.getElementById('bulkActionsBar');
     const selectedCount = document.getElementById('selectedCount');
     const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const bulkDownloadBtn = document.getElementById('bulkDownloadBtn');
     
     // Update count
     selectedCount.textContent = checkedBoxes.length;
@@ -427,9 +431,11 @@ function updateSelection() {
     if (checkedBoxes.length > 0) {
         bulkActionsBar.style.display = 'block';
         bulkDeleteBtn.disabled = false;
+        bulkDownloadBtn.disabled = false;
     } else {
         bulkActionsBar.style.display = 'none';
         bulkDeleteBtn.disabled = true;
+        bulkDownloadBtn.disabled = true;
     }
     
     // Update card visual state
@@ -507,6 +513,55 @@ function bulkDeletePhotos() {
             bulkDeleteBtn.innerHTML = '<i class="bi bi-trash"></i> Delete Selected';
         });
     }
+}
+
+function bulkDownloadPhotos() {
+    const checkedBoxes = document.querySelectorAll('.photo-select:checked');
+    const photoIds = Array.from(checkedBoxes).map(cb => cb.value);
+    
+    if (photoIds.length === 0) {
+        alert('Please select photos to download.');
+        return;
+    }
+    
+    // Disable button during download
+    const bulkDownloadBtn = document.getElementById('bulkDownloadBtn');
+    const originalText = bulkDownloadBtn.innerHTML;
+    bulkDownloadBtn.disabled = true;
+    bulkDownloadBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Preparing Download...';
+    
+    // Create a form to submit photo IDs for download
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/api/photos/bulk-download';
+    form.style.display = 'none';
+    
+    // Add CSRF token
+    const csrfToken = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrf_token';
+    csrfInput.value = csrfToken;
+    form.appendChild(csrfInput);
+    
+    // Add photo IDs
+    photoIds.forEach(photoId => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'photo_ids';
+        input.value = photoId;
+        form.appendChild(input);
+    });
+    
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+    
+    // Re-enable button after a short delay
+    setTimeout(() => {
+        bulkDownloadBtn.disabled = false;
+        bulkDownloadBtn.innerHTML = originalText;
+    }, 3000);
 }
 
 // Enhanced viewing and markup functions

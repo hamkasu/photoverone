@@ -2,9 +2,12 @@
 PhotoVault Gallery Routes
 Simple gallery blueprint for photo management
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, send_file, abort, current_app, Response
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, send_file, abort, current_app, Response, jsonify
 from flask_login import login_required, current_user
 import os
+import zipfile
+import tempfile
+import time
 from photovault.utils.enhanced_file_handler import get_file_content, file_exists_enhanced
 
 # Create the gallery blueprint
@@ -328,3 +331,146 @@ def uploaded_file(user_id, filename):
             current_app.logger.warning(f"Serving placeholder due to exception for thumbnail: {filename}")
             return redirect(url_for('static', filename='img/placeholder.png'))
         abort(404)
+
+@gallery_bp.route('/api/photos/bulk-download', methods=['POST'])
+@login_required
+def bulk_download_photos():
+    """Create ZIP file of selected photos and serve for download"""
+    try:
+        from photovault.models import Photo
+        
+        # Get photo IDs from form data
+        photo_ids = request.form.getlist('photo_ids')
+        
+        if not photo_ids:
+            flash('No photos selected for download.', 'warning')
+            return redirect(url_for('gallery.photos'))
+        
+        # Server-side limits for resource protection
+        MAX_PHOTOS = 50  # Limit bulk downloads to 50 photos
+        MAX_TOTAL_SIZE = 500 * 1024 * 1024  # 500MB limit
+        
+        if len(photo_ids) > MAX_PHOTOS:
+            flash(f'Too many photos selected. Maximum {MAX_PHOTOS} photos allowed per download.', 'error')
+            return redirect(url_for('gallery.photos'))
+        
+        # Validate that all photos belong to current user
+        photos = Photo.query.filter(
+            Photo.id.in_(photo_ids),
+            Photo.user_id == current_user.id
+        ).all()
+        
+        if not photos:
+            flash('No valid photos found for download.', 'error')
+            return redirect(url_for('gallery.photos'))
+        
+        # Pre-validate file sizes to avoid resource exhaustion
+        total_size = 0
+        valid_photos = []
+        
+        for photo in photos:
+            filename_to_use = photo.edited_filename if photo.edited_filename else photo.filename
+            file_size = 0
+            
+            # Check App Storage first
+            app_storage_path = f"users/{photo.user_id}/{filename_to_use}"
+            if file_exists_enhanced(app_storage_path):
+                valid_photos.append((photo, app_storage_path, None))
+                # Estimate file size (cannot get exact size from App Storage easily)
+                file_size = 5 * 1024 * 1024  # Estimate 5MB per photo for safety
+            elif photo.file_path:
+                # Check local filesystem
+                upload_folder = current_app.config.get('UPLOAD_FOLDER', 'photovault/uploads')
+                file_path = photo.file_path
+                
+                if os.path.isabs(file_path):
+                    full_path = file_path
+                elif file_path.startswith(upload_folder + '/'):
+                    full_path = file_path
+                elif file_path.startswith('uploads/') or file_path.startswith('users/'):
+                    path_parts = file_path.split('/', 1)
+                    if len(path_parts) > 1:
+                        full_path = os.path.join(upload_folder, path_parts[1])
+                    else:
+                        full_path = os.path.join(upload_folder, str(photo.user_id), filename_to_use)
+                else:
+                    full_path = os.path.join(upload_folder, str(photo.user_id), file_path)
+                
+                if os.path.exists(full_path):
+                    file_size = os.path.getsize(full_path)
+                    valid_photos.append((photo, None, full_path))
+            
+            total_size += file_size
+            if total_size > MAX_TOTAL_SIZE:
+                flash(f'Selected photos exceed maximum download size limit ({MAX_TOTAL_SIZE // (1024*1024)}MB).', 'error')
+                return redirect(url_for('gallery.photos'))
+        
+        if not valid_photos:
+            flash('No valid photo files found for download.', 'error')
+            return redirect(url_for('gallery.photos'))
+        
+        # Use TemporaryDirectory for guaranteed cleanup
+        with tempfile.TemporaryDirectory() as temp_dir:
+            timestamp = int(time.time())
+            zip_filename = f"photovault_photos_{timestamp}.zip"
+            zip_path = os.path.join(temp_dir, zip_filename)
+            
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                added_files = 0
+                file_count = {}  # Track duplicate filenames
+                
+                for photo, app_storage_path, local_path in valid_photos:
+                    try:
+                        filename_to_use = photo.edited_filename if photo.edited_filename else photo.filename
+                        original_name = photo.original_name or filename_to_use
+                        
+                        # Sanitize filename for ZIP (prevent path traversal)
+                        original_name = os.path.basename(original_name).replace('/', '_').replace('\\', '_')
+                        
+                        # Handle duplicate filenames by adding counter
+                        base_name, ext = os.path.splitext(original_name)
+                        if original_name in file_count:
+                            file_count[original_name] += 1
+                            zip_filename_final = f"{base_name}_{file_count[original_name]}{ext}"
+                        else:
+                            file_count[original_name] = 0
+                            zip_filename_final = original_name
+                        
+                        # Add file to ZIP with memory-efficient approach
+                        if app_storage_path:
+                            # App Storage: Load file content
+                            success, file_content = get_file_content(app_storage_path)
+                            if success and file_content:
+                                zipf.writestr(zip_filename_final, file_content)
+                                added_files += 1
+                                current_app.logger.info(f"Added photo {photo.id} from App Storage as {zip_filename_final}")
+                            else:
+                                current_app.logger.warning(f"Failed to get App Storage content for photo {photo.id}")
+                        elif local_path:
+                            # Local filesystem: Use ZIP's built-in file reading for better memory usage
+                            zipf.write(local_path, zip_filename_final)
+                            added_files += 1
+                            current_app.logger.info(f"Added photo {photo.id} from local storage as {zip_filename_final}")
+                    except Exception as e:
+                        current_app.logger.warning(f"Error adding photo {photo.id} to ZIP: {e}")
+                        continue
+            
+            if added_files == 0:
+                flash('No photo files could be found for download.', 'error')
+                return redirect(url_for('gallery.photos'))
+            
+            current_app.logger.info(f"Serving ZIP download with {added_files} photos for user {current_user.id}")
+            
+            # Send the ZIP file (TemporaryDirectory will auto-cleanup)
+            return send_file(
+                zip_path,
+                as_attachment=True,
+                download_name=f"PhotoVault_Photos_{added_files}_photos.zip",
+                mimetype='application/zip'
+            )
+            # TemporaryDirectory context manager ensures cleanup
+            
+    except Exception as e:
+        current_app.logger.error(f"Error creating bulk download: {e}")
+        flash('Failed to create download. Please try again.', 'error')
+        return redirect(url_for('gallery.photos'))
