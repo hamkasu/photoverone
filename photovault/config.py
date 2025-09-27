@@ -11,21 +11,26 @@ class Config:
         """Get SQLAlchemy engine options based on database type"""
         base_options = {
             'pool_pre_ping': True,  # Validates connections before use
-            'pool_recycle': 300,    # Recycle connections every 5 minutes
-            'pool_timeout': 20,     # Timeout for connection checkout
-            'pool_size': 5,         # Connection pool size
-            'max_overflow': 10,     # Allow some overflow connections
+            'pool_recycle': 180,    # Recycle connections every 3 minutes (more aggressive)
+            'pool_timeout': 30,     # Longer timeout for connection checkout
+            'pool_size': 3,         # Smaller pool for Replit environment
+            'max_overflow': 5,      # Reduced overflow connections
+            'pool_reset_on_return': 'rollback',  # Reset connections on return
         }
         
         if database_uri and 'postgresql' in database_uri:
-            # PostgreSQL-specific settings - more resilient SSL configuration
+            # PostgreSQL-specific settings - robust SSL configuration for Replit
             base_options['connect_args'] = {
-                'connect_timeout': 10,
-                'sslmode': 'prefer',  # More tolerant SSL mode
+                'connect_timeout': 15,  # Longer connect timeout
+                'sslmode': 'require',   # Force SSL but more tolerant of disconnects
                 'sslcert': None,
                 'sslkey': None,
                 'sslrootcert': None,
-                'options': '-c statement_timeout=30s'
+                'keepalives_idle': '600',      # TCP keepalive settings
+                'keepalives_interval': '30',   # Check every 30 seconds
+                'keepalives_count': '3',       # Retry 3 times before giving up
+                'tcp_user_timeout': '10000',   # 10 second TCP timeout
+                'options': '-c statement_timeout=45s -c idle_in_transaction_session_timeout=600s'
             }
         
         return base_options
