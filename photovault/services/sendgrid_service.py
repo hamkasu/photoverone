@@ -10,10 +10,12 @@ from typing import Optional
 try:
     from sendgrid import SendGridAPIClient
     from sendgrid.helpers.mail import Mail, Email, To, Content
+    SENDGRID_AVAILABLE = True
 except ImportError:
     # Handle case where sendgrid is not installed
     SendGridAPIClient = None
     Mail = Email = To = Content = None
+    SENDGRID_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +30,17 @@ class SendGridEmailService:
         if not self.api_key:
             logger.warning("SENDGRID_API_KEY not found in environment variables")
             self.client = None
-        elif not SendGridAPIClient:
+        elif not SENDGRID_AVAILABLE:
             logger.error("SendGrid library not installed. Install with: pip install sendgrid")
             self.client = None
         else:
             try:
-                self.client = SendGridAPIClient(self.api_key)
-                logger.info("SendGrid client initialized successfully")
+                if SendGridAPIClient:
+                    self.client = SendGridAPIClient(self.api_key)
+                    logger.info("SendGrid client initialized successfully")
+                else:
+                    logger.error("SendGridAPIClient class not available")
+                    self.client = None
             except Exception as e:
                 logger.error(f"Failed to initialize SendGrid client: {e}")
                 self.client = None
@@ -76,6 +82,10 @@ class SendGridEmailService:
             sender_email = from_email or self.from_email
             
             # Create message with both HTML and text content
+            if not SENDGRID_AVAILABLE or not Mail or not Email or not To:
+                logger.error("SendGrid classes not available")
+                return False
+                
             message = Mail(
                 from_email=Email(sender_email),
                 to_emails=To(to_email),
@@ -85,6 +95,10 @@ class SendGridEmailService:
             )
             
             # Send the email
+            if not self.client:
+                logger.error("SendGrid client not initialized")
+                return False
+                
             response = self.client.send(message)
             
             # Check response status
