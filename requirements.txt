@@ -45,3 +45,4 @@ sendgrid==6.12.5
 
 # Replit Services
 replit-object-storage==1.0.2
+Flask==3.0.3
