@@ -90,5 +90,5 @@ waitForPort = 5000
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["gunicorn", "wsgi:app", "--bind=0.0.0.0:$PORT", "--workers=2", "--worker-class=sync", "--timeout=60", "--max-requests=1000", "--log-level=info", "--access-logfile=-", "--error-logfile=-"]
+run = ["gunicorn", "--bind=0.0.0.0:5000", "--reuse-port", "-w", "2", "--timeout", "60", "--max-requests", "1000", "main:app"]
 build = ["python", "-m", "flask", "db", "upgrade"]
