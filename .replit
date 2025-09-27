@@ -13,20 +13,12 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 41953
-externalPort = 8080
-
-[[ports]]
 localPort = 42417
 externalPort = 6800
 
 [[ports]]
 localPort = 43265
 externalPort = 5173
-
-[[ports]]
-localPort = 43397
-externalPort = 3001
 
 [[ports]]
 localPort = 43417
@@ -85,7 +77,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "SECRET_KEY=_lo9YLr8nzfDuJwg_dFYTUhzkmrUPxGrheM-Wk6JxUc FLASK_ENV=development FLASK_CONFIG=development python3 main.py"
+args = "SECRET_KEY=_lo9YLr8nzfDuJwg_dFYTUhzkmrUPxGrheM-Wk6JxUc FLASK_ENV=development FLASK_CONFIG=development PHOTOVAULT_SUPERUSER_USERNAME=admin PHOTOVAULT_SUPERUSER_EMAIL=admin@photovault.com PHOTOVAULT_SUPERUSER_PASSWORD=061167@aB1 python3 main.py"
 waitForPort = 5000
 
 [deployment]
