@@ -86,11 +86,11 @@ CALMIC SDN BHD - "Committed to Excellence"
                 <div class="navbar-nav me-auto">
                     <a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}" 
                        href="{{ url_for('main.dashboard') }}" aria-current="{% if request.endpoint == 'main.dashboard' %}page{% endif %}">
-                        Dashboard
+                        <i class="bi bi-speedometer2"></i> Dashboard
                     </a>
                     <a class="nav-link {{ 'active' if request.endpoint and (request.endpoint == 'upload.upload_page' or request.endpoint.startswith('upload.')) }}" 
                        href="{{ url_for('upload.upload_page') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('upload.') %}page{% endif %}">
-                        Upload
+                        <i class="bi bi-cloud-upload"></i> Upload
                     </a>
                     <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('photo_detection.') }}" 
                        href="{{ url_for('photo_detection.photo_detection_page') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('photo_detection.') %}page{% endif %}">
@@ -98,7 +98,7 @@ CALMIC SDN BHD - "Committed to Excellence"
                     </a>
                     <a class="nav-link {{ 'active' if request.endpoint and (request.endpoint == 'gallery.photos' or request.endpoint.startswith('gallery.')) }}" 
                        href="{{ url_for('gallery.photos') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('gallery.') %}page{% endif %}">
-                        Gallery
+                        <i class="bi bi-images"></i> Gallery
                     </a>
                     <a class="nav-link {{ 'active' if request.endpoint in ['main.advanced_enhancement', 'main.enhance_photo'] }}" 
                        href="{{ url_for('main.advanced_enhancement') }}" aria-current="{% if request.endpoint in ['main.advanced_enhancement', 'main.enhance_photo'] %}page{% endif %}">
@@ -110,15 +110,15 @@ CALMIC SDN BHD - "Committed to Excellence"
                     </a>
                     <a class="nav-link {{ 'active' if request.endpoint == 'main.people' }}" 
                        href="{{ url_for('main.people') }}" aria-current="{% if request.endpoint == 'main.people' %}page{% endif %}">
-                        People
+                        <i class="bi bi-people"></i> People
                     </a>
                     <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('family.') }}" 
                        href="{{ url_for('family.index') }}" aria-current="{% if request.endpoint and request.endpoint.startswith('family.') %}page{% endif %}">
-                        Family
+                        <i class="bi bi-house-heart"></i> Family
                     </a>
                     <a class="nav-link {{ 'active' if request.endpoint == 'main.about' }}" 
                        href="{{ url_for('main.about') }}" aria-current="{% if request.endpoint == 'main.about' %}page{% endif %}">
-                        About
+                        <i class="bi bi-info-circle"></i> About
                     </a>
                 </div>
                 
