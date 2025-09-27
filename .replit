@@ -13,7 +13,7 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 40463
+localPort = 33501
 externalPort = 3001
 
 [[ports]]
@@ -86,7 +86,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "SECRET_KEY=tOllZDAG-qAdYfGCawiKGMIvRC5wECFDDOgPbmg-KjU FLASK_ENV=development FLASK_CONFIG=development python3 main.py"
+args = "SECRET_KEY=dC1owE-U50RNrdjajwEZx7iY24DbO-nDoTEbqHPMTnY FLASK_ENV=development FLASK_CONFIG=development python3 main.py"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
