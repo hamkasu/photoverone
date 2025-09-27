@@ -13,6 +13,10 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
+localPort = 41743
+externalPort = 3001
+
+[[ports]]
 localPort = 41953
 externalPort = 8080
 
@@ -86,5 +90,5 @@ waitForPort = 5000
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["gunicorn", "--bind=0.0.0.0:5000", "--reuse-port", "-w", "2", "--timeout", "60", "--max-requests", "1000", "main:app"]
+run = ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "60", "--max-requests", "1000", "--preload", "wsgi:app"]
 build = ["python", "-m", "flask", "db", "upgrade"]
