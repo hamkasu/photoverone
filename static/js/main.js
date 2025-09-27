@@ -1,3 +1,16 @@
+/*
+PhotoVault - Professional Photo Management Platform
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+*/
+
 // photovault/static/js/main.js
 
 // REMOVE OR COMMENT OUT any existing upload-related JavaScript like:

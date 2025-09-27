@@ -1,3 +1,16 @@
+/*
+PhotoVault Mobile API Service
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, distribution,
+modification, or use of this software is strictly prohibited.
+
+Website: https://www.calmic.com.my
+Email: support@calmic.com.my
+
+CALMIC SDN BHD - "Committed to Excellence"
+*/
+
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 

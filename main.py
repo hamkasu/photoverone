@@ -1,5 +1,7 @@
 """
 PhotoVault Main Application File
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
 Development entry point using centralized app factory
 """
 import os

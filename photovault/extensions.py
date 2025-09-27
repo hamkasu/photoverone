@@ -1,5 +1,7 @@
 """
 PhotoVault Extensions
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+
 Centralized extension initialization to avoid instance duplication.
 """
 

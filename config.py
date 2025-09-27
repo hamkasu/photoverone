@@ -1,3 +1,8 @@
+"""
+PhotoVault Configuration Module
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+"""
+
 import os
 from photovault.config import config, DevelopmentConfig, ProductionConfig, TestingConfig
 

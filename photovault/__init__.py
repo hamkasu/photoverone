@@ -1,3 +1,7 @@
+"""
+PhotoVault Application Factory
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+"""
 # photovault/__init__.py
 
 from flask import Flask

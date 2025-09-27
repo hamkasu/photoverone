@@ -1,3 +1,7 @@
+"""
+PhotoVault Database Models
+Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.
+"""
 # photovault/models.py
 
 from datetime import datetime
