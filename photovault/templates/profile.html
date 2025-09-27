@@ -78,7 +78,7 @@ CALMIC SDN BHD - "Committed to Excellence"
                             </div>
                             <div class="card bg-light">
                                 <div class="card-body text-center py-3">
-                                    <h5>{{ stats.total_size // (1024 * 1024) }} MB</h5>
+                                    <h5>{{ stats.total_size_mb }} MB</h5>
                                     <small class="text-muted">Storage Used</small>
                                 </div>
                             </div>
@@ -89,18 +89,15 @@ CALMIC SDN BHD - "Committed to Excellence"
                     {% if stats.total_size > 0 %}
                     <div class="mb-4">
                         <h6 class="text-muted">Storage Usage</h6>
-                        {% set storage_mb = stats.total_size // (1024 * 1024) %}
-                        {% set usage_percent = (storage_mb / 100 * 100) | round(1) %}
                         <div class="progress mb-2" style="height: 20px;">
-                            {% set display_percent = usage_percent if usage_percent <= 100 else 100 %}
-                            <div class="progress-bar {% if usage_percent > 80 %}bg-danger{% elif usage_percent > 60 %}bg-warning{% else %}bg-info{% endif %}" 
+                            <div class="progress-bar {% if stats.storage_usage_percent > 80 %}bg-danger{% elif stats.storage_usage_percent > 60 %}bg-warning{% else %}bg-info{% endif %}" 
                                  role="progressbar" 
-                                 style="width: {{ display_percent }}%;">
-                                {{ usage_percent }}%
+                                 style="width: {{ stats.storage_usage_percent if stats.storage_usage_percent <= 100 else 100 }}%;">
+                                {{ stats.storage_usage_percent }}%
                             </div>
                         </div>
                         <small class="text-muted">
-                            {{ storage_mb }} MB used of 100 MB limit
+                            {{ stats.total_size_mb }} MB used of {{ stats.storage_limit_mb }} MB limit
                         </small>
                     </div>
                     {% endif %}

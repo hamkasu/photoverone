@@ -160,11 +160,19 @@ def profile():
             member_since = current_user.created_at.strftime('%B %Y')
         else:
             member_since = 'Unknown'
+        
+        # Calculate storage in MB (float for accurate display)
+        total_size_mb = round(total_size / 1024 / 1024, 2) if total_size > 0 else 0
+        storage_limit_mb = 100  # 100 MB limit
+        storage_usage_percent = min(100, round(total_size_mb / storage_limit_mb * 100, 1)) if storage_limit_mb > 0 else 0
             
         stats = {
             'total_photos': total_photos,
             'edited_photos': edited_photos, 
             'total_size': total_size,
+            'total_size_mb': total_size_mb,
+            'storage_usage_percent': storage_usage_percent,
+            'storage_limit_mb': storage_limit_mb,
             'member_since': member_since
         }
         
