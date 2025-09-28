@@ -86,5 +86,5 @@ outputType = "webview"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["gunicorn", "--bind=0.0.0.0:5000", "--workers=2", "wsgi:app"]
+run = ["gunicorn", "--bind=0.0.0.0:5000", "--workers=2", "--worker-class=sync", "--timeout=120", "--access-logfile=-", "--error-logfile=-", "wsgi:app"]
 build = ["python", "-m", "flask", "db", "upgrade"]
