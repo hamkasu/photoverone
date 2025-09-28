@@ -1,4 +1,4 @@
-modules = ["web", "nodejs-20", "python-3.11"]
+modules = ["web", "nodejs-20", "python-3.11", "postgresql-16"]
 
 [nix]
 channel = "stable-25_05"
@@ -11,6 +11,10 @@ integrations = ["replitmail:1.0.0", "python_sendgrid:1.0.0", "python_database:1.
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 35677
+externalPort = 8081
 
 [[ports]]
 localPort = 41769
