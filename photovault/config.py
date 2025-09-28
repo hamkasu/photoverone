@@ -82,10 +82,10 @@ class DevelopmentConfig(Config):
     
     # URL generation configuration for external links (email invitations)
     REPLIT_DOMAIN = os.environ.get('REPLIT_DEV_DOMAIN') or os.environ.get('REPLIT_DOMAINS')
-    if REPLIT_DOMAIN:
-        SERVER_NAME = REPLIT_DOMAIN
-        PREFERRED_URL_SCHEME = 'https'
-        APPLICATION_ROOT = '/'
+    # Don't set SERVER_NAME in development to avoid host verification issues
+    # Flask will be more flexible with host headers this way
+    PREFERRED_URL_SCHEME = 'https'
+    APPLICATION_ROOT = '/'
     
     def __init__(self):
         super().__init__()
