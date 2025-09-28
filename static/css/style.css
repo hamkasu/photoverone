@@ -636,64 +636,236 @@ footer .text-muted {
     }
 }
 
-/* Extra small devices (phones, 576px and down) */
+/* Extra small devices (phones, 576px and down) - Minimal Design */
 @media (max-width: 576px) {
+    /* Ultra minimal container spacing */
     .container {
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
     }
     
-    .card {
-        margin-bottom: 1rem;
+    /* Minimal navbar for mobile */
+    .navbar {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
     }
     
-    .card-body {
-        padding: 1rem;
+    .navbar-brand {
+        font-size: 1rem;
+        padding: 0.25rem 0;
     }
     
-    /* Family vault specific mobile adjustments */
-    .vault-card h6 {
+    .brand-name {
         font-size: 1rem;
     }
     
-    .vault-card .card-text {
-        font-size: 0.875rem;
+    .company-name {
+        font-size: 0.6rem;
+    }
+    
+    /* Hide company tagline on very small screens */
+    .company-name {
+        display: none;
+    }
+    
+    /* Minimal navigation links */
+    .navbar-nav .nav-link {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    /* Minimal cards */
+    .card {
+        margin-bottom: 0.75rem;
+        border-radius: 2px;
+        box-shadow: none;
+        border: 1px solid #e9ecef;
+    }
+    
+    .card-body {
+        padding: 0.75rem;
+    }
+    
+    .card-header {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        background-color: #f8f9fa;
+    }
+    
+    /* Minimal hero section */
+    .hero-section {
+        padding: 1rem 0.75rem !important;
+        margin-bottom: 1rem;
+    }
+    
+    /* Compact photo grid for mobile */
+    .photo-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .photo-item {
+        border-radius: 2px;
+    }
+    
+    /* Hide photo overlay on mobile for cleaner look */
+    .photo-overlay {
+        display: none;
+    }
+    
+    /* Minimal buttons */
+    .btn {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.75rem;
+        border-radius: 2px;
     }
     
     .btn-sm {
-        font-size: 0.8rem;
-        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
+        padding: 0.3rem 0.6rem;
     }
     
-    /* Photo viewing mobile adjustments */
-    .img-fluid {
-        max-height: 60vh !important;
-    }
-    
-    .card-header h4,
-    .card-header h5 {
-        font-size: 1.1rem;
-    }
-    
-    /* Navigation improvements for small screens */
+    /* Stack all buttons vertically for consistent spacing */
     .btn-outline-secondary,
     .btn-outline-primary,
     .btn-primary,
-    .btn-success {
+    .btn-success,
+    .btn-info,
+    .btn-warning {
         margin: 0.25rem 0;
         width: 100%;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
     }
     
-    /* Stack buttons vertically on very small screens */
+    /* Minimal card footers */
+    .card-footer {
+        padding: 0.5rem 0.75rem;
+        background-color: transparent;
+        border-top: 1px solid #e9ecef;
+    }
+    
     .card-footer .btn {
         display: block;
         width: 100%;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.4rem;
+        font-size: 0.8rem;
     }
     
     .card-footer .btn:last-child {
         margin-bottom: 0;
+    }
+    
+    /* Minimal form elements */
+    .form-control {
+        font-size: 0.85rem;
+        padding: 0.5rem;
+        border-radius: 2px;
+    }
+    
+    .form-label {
+        font-size: 0.8rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    /* Minimal upload area */
+    .upload-area {
+        padding: 1rem 0.75rem;
+        border-radius: 2px;
+        border-width: 1px;
+    }
+    
+    /* Compact main content area */
+    main.container {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    /* Minimal footer */
+    footer {
+        padding: 1rem 0;
+        font-size: 0.75rem;
+    }
+    
+    footer .row > div {
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+    
+    /* Hide footer logo on very small screens */
+    .footer-logo-container {
+        display: none;
+    }
+    
+    /* Minimal alerts */
+    .alert {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+        border-radius: 2px;
+        margin-bottom: 0.75rem;
+    }
+    
+    /* Family vault specific minimal adjustments */
+    .vault-card h6 {
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .vault-card .card-text {
+        font-size: 0.8rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Photo viewing minimal adjustments */
+    .img-fluid {
+        max-height: 50vh !important;
+        border-radius: 2px;
+    }
+    
+    .card-header h4,
+    .card-header h5 {
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    /* Minimal navigation between photos */
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: stretch;
+    }
+    
+    .d-flex.justify-content-between > div {
+        text-align: center;
+    }
+    
+    /* Vault code minimal styling */
+    .vault-code {
+        font-size: 0.75rem !important;
+        word-break: break-all;
+        padding: 0.25rem 0.5rem;
+        background-color: #f8f9fa;
+        border-radius: 2px;
+    }
+    
+    /* Hide non-essential elements on very small screens */
+    .badge {
+        font-size: 0.55em;
+        padding: 0.2em 0.3em;
+    }
+    
+    /* Minimal statistics cards */
+    .stats-card {
+        padding: 0.75rem;
+        border-radius: 2px;
+    }
+    
+    .stats-number {
+        font-size: 1.4rem;
+        margin-bottom: 0.15rem;
+    }
+    
+    .stats-label {
+        font-size: 0.7rem;
     }
 }
 
