@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+{% block title %}Create Montage - {{ vault.name }} - PhotoVault{% endblock %}
+
+{% block extra_css %}
+<style>
+.montage-creator {
+    padding: 2rem 0;
+}
+
+.photo-selector .photo-grid {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.photo-thumbnail {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.photo-thumbnail:hover {
+    border-color: #007bff;
+    transform: scale(1.05);
+}
+
+.photo-thumbnail.selected {
+    border-color: #28a745;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
+}
+
+.montage-settings .setting-group {
+    margin-bottom: 1.5rem;
+}
+
+.layout-preview {
+    display: inline-block;
+    margin: 0.5rem;
+    padding: 1rem;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.layout-preview:hover {
+    border-color: #007bff;
+}
+
+.layout-preview.active {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.layout-grid {
+    display: grid;
+    gap: 2px;
+    width: 40px;
+    height: 30px;
+}
+
+.layout-cell {
+    background-color: #6c757d;
+    border-radius: 1px;
+}
+
+.selected-count {
+    font-weight: bold;
+    color: #28a745;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container montage-creator">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="bi bi-grid-3x3"></i> Create Montage</h2>
+                    <p class="text-muted">Select photos from {{ vault.name }} to create a montage</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('family.view_vault', vault_id=vault.id) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Vault
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Photo Selector -->
+        <div class="col-lg-8">
+            <div class="card photo-selector">
+                <div class="card-header d-flex justify-content-between">
+                    <h5 class="mb-0">
+                        <i class="bi bi-images"></i> Select Photos
+                        <span class="selected-count" id="selectedCount">(0 selected)</span>
+                    </h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="selectAll()">Select All</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">Clear</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="photo-grid">
+                        <div class="row">
+                            {% if vault_photos %}
+                                {% for vault_photo in vault_photos %}
+                                <div class="col-lg-2 col-md-3 col-4 mb-3">
+                                    <div class="text-center">
+                                        <img src="{{ url_for('gallery.uploaded_file', user_id=vault_photo.photo.user_id, filename=vault_photo.photo.filename) }}" 
+                                             class="photo-thumbnail" 
+                                             alt="{{ vault_photo.photo.original_name }}"
+                                             data-photo-id="{{ vault_photo.id }}"
+                                             onclick="toggleSelection(this)"
+                                             onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/placeholder.png') }}'; this.style.cursor='default';">
+                                        <small class="d-block text-muted mt-1">{{ vault_photo.photo.original_name[:20] }}{% if vault_photo.photo.original_name|length > 20 %}...{% endif %}</small>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="col-12 text-center text-muted py-4">
+                                    <i class="bi bi-images" style="font-size: 3rem;"></i>
+                                    <h5>No Photos Available</h5>
+                                    <p>Add some photos to the vault before creating a montage.</p>
+                                    <a href="{{ url_for('family.add_photos', vault_id=vault.id) }}" class="btn btn-primary">
+                                        <i class="bi bi-plus"></i> Add Photos
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Montage Settings -->
+        <div class="col-lg-4">
+            <div class="card montage-settings">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-sliders"></i> Montage Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form id="montageForm">
+                        <!-- Layout Selection -->
+                        <div class="setting-group">
+                            <label class="form-label">Layout</label>
+                            <div class="d-flex flex-wrap">
+                                <div class="layout-preview active" data-rows="2" data-cols="2" onclick="selectLayout(2, 2, this)">
+                                    <div class="layout-grid" style="grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;">
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                    </div>
+                                    <small class="d-block text-center mt-1">2×2</small>
+                                </div>
+                                <div class="layout-preview" data-rows="2" data-cols="3" onclick="selectLayout(2, 3, this)">
+                                    <div class="layout-grid" style="grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr;">
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                    </div>
+                                    <small class="d-block text-center mt-1">2×3</small>
+                                </div>
+                                <div class="layout-preview" data-rows="3" data-cols="3" onclick="selectLayout(3, 3, this)">
+                                    <div class="layout-grid" style="grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr;">
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                        <div class="layout-cell"></div>
+                                    </div>
+                                    <small class="d-block text-center mt-1">3×3</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Title -->
+                        <div class="setting-group">
+                            <label for="montageTitle" class="form-label">Title (Optional)</label>
+                            <input type="text" class="form-control" id="montageTitle" placeholder="Enter montage title...">
+                        </div>
+
+                        <!-- Spacing -->
+                        <div class="setting-group">
+                            <label for="spacing" class="form-label">Spacing between photos</label>
+                            <input type="range" class="form-range" id="spacing" min="0" max="50" value="10">
+                            <small class="text-muted">Current: <span id="spacingValue">10</span>px</small>
+                        </div>
+
+                        <!-- Dimensions -->
+                        <div class="row setting-group">
+                            <div class="col-6">
+                                <label for="width" class="form-label">Width</label>
+                                <input type="number" class="form-control" id="width" value="1200" min="400" max="2400">
+                            </div>
+                            <div class="col-6">
+                                <label for="height" class="form-label">Height</label>
+                                <input type="number" class="form-control" id="height" value="800" min="300" max="1600">
+                            </div>
+                        </div>
+
+                        <!-- Create Button -->
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-primary btn-lg" onclick="createMontage()" id="createBtn" disabled>
+                                <i class="bi bi-magic"></i> Create Montage
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Progress -->
+            <div class="card mt-3" id="progressCard" style="display: none;">
+                <div class="card-body text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Creating montage...</span>
+                    </div>
+                    <p class="mt-2 mb-0">Creating your montage...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedPhotos = new Set();
+let currentLayout = { rows: 2, cols: 2 };
+
+function toggleSelection(img) {
+    const photoId = img.getAttribute('data-photo-id');
+    
+    if (selectedPhotos.has(photoId)) {
+        selectedPhotos.delete(photoId);
+        img.classList.remove('selected');
+    } else {
+        selectedPhotos.add(photoId);
+        img.classList.add('selected');
+    }
+    
+    updateSelectedCount();
+    updateCreateButton();
+}
+
+function selectAll() {
+    document.querySelectorAll('.photo-thumbnail').forEach(img => {
+        const photoId = img.getAttribute('data-photo-id');
+        selectedPhotos.add(photoId);
+        img.classList.add('selected');
+    });
+    updateSelectedCount();
+    updateCreateButton();
+}
+
+function clearSelection() {
+    selectedPhotos.clear();
+    document.querySelectorAll('.photo-thumbnail').forEach(img => {
+        img.classList.remove('selected');
+    });
+    updateSelectedCount();
+    updateCreateButton();
+}
+
+function updateSelectedCount() {
+    document.getElementById('selectedCount').textContent = `(${selectedPhotos.size} selected)`;
+}
+
+function updateCreateButton() {
+    const btn = document.getElementById('createBtn');
+    btn.disabled = selectedPhotos.size < 2;
+    
+    if (selectedPhotos.size < 2) {
+        btn.innerHTML = '<i class="bi bi-magic"></i> Select at least 2 photos';
+    } else {
+        btn.innerHTML = `<i class="bi bi-magic"></i> Create Montage (${selectedPhotos.size} photos)`;
+    }
+}
+
+function selectLayout(rows, cols, element) {
+    // Remove active class from all layout previews
+    document.querySelectorAll('.layout-preview').forEach(prev => {
+        prev.classList.remove('active');
+    });
+    
+    // Add active class to selected layout
+    element.classList.add('active');
+    
+    // Update current layout
+    currentLayout = { rows, cols };
+}
+
+function createMontage() {
+    if (selectedPhotos.size < 2) {
+        alert('Please select at least 2 photos for the montage.');
+        return;
+    }
+
+    // Show progress
+    document.getElementById('progressCard').style.display = 'block';
+    document.getElementById('createBtn').disabled = true;
+
+    // Prepare data
+    const data = {
+        photo_ids: Array.from(selectedPhotos),
+        rows: currentLayout.rows,
+        cols: currentLayout.cols,
+        title: document.getElementById('montageTitle').value,
+        spacing: parseInt(document.getElementById('spacing').value),
+        width: parseInt(document.getElementById('width').value),
+        height: parseInt(document.getElementById('height').value)
+    };
+
+    // Send request
+    fetch(`/family/vault/{{ vault.id }}/montage`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        document.getElementById('progressCard').style.display = 'none';
+        
+        if (result.success) {
+            alert('Montage created successfully! Redirecting to vault...');
+            window.location.href = "{{ url_for('family.view_vault', vault_id=vault.id) }}";
+        } else {
+            alert('Error creating montage: ' + result.error);
+            document.getElementById('createBtn').disabled = false;
+        }
+    })
+    .catch(error => {
+        document.getElementById('progressCard').style.display = 'none';
+        alert('Error creating montage: ' + error.message);
+        document.getElementById('createBtn').disabled = false;
+    });
+}
+
+// Update spacing value display
+document.getElementById('spacing').addEventListener('input', function() {
+    document.getElementById('spacingValue').textContent = this.value;
+});
+
+// Initialize
+updateSelectedCount();
+updateCreateButton();
+</script>
+{% endblock %}
