@@ -144,15 +144,19 @@ def view_vault(vault_id):
     # Get vault members
     members = FamilyMember.query.filter_by(vault_id=vault_id, status='active').all()
     
-    # Get user's role in vault
+    # Get pending invitations (only for admins and vault creator)
     user_role = vault.get_member_role(current_user.id)
+    pending_invitations = []
+    if user_role == 'admin' or vault.created_by == current_user.id:
+        pending_invitations = VaultInvitation.query.filter_by(vault_id=vault_id, status='pending').all()
     
     return render_template('family/vault_detail.html',
                          vault=vault,
                          vault_photos=vault_photos,
                          stories=stories,
                          members=members,
-                         user_role=user_role)
+                         user_role=user_role,
+                         pending_invitations=pending_invitations)
 
 @family_bp.route('/vault/<int:vault_id>/invite', methods=['GET', 'POST'])
 @login_required
@@ -221,6 +225,8 @@ def invite_member(vault_id):
             )
             
             if email_sent:
+                invitation.mark_as_sent()
+                db.session.commit()
                 flash(f'Invitation sent to {email}', 'success')
             else:
                 flash(f'Invitation created but email failed to send. You can share the invitation link manually: {url_for("family.accept_invitation", token=invitation.invitation_token, _external=True)}', 'warning')
@@ -515,6 +521,63 @@ def add_photos(vault_id):
                        .paginate(page=page, per_page=20, error_out=False)
     
     return render_template('family/add_photos.html', vault=vault, photos=photos)
+
+@family_bp.route('/vault/<int:vault_id>/invitation/<int:invitation_id>/resend', methods=['POST'])
+@login_required
+def resend_invitation(vault_id, invitation_id):
+    """Resend family vault invitation with rate limiting"""
+    vault = FamilyVault.query.get_or_404(vault_id)
+    invitation = VaultInvitation.query.get_or_404(invitation_id)
+    
+    # Check if invitation belongs to the vault
+    if invitation.vault_id != vault_id:
+        flash('Invalid invitation.', 'error')
+        return redirect(url_for('family.view_vault', vault_id=vault_id))
+    
+    # Check if user can manage vault
+    user_role = vault.get_member_role(current_user.id)
+    if user_role not in ['admin'] and vault.created_by != current_user.id:
+        flash('You do not have permission to resend invitations.', 'error')
+        return redirect(url_for('family.view_vault', vault_id=vault_id))
+    
+    # Check if invitation is still pending
+    if not invitation.is_pending:
+        flash('This invitation is no longer pending.', 'error')
+        return redirect(url_for('family.view_vault', vault_id=vault_id))
+    
+    # Check rate limiting (60 seconds minimum)
+    if not invitation.can_resend(60):
+        if invitation.last_sent_at:
+            time_since_last = datetime.utcnow() - invitation.last_sent_at
+            remaining_seconds = max(1, 60 - int(time_since_last.total_seconds()))
+            flash(f'Please wait {remaining_seconds} more seconds before resending.', 'warning')
+        else:
+            flash('Unable to resend invitation at this time.', 'warning')
+        return redirect(url_for('family.view_vault', vault_id=vault_id))
+    
+    try:
+        # Resend invitation email
+        email_sent = send_invitation_email(
+            email=invitation.email,
+            invitation_token=invitation.invitation_token,
+            vault_name=vault.name,
+            inviter_name=current_user.username
+        )
+        
+        if email_sent:
+            invitation.mark_as_sent()
+            db.session.commit()
+            flash(f'Invitation resent to {invitation.email}', 'success')
+        else:
+            flash(f'Failed to resend invitation to {invitation.email}. Please try again.', 'error')
+            logger.warning(f"Failed to resend invitation to {invitation.email}")
+            
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to resend invitation: {str(e)}")
+        flash('Failed to resend invitation. Please try again.', 'error')
+    
+    return redirect(url_for('family.view_vault', vault_id=vault_id))
 
 @family_bp.route('/api/vaults/<int:vault_id>/members/<int:member_id>/role', methods=['PUT'])
 @login_required

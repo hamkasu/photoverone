@@ -343,6 +343,7 @@ class VaultInvitation(db.Model):
     expires_at = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     accepted_at = db.Column(db.DateTime)
+    last_sent_at = db.Column(db.DateTime)
     
     # Relationships
     inviter = db.relationship('User', backref='sent_invitations')
@@ -356,6 +357,19 @@ class VaultInvitation(db.Model):
     def is_pending(self):
         """Check if invitation is still pending"""
         return self.status == 'pending' and not self.is_expired
+    
+    def can_resend(self, min_seconds=60):
+        """Check if invitation can be resent (rate limiting)"""
+        if not self.is_pending:
+            return False
+        if not self.last_sent_at:
+            return True
+        time_since_last = datetime.utcnow() - self.last_sent_at
+        return time_since_last.total_seconds() >= min_seconds
+    
+    def mark_as_sent(self):
+        """Update last_sent_at timestamp"""
+        self.last_sent_at = datetime.utcnow()
     
     def accept(self, user):
         """Accept the invitation and create family member"""

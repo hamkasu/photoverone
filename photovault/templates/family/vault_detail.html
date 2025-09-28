@@ -119,6 +119,52 @@
                 </div>
             </div>
 
+            <!-- Pending Invitations (only visible to admins and vault creator) -->
+            {% if pending_invitations and (user_role == 'admin' or vault.created_by == current_user.id) %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock"></i> Pending Invitations ({{ pending_invitations|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for invitation in pending_invitations %}
+                    <div class="row align-items-center mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+                        <div class="col-md-4">
+                            <strong>{{ invitation.email }}</strong>
+                            <br>
+                            <small class="text-muted">{{ invitation.role.title() }}</small>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted">
+                                Invited: {{ invitation.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                <br>
+                                {% if invitation.last_sent_at %}
+                                Last sent: {{ invitation.last_sent_at.strftime('%Y-%m-%d %H:%M') }}
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            {% if invitation.can_resend(60) %}
+                            <form method="POST" action="{{ url_for('family.resend_invitation', vault_id=vault.id, invitation_id=invitation.id) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-sm btn-outline-primary" 
+                                        onclick="return confirm('Resend invitation to {{ invitation.email }}?')">
+                                    <i class="bi bi-arrow-clockwise"></i> Resend
+                                </button>
+                            </form>
+                            {% else %}
+                            <button class="btn btn-sm btn-outline-secondary" disabled title="Please wait at least 60 seconds between resends">
+                                <i class="bi bi-clock"></i> Wait...
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
             <div class="text-center">
                 <a href="{{ url_for('family.index') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Back to Family Vaults
