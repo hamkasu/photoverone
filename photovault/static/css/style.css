@@ -612,43 +612,55 @@ footer .text-muted {
         word-break: break-all;
     }
     
-    /* Mobile button toolbar optimization */
+    /* Mobile button toolbar optimization - FORCE SINGLE LINE */
     .btn-toolbar {
+        display: flex !important;
         flex-wrap: nowrap !important;
-        gap: 0.25rem !important;
-        justify-content: space-between !important;
+        flex-direction: row !important;
+        gap: 0.15rem !important;
+        justify-content: flex-start !important;
+        overflow-x: auto !important;
+        padding-bottom: 0.25rem;
+        white-space: nowrap !important;
     }
     
     .btn-toolbar .btn-group {
-        margin-right: 0 !important;
-        margin-bottom: 0 !important;
-        flex-shrink: 0;
+        margin: 0 !important;
+        flex-shrink: 0 !important;
+        display: inline-flex !important;
     }
     
     .btn-toolbar .btn-group-sm .btn {
-        padding: 0.25rem 0.4rem !important;
-        font-size: 0.7rem !important;
+        padding: 0.2rem 0.3rem !important;
+        font-size: 0.65rem !important;
         border-radius: 0.2rem !important;
-    }
-    
-    .btn-toolbar .btn-group-sm .btn i {
-        font-size: 0.8rem !important;
-    }
-    
-    /* Hide button text on mobile, show only icons */
-    .btn-toolbar .btn-group-sm .btn .me-2,
-    .btn-toolbar .btn-group-sm .btn .ms-2 {
+        min-width: 26px !important;
+        height: 26px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         margin: 0 !important;
     }
     
-    /* Compact dropdown styling for mobile */
-    .btn-toolbar .dropdown-toggle::after {
-        font-size: 0.6rem !important;
+    .btn-toolbar .btn-group-sm .btn i {
+        font-size: 0.7rem !important;
+        margin: 0 !important;
     }
     
+    /* Force all button groups to stay inline */
+    .btn-toolbar > .btn-group:not(:last-child) {
+        margin-right: 0.15rem !important;
+    }
+    
+    /* Hide dropdown arrows to save space */
+    .btn-toolbar .dropdown-toggle::after {
+        display: none !important;
+    }
+    
+    /* Compact dropdown menu */
     .btn-toolbar .dropdown-menu {
-        font-size: 0.75rem !important;
-        min-width: 120px !important;
+        font-size: 0.7rem !important;
+        min-width: 100px !important;
     }
 }
 
@@ -884,49 +896,67 @@ footer .text-muted {
         font-size: 0.7rem;
     }
     
-    /* Extra compact button toolbar for very small screens */
+    /* Extra compact button toolbar for very small screens - ULTRA COMPACT SINGLE LINE */
     .btn-toolbar {
-        gap: 0.15rem !important;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        flex-direction: row !important;
+        gap: 0.1rem !important;
         overflow-x: auto !important;
         padding-bottom: 0.25rem;
+        white-space: nowrap !important;
+        justify-content: flex-start !important;
     }
     
-    .btn-toolbar .btn-group-sm .btn {
-        padding: 0.2rem 0.3rem !important;
-        font-size: 0.65rem !important;
-        min-width: 28px !important;
-        height: 28px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    
-    .btn-toolbar .btn-group-sm .btn i {
-        font-size: 0.75rem !important;
-        margin: 0 !important;
-    }
-    
-    /* Ensure icons are always visible on very small screens */
     .btn-toolbar .btn-group {
+        margin: 0 !important;
         flex-shrink: 0 !important;
+        display: inline-flex !important;
         white-space: nowrap !important;
     }
     
-    /* Hide dropdown arrows on very small screens for cleaner look */
+    .btn-toolbar .btn-group-sm .btn {
+        padding: 0.15rem 0.25rem !important;
+        font-size: 0.6rem !important;
+        min-width: 24px !important;
+        height: 24px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 !important;
+        border-radius: 0.15rem !important;
+    }
+    
+    .btn-toolbar .btn-group-sm .btn i {
+        font-size: 0.65rem !important;
+        margin: 0 !important;
+    }
+    
+    /* Ensure button groups stay inline with minimal spacing */
+    .btn-toolbar > .btn-group:not(:last-child) {
+        margin-right: 0.1rem !important;
+    }
+    
+    /* Hide dropdown arrows completely */
     .btn-toolbar .dropdown-toggle::after {
         display: none !important;
     }
     
-    /* Compact dropdown items for mobile */
+    /* Ultra compact dropdown for tiny screens */
+    .btn-toolbar .dropdown-menu {
+        font-size: 0.65rem !important;
+        min-width: 90px !important;
+    }
+    
     .btn-toolbar .dropdown-menu .dropdown-item {
-        padding: 0.4rem 0.6rem !important;
-        font-size: 0.7rem !important;
+        padding: 0.3rem 0.5rem !important;
+        font-size: 0.65rem !important;
     }
     
     .btn-toolbar .dropdown-menu .dropdown-item i {
-        width: 14px !important;
+        width: 12px !important;
         text-align: center !important;
-        margin-right: 0.4rem !important;
+        margin-right: 0.3rem !important;
     }
 }
 
