@@ -4,6 +4,7 @@ Simple gallery blueprint for photo management
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, send_file, abort, current_app, Response, jsonify
 from flask_login import login_required, current_user
+from photovault.extensions import db
 import os
 import zipfile
 import tempfile
