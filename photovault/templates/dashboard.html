@@ -20,6 +20,13 @@ CALMIC SDN BHD - "Committed to Excellence"
 {% endblock %}
 
 {% block content %}
+<!-- Mobile Orientation Prompt Overlay -->
+<div class="orientation-prompt" id="orientationPrompt">
+    <div class="rotate-icon">📱</div>
+    <h3>Rotate Your Device</h3>
+    <p>PhotoVault works best in landscape mode<br>for optimal photo viewing and management</p>
+    <button class="dismiss-btn" onclick="dismissOrientationPrompt()">Continue in Portrait</button>
+</div>
 <div class="container-fluid">
     <!-- Welcome Header -->
     <div class="row mb-4">
@@ -482,5 +489,60 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Mobile Orientation Prompt Functionality
+let orientationPromptDismissed = localStorage.getItem('orientationPromptDismissed') === 'true';
+
+function checkOrientation() {
+    const orientationPrompt = document.getElementById('orientationPrompt');
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+    
+    // Only show prompt if user is on mobile, in portrait mode, and hasn't dismissed it
+    if (isMobile && isPortrait && !orientationPromptDismissed) {
+        orientationPrompt.classList.add('show');
+        document.body.classList.add('orientation-prompt-active');
+    } else {
+        orientationPrompt.classList.remove('show');
+        document.body.classList.remove('orientation-prompt-active');
+    }
+}
+
+function dismissOrientationPrompt() {
+    orientationPromptDismissed = true;
+    localStorage.setItem('orientationPromptDismissed', 'true');
+    const orientationPrompt = document.getElementById('orientationPrompt');
+    orientationPrompt.classList.remove('show');
+    document.body.classList.remove('orientation-prompt-active');
+}
+
+// Listen for orientation and resize changes
+window.addEventListener('orientationchange', function() {
+    // Small delay to ensure orientation change is complete
+    setTimeout(checkOrientation, 300);
+});
+
+window.addEventListener('resize', checkOrientation);
+
+// Check orientation on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Small delay to ensure DOM is fully loaded
+    setTimeout(checkOrientation, 100);
+});
+
+// Reset dismissal on new day (optional - user can see prompt again if they haven't used landscape)
+function resetDismissalDaily() {
+    const lastDismissDate = localStorage.getItem('orientationPromptDismissDate');
+    const today = new Date().toDateString();
+    
+    if (lastDismissDate !== today) {
+        localStorage.removeItem('orientationPromptDismissed');
+        localStorage.setItem('orientationPromptDismissDate', today);
+        orientationPromptDismissed = false;
+    }
+}
+
+// Run daily reset check
+resetDismissalDaily();
 </script>
 {% endblock %}
