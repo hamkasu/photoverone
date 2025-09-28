@@ -14,7 +14,7 @@ CALMIC SDN BHD - "Committed to Excellence"
 /* PhotoVault - Ultra Conservative Professional Styling */
 
 /* Typography - Muted and Professional */
-html, body {
+html {
     height: 100%;
 }
 
@@ -25,8 +25,13 @@ body {
     color: #495057;
     background-color: #fafbfc;
     font-weight: 400;
-    display: flex;
-    flex-direction: column;
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas: 
+        "navbar"
+        "main"
+        "footer";
 }
 
 /* Ultra Conservative Color Palette */
@@ -436,17 +441,23 @@ body {
     border-color: #b8daff;
 }
 
-/* Main content area - flex grow to fill available space */
-main.container {
-    flex: 1;
+/* Navigation area */
+nav.navbar {
+    grid-area: navbar;
 }
 
-/* Footer - Very Subtle and Sticky to Bottom */
+/* Main content area - takes available space */
+main.container {
+    grid-area: main;
+    align-self: start;
+}
+
+/* Footer - Sticky to Bottom */
 footer {
+    grid-area: footer;
     background-color: var(--primary-color);
     color: #ffffff;
     border-top: 1px solid #dee2e6;
-    margin-top: auto;
 }
 
 footer .text-muted {
