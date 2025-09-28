@@ -80,6 +80,13 @@ class DevelopmentConfig(Config):
     SESSION_COOKIE_SAMESITE = 'Lax'  # Compatible with Replit proxy
     WTF_CSRF_SSL_STRICT = False
     
+    # URL generation configuration for external links (email invitations)
+    REPLIT_DOMAIN = os.environ.get('REPLIT_DEV_DOMAIN') or os.environ.get('REPLIT_DOMAINS')
+    if REPLIT_DOMAIN:
+        SERVER_NAME = REPLIT_DOMAIN
+        PREFERRED_URL_SCHEME = 'https'
+        APPLICATION_ROOT = '/'
+    
     def __init__(self):
         super().__init__()
         self.SQLALCHEMY_ENGINE_OPTIONS = self.get_engine_options(self.SQLALCHEMY_DATABASE_URI)
