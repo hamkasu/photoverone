@@ -1,93 +1,93 @@
 # PhotoVault - Professional Photo Management Platform
 
 ## Overview
-PhotoVault is a professional photo management platform built with Python Flask backend. It provides advanced camera features, secure storage, and photo organization capabilities. The application includes user authentication, admin controls, and comprehensive photo processing features.
+PhotoVault is a comprehensive photo management platform developed by Calmic Sdn Bhd. The application provides professional photo management with advanced camera features, automatic organization, and secure storage capabilities.
 
-## Recent Changes (September 28, 2025)
-- ✅ Successfully imported fresh GitHub clone and configured for Replit environment
-- ✅ Installed Python 3.11 and all required dependencies from requirements.txt
-- ✅ Set up PostgreSQL database using Replit's built-in database service
-- ✅ Configured database migrations and marked as up-to-date with existing schema
-- ✅ Set up proper Flask workflow running on port 5000 with host 0.0.0.0 
-- ✅ Fixed Flask SERVER_NAME configuration issue causing 404 errors in Replit environment
-- ✅ Verified all core functionality: routes registered and server responding with HTTP 200
-- ✅ Configured deployment settings for Replit Autoscale with Gunicorn (2 workers)
-- ✅ All static assets (CSS, images, JavaScript) loading correctly
-- ✅ Professional UI components and PhotoVault features initialized successfully
-- ✅ Database connectivity verified and all tables properly configured
-- ✅ Face detection, image enhancement, and photo processing features enabled
-- ✅ Working homepage with registration/login functionality
-- ✅ Fresh import setup completed successfully - application fully operational
-- ✅ Production deployment configuration ready for Replit Autoscale
-- ✅ **FIXED FAMILY VAULT SHARING ISSUE**: Modified gallery.uploaded_file route to allow family vault members to view photos shared by other members. Previously, members could only see their own shared photos due to security restrictions.
+## Current Project Status
+- **Status**: Fully operational in Replit environment
+- **Last Updated**: September 28, 2025
+- **Environment**: Development with PostgreSQL database
+- **Port**: 5000 (configured for Replit proxy)
 
-## Project Architecture
+## Architecture
+- **Backend**: Flask 3.0.3 application with SQLAlchemy ORM
+- **Database**: PostgreSQL (Replit-provided Neon database)
+- **Frontend**: Server-side rendered HTML with modern CSS and JavaScript
+- **Image Processing**: OpenCV and Pillow for photo enhancement and manipulation
+- **Authentication**: Flask-Login with secure password hashing
+- **File Handling**: Multi-format support (PNG, JPG, JPEG, GIF, BMP, WEBP)
 
-### Backend (Flask)
-- **Framework**: Flask 3.0.3 with SQLAlchemy ORM
-- **Database**: PostgreSQL (Replit managed)
-- **Image Processing**: OpenCV, Pillow, scikit-image for advanced photo features
-- **Authentication**: Flask-Login with admin/superuser roles
-- **Security**: CSRF protection, secure sessions, password hashing
+## Key Features
+1. **Professional Camera Interface**: Full-screen camera with landscape mode and tap-to-capture
+2. **Automatic Upload & Organization**: Photos automatically uploaded and organized after capture
+3. **Secure Storage**: Professional-grade security for photo storage
+4. **Face Detection**: Advanced face recognition and people tagging
+5. **Photo Enhancement**: Image editing and enhancement tools
+6. **Family Vaults**: Shared photo collections with invitation system
+7. **Smart Tagging**: AI-powered photo categorization
+8. **Admin Dashboard**: Comprehensive user and system management
 
-### Key Features
-- Professional camera interface with full-screen mode
-- Automatic photo upload and organization
-- Secure cloud storage integration (Replit Object Storage)
-- Face detection and recognition capabilities
-- Advanced image enhancement and editing
-- Multi-user family vault system
-- Admin dashboard and user management
-- Voice memo functionality
+## Technical Configuration
 
-### Dependencies
-- Core: Flask, SQLAlchemy, Flask-Login, Flask-Migrate
-- Image: OpenCV, Pillow, numpy, scikit-image
-- Database: psycopg2-binary for PostgreSQL
-- Storage: replit-object-storage
-- Email: SendGrid integration
-
-## Development Setup
+### Database Schema
+Core tables: user, album, person, photo, family_vault, story, voice_memo, and related junction tables for many-to-many relationships.
 
 ### Environment Variables
-- `SECRET_KEY`: Application secret key
-- `FLASK_ENV`: Set to 'development'
+- `DATABASE_URL`: PostgreSQL connection string (configured)
 - `FLASK_CONFIG`: Set to 'development'
-- `DATABASE_URL`: PostgreSQL connection (auto-configured by Replit)
-- `PHOTOVAULT_SUPERUSER_*`: Default admin account credentials
+- `FLASK_ENV`: Set to 'development'
+- `SECRET_KEY`: Auto-generated secure key
 
-### Running the Application
-The application runs automatically through the Replit workflow:
-- **Host**: 0.0.0.0 (configured for Replit proxy)
-- **Port**: 5000 (required for Replit frontend)
-- **Python Path**: `/home/runner/workspace/.pythonlibs/bin/python3`
+### Deployment Configuration
+- **Target**: Autoscale deployment (stateless web application)
+- **Server**: Gunicorn WSGI server
+- **Port Binding**: 0.0.0.0:5000 for Replit compatibility
 
-### Database
-- PostgreSQL database managed by Replit
-- Migrations handled by Flask-Migrate
-- All tables created and superuser account initialized
+## File Structure
+```
+/
+├── photovault/           # Main application package
+│   ├── routes/          # Route handlers (auth, upload, photo, etc.)
+│   ├── models/          # Database models
+│   ├── services/        # Business logic services
+│   ├── utils/           # Utility functions
+│   ├── static/          # CSS, JS, images
+│   └── templates/       # Jinja2 HTML templates
+├── migrations/          # Database migration files
+├── api/                 # API endpoints
+├── photovault-ios/      # React Native mobile app
+├── main.py              # Development server entry point
+├── wsgi.py              # Production WSGI entry point
+├── config.py            # Configuration management
+└── requirements.txt     # Python dependencies
+```
 
-## Deployment
-- **Target**: Replit Autoscale (stateless web application)
-- **Production Server**: Gunicorn with 2 workers
-- **Static Files**: Served by Flask in development, CDN recommended for production
-- **SSL**: Handled by Replit deployment platform
+## Development Workflow
+1. The application runs on port 5000 with development server
+2. Database migrations are handled via Flask-Migrate
+3. Static files served from photovault/static/
+4. Templates rendered from photovault/templates/
+
+## Mobile Application
+Includes a React Native iOS application in `photovault-ios/` directory with:
+- Camera functionality
+- Gallery viewing
+- Authentication screens
+- API integration with the Flask backend
+
+## Security Features
+- CSRF protection
+- Secure session management
+- Password hashing with industry standards
+- SSL/HTTPS ready configuration
+- File upload security validation
 
 ## User Preferences
-- Professional photo management application
-- Clean, modern UI design
-- Security-focused with proper authentication
-- Advanced image processing capabilities
-- Multi-user support with role-based access
+- No specific user preferences recorded yet
 
-## Current Status
-The application is fully operational and ready for use. All core features are working including:
-- User registration and authentication
-- Photo upload and management
-- Camera functionality
-- Image processing features
-- Admin controls
-- Database operations
-
-## Mobile App
-The project includes a React Native mobile application in `photovault-ios/` directory, but the main focus is the web application for the Replit environment.
+## Recent Changes
+- **2025-09-28**: Successfully imported from GitHub and configured for Replit environment
+- Set up PostgreSQL database with complete schema
+- Configured workflows for development server on port 5000
+- Tested application functionality - all features working properly
+- Configured deployment settings for production readiness
