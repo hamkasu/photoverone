@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}Create Montage - {{ vault.name }} - PhotoVault{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3>
+                    <i class="bi bi-grid-3x3"></i> Create Montage for {{ vault.name }}
+                </h3>
+                <a href="{{ url_for('family.view_vault', vault_id=vault.id) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Vault
+                </a>
+            </div>
+
+            <!-- Montage Settings -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-sliders"></i> Montage Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form id="montageForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">Title (Optional)</label>
+                                    <input type="text" class="form-control" id="title" placeholder="Enter montage title">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            <label for="rows" class="form-label">Rows</label>
+                                            <select class="form-select" id="rows">
+                                                <option value="1">1</option>
+                                                <option value="2" selected>2</option>
+                                                <option value="3">3</option>
+                                                <option value="4">4</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            <label for="cols" class="form-label">Columns</label>
+                                            <select class="form-select" id="cols">
+                                                <option value="1">1</option>
+                                                <option value="2" selected>2</option>
+                                                <option value="3">3</option>
+                                                <option value="4">4</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="spacing" class="form-label">Spacing (px)</label>
+                                    <input type="number" class="form-control" id="spacing" value="10" min="0" max="50">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="width" class="form-label">Width (px)</label>
+                                    <input type="number" class="form-control" id="width" value="1200" min="400" max="2400">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="height" class="form-label">Height (px)</label>
+                                    <input type="number" class="form-control" id="height" value="800" min="300" max="1600">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Photo Selection -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-images"></i> Select Photos for Montage</h5>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAll()">Select All</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectNone()">Select None</button>
+                        <span class="badge bg-info ms-2" id="selectedCount">0 selected</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if vault_photos %}
+                    <div class="row" id="photoGrid">
+                        {% for vault_photo in vault_photos %}
+                        <div class="col-md-4 col-lg-3 mb-3">
+                            <div class="card photo-card" data-photo-id="{{ vault_photo.id }}">
+                                <div class="position-relative">
+                                    <img src="{{ url_for('gallery.uploaded_file', user_id=vault_photo.photo.user_id, filename=vault_photo.photo.filename) }}" 
+                                         class="card-img-top" alt="Vault photo" style="height: 200px; object-fit: cover;"
+                                         onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/placeholder.png') }}'; this.style.cursor='default';">
+                                    <div class="position-absolute top-0 end-0 p-2">
+                                        <input type="checkbox" class="form-check-input photo-checkbox" 
+                                               value="{{ vault_photo.id }}" 
+                                               style="transform: scale(1.2);">
+                                    </div>
+                                    <div class="position-absolute bottom-0 start-0 end-0 bg-dark bg-opacity-75 text-white p-2 d-none photo-overlay">
+                                        <i class="bi bi-check-circle-fill text-success"></i> Selected
+                                    </div>
+                                </div>
+                                <div class="card-body p-2">
+                                    <p class="card-text small">{{ vault_photo.caption or "No caption" }}</p>
+                                    <small class="text-muted">Shared by {{ vault_photo.sharer.username }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-images text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">No photos in this vault yet. Add some photos first to create a montage.</p>
+                        <a href="{{ url_for('family.add_photos', vault_id=vault.id) }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Add Photos
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Create Button -->
+            {% if vault_photos %}
+            <div class="text-center mb-4">
+                <button type="button" class="btn btn-success btn-lg" id="createMontageBtn" onclick="createMontage()" disabled>
+                    <i class="bi bi-grid-3x3"></i> Create Montage
+                </button>
+                <div class="mt-2">
+                    <small class="text-muted">Select at least 2 photos to create a montage</small>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Progress -->
+            <div id="progressContainer" class="d-none">
+                <div class="card">
+                    <div class="card-body">
+                        <h6>Creating your montage...</h6>
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.photo-card {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.photo-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.photo-card.selected {
+    border: 3px solid #198754;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(25,135,84,0.3);
+}
+
+.photo-checkbox {
+    z-index: 10;
+}
+</style>
+
+<script>
+let selectedPhotos = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click handlers to photo cards
+    document.querySelectorAll('.photo-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            if (e.target.type !== 'checkbox') {
+                const checkbox = this.querySelector('.photo-checkbox');
+                checkbox.checked = !checkbox.checked;
+                updateSelection();
+            }
+        });
+    });
+
+    // Add change handlers to checkboxes
+    document.querySelectorAll('.photo-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelection);
+    });
+});
+
+function updateSelection() {
+    selectedPhotos = [];
+    document.querySelectorAll('.photo-checkbox:checked').forEach(checkbox => {
+        selectedPhotos.push(parseInt(checkbox.value));
+        const card = checkbox.closest('.photo-card');
+        card.classList.add('selected');
+        card.querySelector('.photo-overlay').classList.remove('d-none');
+    });
+
+    document.querySelectorAll('.photo-checkbox:not(:checked)').forEach(checkbox => {
+        const card = checkbox.closest('.photo-card');
+        card.classList.remove('selected');
+        card.querySelector('.photo-overlay').classList.add('d-none');
+    });
+
+    document.getElementById('selectedCount').textContent = `${selectedPhotos.length} selected`;
+    document.getElementById('createMontageBtn').disabled = selectedPhotos.length < 2;
+}
+
+function selectAll() {
+    document.querySelectorAll('.photo-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    updateSelection();
+}
+
+function selectNone() {
+    document.querySelectorAll('.photo-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    updateSelection();
+}
+
+function createMontage() {
+    if (selectedPhotos.length < 2) {
+        alert('Please select at least 2 photos for the montage.');
+        return;
+    }
+
+    const settings = {
+        photo_ids: selectedPhotos,
+        title: document.getElementById('title').value,
+        rows: parseInt(document.getElementById('rows').value),
+        cols: parseInt(document.getElementById('cols').value),
+        spacing: parseInt(document.getElementById('spacing').value),
+        width: parseInt(document.getElementById('width').value),
+        height: parseInt(document.getElementById('height').value)
+    };
+
+    // Show progress
+    document.getElementById('progressContainer').classList.remove('d-none');
+    document.getElementById('createMontageBtn').disabled = true;
+
+    // Create montage
+    fetch(`{{ url_for('family.create_montage_process', vault_id=vault.id) }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings)
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('progressContainer').classList.add('d-none');
+        
+        if (data.success) {
+            alert('Montage created successfully! It has been added to your vault.');
+            window.location.href = `{{ url_for('family.view_vault', vault_id=vault.id) }}`;
+        } else {
+            alert('Error creating montage: ' + (data.error || 'Unknown error'));
+            document.getElementById('createMontageBtn').disabled = false;
+        }
+    })
+    .catch(error => {
+        document.getElementById('progressContainer').classList.add('d-none');
+        document.getElementById('createMontageBtn').disabled = false;
+        alert('Error creating montage: ' + error.message);
+    });
+}
+</script>
+{% endblock %}
