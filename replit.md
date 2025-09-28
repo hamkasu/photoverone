@@ -37,3 +37,20 @@ Key entities include Users, Photos, Albums, People, Family Vaults, Stories, and 
 - **Object Storage**: Replit Object Storage
 - **Image Processing Libraries**: OpenCV, Pillow, scikit-image
 - **Mobile Development Platform**: Expo
+
+## Recent Changes (September 28, 2025)
+- Successfully imported GitHub project into Replit environment
+- Configured Flask application for Replit deployment with proper host settings (0.0.0.0:5000)
+- Set up PostgreSQL database using Replit's built-in Neon database
+- Installed all Python dependencies via pip
+- Created database tables and verified connectivity
+- Configured development workflow with proper environment variables
+- Set up deployment configuration for Replit Autoscale using Gunicorn
+- Verified application functionality with working homepage, authentication, and static assets
+
+## Replit Configuration
+- **Development Server**: Flask dev server on port 5000, binding to 0.0.0.0
+- **Production Deployment**: Gunicorn WSGI server configured for Replit Autoscale
+- **Database**: Connected to Replit PostgreSQL with proper SSL configuration
+- **Environment Variables**: SECRET_KEY, DATABASE_URL, and other database credentials configured
+- **Workflow**: PhotoVault Frontend workflow configured and running successfully
