@@ -458,39 +458,6 @@
             }
         }
 
-        /* Force Landscape Mode */
-        @media (orientation: portrait) {
-            .landscape-warning {
-                display: flex !important;
-            }
-        }
-
-        .landscape-warning {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.95);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 500;
-            flex-direction: column;
-            text-align: center;
-            padding: 40px;
-        }
-
-        .rotate-icon {
-            font-size: 60px;
-            animation: rotatePhone 2s ease-in-out infinite;
-            margin-bottom: 20px;
-        }
-
-        @keyframes rotatePhone {
-            0%, 100% { transform: rotate(0deg); }
-            50% { transform: rotate(90deg); }
-        }
 
         /* Landscape Mode Optimization */
         @media (orientation: landscape) {
@@ -988,12 +955,6 @@
         <!-- Flash Effect -->
         <div class="flash-effect" id="flashEffect"></div>
 
-        <!-- Landscape Warning -->
-        <div class="landscape-warning" id="landscapeWarning">
-            <div class="rotate-icon">📱</div>
-            <h3>Please Rotate Your Device</h3>
-            <p>For the best camera experience, please rotate your device to landscape mode.</p>
-        </div>
 
         <!-- Permission Screen -->
         <div class="permission-screen hidden" id="permissionScreen">

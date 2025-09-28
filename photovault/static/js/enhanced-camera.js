@@ -14,7 +14,6 @@ class PhotoVaultEnhancedCamera {
         this.currentStream = null;
         this.isFullscreen = false;
         this.isCapturing = false;
-        this.orientationLocked = false;
         
         // Photo capture mode management  
         this.captureMode = 'single'; // 'single' | 'quad'
@@ -297,15 +296,6 @@ class PhotoVaultEnhancedCamera {
             }
         });
         
-        // Screen orientation change
-        if (screen.orientation) {
-            screen.orientation.addEventListener('change', () => {
-                if (this.isFullscreen) {
-                    console.log('📱 Orientation changed:', screen.orientation.type);
-                    this.handleOrientationChange();
-                }
-            });
-        }
         
         // Handle visibility change (tab switching)
         document.addEventListener('visibilitychange', () => {
@@ -393,8 +383,6 @@ class PhotoVaultEnhancedCamera {
             // Restore page scrolling
             document.body.style.overflow = '';
             
-            // Unlock orientation
-            await this.unlockOrientation();
             
             console.log('✅ Full screen camera mode deactivated');
             
@@ -403,35 +391,6 @@ class PhotoVaultEnhancedCamera {
         }
     }
 
-    async lockOrientation() {
-        if (!screen.orientation?.lock) {
-            console.log('⚠️ Screen orientation lock not supported');
-            return;
-        }
-        
-        try {
-            await screen.orientation.lock('landscape');
-            this.orientationLocked = true;
-            console.log('🔒 Locked to landscape orientation');
-        } catch (error) {
-            console.log('⚠️ Could not lock orientation:', error.message);
-            // Not critical, continue without orientation lock
-        }
-    }
-
-    async unlockOrientation() {
-        if (!screen.orientation?.unlock || !this.orientationLocked) {
-            return;
-        }
-        
-        try {
-            screen.orientation.unlock();
-            this.orientationLocked = false;
-            console.log('🔓 Unlocked screen orientation');
-        } catch (error) {
-            console.log('⚠️ Could not unlock orientation:', error.message);
-        }
-    }
 
     async startCamera(deviceId) {
         try {
@@ -804,10 +763,6 @@ class PhotoVaultEnhancedCamera {
     }
 
     // Event handlers for lifecycle events
-    handleOrientationChange() {
-        console.log('📱 Handling orientation change...');
-        // Could add specific orientation handling logic here
-    }
 
     handleWindowResize() {
         console.log('📱 Handling window resize...');

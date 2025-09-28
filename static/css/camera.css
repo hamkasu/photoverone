@@ -240,56 +240,6 @@ CALMIC SDN BHD - "Committed to Excellence"
     transform: none;
 }
 
-/* Landscape Orientation Prompt */
-.landscape-prompt {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.95);
-    color: white;
-    padding: 30px;
-    border-radius: 15px;
-    text-align: center;
-    z-index: 10002;
-    backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    max-width: 90vw;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 0.9; }
-    50% { opacity: 1; }
-}
-
-.landscape-prompt i {
-    color: #00d4ff;
-    animation: rotate 2s linear infinite;
-}
-
-@keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(90deg); }
-}
-
-.landscape-prompt h5 {
-    margin: 15px 0 10px 0;
-    font-weight: 600;
-}
-
-.landscape-prompt p {
-    margin: 0;
-    opacity: 0.9;
-    line-height: 1.4;
-}
-
-/* Hide landscape prompt in landscape mode */
-@media screen and (orientation: landscape) {
-    .landscape-prompt {
-        display: none !important;
-    }
-}
 
 /* Mobile-specific styles */
 @media screen and (max-width: 768px) {
