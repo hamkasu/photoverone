@@ -198,8 +198,51 @@ def file_diagnostics():
 @login_required
 def uploaded_file(user_id, filename):
     """Secure route for serving uploaded files with authentication checks"""
-    # Security check: Users can only access their own files unless they're admin
-    if current_user.id != user_id and not current_user.is_admin:
+    # Security check: Users can access their own files, admin can access all files,
+    # or if the photo is shared in a family vault where the user is a member
+    access_allowed = (
+        current_user.id == user_id or 
+        current_user.is_admin
+    )
+    
+    # If not the owner or admin, check if photo is shared in a family vault where user is a member
+    if not access_allowed:
+        try:
+            from photovault.models import Photo, VaultPhoto, FamilyMember
+            
+            # Find the photo being requested
+            original_filename = filename
+            if filename.endswith('_thumb.jpg') or filename.endswith('_thumb.png') or filename.endswith('_thumb.jpeg'):
+                base_name = filename.rsplit('_thumb.', 1)[0]
+                for ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']:
+                    potential_original = base_name + ext
+                    test_photo = Photo.query.filter_by(user_id=user_id).filter(
+                        (Photo.filename == potential_original) | (Photo.edited_filename == potential_original)
+                    ).first()
+                    if test_photo:
+                        original_filename = potential_original
+                        break
+            
+            # Find the photo record
+            photo = Photo.query.filter_by(user_id=user_id).filter(
+                (Photo.filename == original_filename) | (Photo.edited_filename == original_filename)
+            ).first()
+            
+            if photo:
+                # Check if this photo is shared in any family vault where current user is a member
+                shared_in_vault = db.session.query(VaultPhoto).join(FamilyMember, VaultPhoto.vault_id == FamilyMember.vault_id).filter(
+                    VaultPhoto.photo_id == photo.id,
+                    FamilyMember.user_id == current_user.id,
+                    FamilyMember.status == 'active'
+                ).first()
+                
+                if shared_in_vault:
+                    access_allowed = True
+        except Exception as e:
+            # If there's any error in the vault check, deny access for security
+            pass
+    
+    if not access_allowed:
         abort(403)
     
     # Verify the file exists and belongs to the user
