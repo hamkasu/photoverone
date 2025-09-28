@@ -9,7 +9,8 @@ from PIL import Image, ImageDraw, ImageFont
 from flask import current_app
 from datetime import datetime
 
-from photovault.utils.enhanced_file_handler import save_uploaded_file_enhanced, get_image_dimensions
+from photovault.utils.enhanced_file_handler import save_uploaded_file_enhanced
+from photovault.utils.file_handler import get_image_dimensions
 from photovault.services.app_storage_service import app_storage
 
 logger = logging.getLogger(__name__)

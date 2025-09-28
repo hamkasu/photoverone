@@ -16,7 +16,7 @@ from photovault.forms import (
     get_invitation_expiry, validate_vault_code, validate_photo_caption
 )
 from photovault.services.montage_service import create_montage
-from photovault.utils.enhanced_file_handler import delete_file_safely
+from photovault.utils.enhanced_file_handler import delete_file_enhanced
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -787,11 +787,11 @@ def delete_original_photo(vault_id, vault_photo_id):
             }), 409
         
         # Delete the file
-        file_deleted = delete_file_safely(photo.file_path)
+        file_deleted = delete_file_enhanced(photo.file_path)
         if photo.thumbnail_path:
-            delete_file_safely(photo.thumbnail_path)
+            delete_file_enhanced(photo.thumbnail_path)
         if photo.edited_path:
-            delete_file_safely(photo.edited_path)
+            delete_file_enhanced(photo.edited_path)
         
         photo_name = photo.original_name
         
