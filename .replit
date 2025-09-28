@@ -13,16 +13,16 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 34271
-externalPort = 9000
-
-[[ports]]
 localPort = 41187
 externalPort = 8081
 
 [[ports]]
 localPort = 41769
 externalPort = 8080
+
+[[ports]]
+localPort = 41781
+externalPort = 9000
 
 [[ports]]
 localPort = 42149
@@ -88,13 +88,13 @@ args = "PhotoVault Frontend"
 name = "PhotoVault Frontend"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "export FLASK_CONFIG=development && export FLASK_ENV=development && export FLASK_DEBUG=false && python main.py"
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "export SECRET_KEY=\"replit-photovault-dev-key-$(date +%s)\" && export FLASK_CONFIG=development && export FLASK_ENV=development && export FLASK_DEBUG=false && python main.py"
+waitForPort = 5000
 
 [deployment]
 deploymentTarget = "autoscale"
