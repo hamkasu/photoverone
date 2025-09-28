@@ -13,10 +13,6 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 38557
-externalPort = 8080
-
-[[ports]]
 localPort = 42417
 externalPort = 6800
 
@@ -76,13 +72,13 @@ args = "PhotoVault Frontend"
 name = "PhotoVault Frontend"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "SECRET_KEY=_lo9YLr8nzfDuJwg_dFYTUhzkmrUPxGrheM-Wk6JxUc FLASK_ENV=development FLASK_CONFIG=development PHOTOVAULT_SUPERUSER_USERNAME=admin PHOTOVAULT_SUPERUSER_EMAIL=admin@photovault.com PHOTOVAULT_SUPERUSER_PASSWORD=061167@aB1 /home/runner/workspace/.pythonlibs/bin/python3 main.py"
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 main.py"
+waitForPort = 5000
 
 [deployment]
 deploymentTarget = "autoscale"
