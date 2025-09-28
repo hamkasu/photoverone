@@ -30,14 +30,14 @@ CALMIC SDN BHD - "Committed to Excellence"
                     <p class="text-muted">Here's your PhotoVault overview</p>
                 </div>
                 <div class="btn-group" role="group">
-                    <a href="/upload" class="btn btn-primary">
-                        <i class="bi bi-cloud-upload"></i> Upload Files
+                    <a href="/upload" class="btn btn-primary" title="Upload Files" data-bs-toggle="tooltip">
+                        <i class="bi bi-cloud-upload"></i><span class="btn-text"> Upload Files</span>
                     </a>
-                    <a href="/camera/" class="btn btn-success">
-                        <i class="bi bi-camera"></i> Camera
+                    <a href="/camera/" class="btn btn-success" title="Camera" data-bs-toggle="tooltip">
+                        <i class="bi bi-camera"></i><span class="btn-text"> Camera</span>
                     </a>
-                    <a href="{{ url_for('main.advanced_enhancement') }}" class="btn btn-info">
-                        <i class="bi bi-magic"></i> Enhance
+                    <a href="{{ url_for('main.advanced_enhancement') }}" class="btn btn-info" title="Enhance" data-bs-toggle="tooltip">
+                        <i class="bi bi-magic"></i><span class="btn-text"> Enhance</span>
                     </a>
                 </div>
             </div>
@@ -135,25 +135,25 @@ CALMIC SDN BHD - "Committed to Excellence"
                             <p class="mb-2">Transform your photos with professional-grade image enhancement:</p>
                             <div class="row text-center mb-3">
                                 <div class="col-6 col-lg-3 mb-2">
-                                    <div class="p-2">
+                                    <div class="p-2" title="CLAHE - Contrast Enhancement" data-bs-toggle="tooltip">
                                         <i class="bi bi-eye text-primary" style="font-size: 1.5rem;"></i>
                                         <br><small><strong>CLAHE</strong><br>Contrast Enhancement</small>
                                     </div>
                                 </div>
                                 <div class="col-6 col-lg-3 mb-2">
-                                    <div class="p-2">
+                                    <div class="p-2" title="Bilateral - Noise Reduction" data-bs-toggle="tooltip">
                                         <i class="bi bi-funnel text-success" style="font-size: 1.5rem;"></i>
                                         <br><small><strong>Bilateral</strong><br>Noise Reduction</small>
                                     </div>
                                 </div>
                                 <div class="col-6 col-lg-3 mb-2">
-                                    <div class="p-2">
+                                    <div class="p-2" title="Auto-Levels - Histogram Stretch" data-bs-toggle="tooltip">
                                         <i class="bi bi-graph-up text-info" style="font-size: 1.5rem;"></i>
                                         <br><small><strong>Auto-Levels</strong><br>Histogram Stretch</small>
                                     </div>
                                 </div>
                                 <div class="col-6 col-lg-3 mb-2">
-                                    <div class="p-2">
+                                    <div class="p-2" title="Canvas - Manual Editing" data-bs-toggle="tooltip">
                                         <i class="bi bi-brush text-warning" style="font-size: 1.5rem;"></i>
                                         <br><small><strong>Canvas</strong><br>Manual Editing</small>
                                     </div>
@@ -161,8 +161,8 @@ CALMIC SDN BHD - "Committed to Excellence"
                             </div>
                         </div>
                         <div class="col-md-4 text-center">
-                            <a href="{{ url_for('main.advanced_enhancement') }}" class="btn btn-primary btn-lg mb-2">
-                                <i class="bi bi-magic"></i> Advanced Enhancement
+                            <a href="{{ url_for('main.advanced_enhancement') }}" class="btn btn-primary btn-lg mb-2" title="Advanced Enhancement - Restore old photos & enhance images" data-bs-toggle="tooltip">
+                                <i class="bi bi-magic"></i><span class="btn-text"> Advanced Enhancement</span>
                             </a>
                             <br><small class="text-muted">Restore old photos & enhance images</small>
                         </div>
@@ -208,19 +208,19 @@ CALMIC SDN BHD - "Committed to Excellence"
                             </div>
                             <div class="photo-actions-bottom mt-2 p-2 text-center">
                                 <a href="/gallery" 
-                                   class="btn btn-outline-primary btn-sm me-1" title="View photo">
+                                   class="btn btn-outline-primary btn-sm me-1" title="View photo" data-bs-toggle="tooltip">
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 <button onclick="openVoiceMemo({{ photo.id }})" 
-                                        class="btn btn-outline-info btn-sm me-1" title="Voice memo">
+                                        class="btn btn-outline-info btn-sm me-1" title="Voice memo" data-bs-toggle="tooltip">
                                     <i class="bi bi-mic"></i>
                                 </button>
                                 <a href="#" onclick="editPhoto({{ photo.id }})" 
-                                   class="btn btn-outline-secondary btn-sm me-1" title="Edit photo">
+                                   class="btn btn-outline-secondary btn-sm me-1" title="Edit photo" data-bs-toggle="tooltip">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <button onclick="deletePhoto({{ photo.id }})" 
-                                        class="btn btn-outline-danger btn-sm" title="Delete photo">
+                                        class="btn btn-outline-danger btn-sm" title="Delete photo" data-bs-toggle="tooltip">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
@@ -257,28 +257,28 @@ CALMIC SDN BHD - "Committed to Excellence"
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3 mb-2">
-                            <a href="/upload" class="btn btn-outline-primary w-100">
-                                <i class="bi bi-cloud-upload"></i> Upload Files
+                            <a href="/upload" class="btn btn-outline-primary w-100" title="Upload Files" data-bs-toggle="tooltip">
+                                <i class="bi bi-cloud-upload"></i><span class="btn-text"> Upload Files</span>
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="/camera/" class="btn btn-outline-success w-100">
-                                <i class="bi bi-camera"></i> Camera Capture
+                            <a href="/camera/" class="btn btn-outline-success w-100" title="Camera Capture" data-bs-toggle="tooltip">
+                                <i class="bi bi-camera"></i><span class="btn-text"> Camera Capture</span>
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="/gallery" class="btn btn-outline-secondary w-100">
-                                <i class="bi bi-file-image"></i> View Originals
+                            <a href="/gallery" class="btn btn-outline-secondary w-100" title="View Originals" data-bs-toggle="tooltip">
+                                <i class="bi bi-file-image"></i><span class="btn-text"> View Originals</span>
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="{{ url_for('family.index') }}" class="btn btn-outline-secondary w-100">
-                                <i class="bi bi-house-heart"></i> Family Vault
+                            <a href="{{ url_for('family.index') }}" class="btn btn-outline-secondary w-100" title="Family Vault" data-bs-toggle="tooltip">
+                                <i class="bi bi-house-heart"></i><span class="btn-text"> Family Vault</span>
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="/profile" class="btn btn-outline-info w-100">
-                                <i class="bi bi-person-circle"></i> Profile
+                            <a href="/profile" class="btn btn-outline-info w-100" title="Profile" data-bs-toggle="tooltip">
+                                <i class="bi bi-person-circle"></i><span class="btn-text"> Profile</span>
                             </a>
                         </div>
                         {% if current_user.is_admin %}
@@ -472,5 +472,15 @@ function openVoiceMemo(photoId) {
         document.getElementById('voiceMemoContainer').innerHTML = '';
     }, { once: true });
 }
+
+// Initialize Bootstrap tooltips for mobile accessibility
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            trigger: 'hover focus'
+        });
+    });
+});
 </script>
 {% endblock %}
