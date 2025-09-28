@@ -611,6 +611,45 @@ footer .text-muted {
         font-size: 0.8rem !important;
         word-break: break-all;
     }
+    
+    /* Mobile button toolbar optimization */
+    .btn-toolbar {
+        flex-wrap: nowrap !important;
+        gap: 0.25rem !important;
+        justify-content: space-between !important;
+    }
+    
+    .btn-toolbar .btn-group {
+        margin-right: 0 !important;
+        margin-bottom: 0 !important;
+        flex-shrink: 0;
+    }
+    
+    .btn-toolbar .btn-group-sm .btn {
+        padding: 0.25rem 0.4rem !important;
+        font-size: 0.7rem !important;
+        border-radius: 0.2rem !important;
+    }
+    
+    .btn-toolbar .btn-group-sm .btn i {
+        font-size: 0.8rem !important;
+    }
+    
+    /* Hide button text on mobile, show only icons */
+    .btn-toolbar .btn-group-sm .btn .me-2,
+    .btn-toolbar .btn-group-sm .btn .ms-2 {
+        margin: 0 !important;
+    }
+    
+    /* Compact dropdown styling for mobile */
+    .btn-toolbar .dropdown-toggle::after {
+        font-size: 0.6rem !important;
+    }
+    
+    .btn-toolbar .dropdown-menu {
+        font-size: 0.75rem !important;
+        min-width: 120px !important;
+    }
 }
 
 /* Extra small devices (phones, 576px and down) - Minimal Design */
@@ -843,6 +882,51 @@ footer .text-muted {
     
     .stats-label {
         font-size: 0.7rem;
+    }
+    
+    /* Extra compact button toolbar for very small screens */
+    .btn-toolbar {
+        gap: 0.15rem !important;
+        overflow-x: auto !important;
+        padding-bottom: 0.25rem;
+    }
+    
+    .btn-toolbar .btn-group-sm .btn {
+        padding: 0.2rem 0.3rem !important;
+        font-size: 0.65rem !important;
+        min-width: 28px !important;
+        height: 28px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    .btn-toolbar .btn-group-sm .btn i {
+        font-size: 0.75rem !important;
+        margin: 0 !important;
+    }
+    
+    /* Ensure icons are always visible on very small screens */
+    .btn-toolbar .btn-group {
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
+    }
+    
+    /* Hide dropdown arrows on very small screens for cleaner look */
+    .btn-toolbar .dropdown-toggle::after {
+        display: none !important;
+    }
+    
+    /* Compact dropdown items for mobile */
+    .btn-toolbar .dropdown-menu .dropdown-item {
+        padding: 0.4rem 0.6rem !important;
+        font-size: 0.7rem !important;
+    }
+    
+    .btn-toolbar .dropdown-menu .dropdown-item i {
+        width: 14px !important;
+        text-align: center !important;
+        margin-right: 0.4rem !important;
     }
 }
 
