@@ -110,7 +110,27 @@ class SendGridEmailService:
                 return False
                 
         except Exception as e:
-            logger.error(f"Exception while sending email to {to_email}: {str(e)}")
+            error_msg = str(e)
+            
+            # Enhanced error reporting for common SendGrid issues
+            if "403" in error_msg or "Forbidden" in error_msg:
+                logger.error(f"SendGrid 403 Forbidden Error - Common fixes needed:")
+                logger.error(f"1. Check API key permissions in SendGrid dashboard")
+                logger.error(f"2. Verify sender email '{sender_email}' in SendGrid")
+                logger.error(f"3. Ensure API key has 'Mail Send' permissions")
+                logger.error(f"Original error: {error_msg}")
+                
+                # Additional Railway-specific diagnostics
+                if os.environ.get('RAILWAY_ENVIRONMENT'):
+                    logger.error("Railway deployment detected - verify environment variables:")
+                    logger.error(f"- SENDGRID_API_KEY configured: {bool(self.api_key)}")
+                    logger.error(f"- SENDGRID_FROM_EMAIL: {self.from_email}")
+                    
+            elif "401" in error_msg or "Unauthorized" in error_msg:
+                logger.error(f"SendGrid 401 Unauthorized - API key invalid or missing")
+                logger.error(f"Check SENDGRID_API_KEY environment variable")
+                
+            logger.error(f"Exception while sending email to {to_email}: {error_msg}")
             return False
 
 
