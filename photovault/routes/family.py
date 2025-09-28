@@ -1,8 +1,9 @@
 # photovault/routes/family.py
 
 import logging
+import os
 from datetime import datetime
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, current_app
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, current_app, abort
 from flask_login import login_required, current_user
 from photovault.models import (
     db, User, FamilyVault, FamilyMember, VaultInvitation, Story, 
@@ -14,6 +15,8 @@ from photovault.forms import (
     validate_story_type, generate_vault_code, generate_invitation_token,
     get_invitation_expiry, validate_vault_code, validate_photo_caption
 )
+from photovault.services.montage_service import create_montage
+from photovault.utils.enhanced_file_handler import delete_file_safely
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -605,3 +608,206 @@ def update_member_role(vault_id, member_id):
         db.session.rollback()
         logger.error(f"Failed to update member role: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to update role'}), 500
+
+# Montage Routes
+@family_bp.route('/vault/<int:vault_id>/montage', methods=['GET'])
+@login_required
+def create_montage_ui(vault_id):
+    """Show montage creation interface"""
+    vault = FamilyVault.query.get_or_404(vault_id)
+    
+    # Check if user is a member
+    if not vault.has_member(current_user.id) and vault.created_by != current_user.id:
+        flash('You do not have access to this vault.', 'error')
+        return redirect(url_for('family.index'))
+    
+    # Get vault photos
+    vault_photos = vault.shared_photos.all()
+    
+    return render_template('family/create_montage.html',
+                         vault=vault,
+                         vault_photos=vault_photos)
+
+@family_bp.route('/vault/<int:vault_id>/montage', methods=['POST'])
+@login_required
+def create_montage_process(vault_id):
+    """Process montage creation"""
+    vault = FamilyVault.query.get_or_404(vault_id)
+    
+    # Check permissions
+    user_role = vault.get_member_role(current_user.id)
+    if user_role not in ['admin', 'contributor'] and vault.created_by != current_user.id:
+        return jsonify({'success': False, 'error': 'Permission denied'}), 403
+    
+    try:
+        # Get selected photo IDs
+        selected_ids = request.json.get('photo_ids', [])
+        if len(selected_ids) < 2:
+            return jsonify({'success': False, 'error': 'At least 2 photos are required'}), 400
+        
+        # Get montage settings
+        settings = {
+            'rows': int(request.json.get('rows', 2)),
+            'cols': int(request.json.get('cols', 2)),
+            'spacing': int(request.json.get('spacing', 10)),
+            'title': request.json.get('title', ''),
+            'target_width': int(request.json.get('width', 1200)),
+            'target_height': int(request.json.get('height', 800))
+        }
+        
+        # Get vault photos and build file paths
+        vault_photos = VaultPhoto.query.filter(
+            VaultPhoto.vault_id == vault_id,
+            VaultPhoto.id.in_(selected_ids)
+        ).all()
+        
+        if len(vault_photos) < 2:
+            return jsonify({'success': False, 'error': 'Selected photos not found'}), 400
+        
+        # Build photo paths
+        photo_paths = []
+        for vault_photo in vault_photos:
+            photo_paths.append(vault_photo.photo.file_path)
+        
+        # Create montage
+        success, file_path, applied_settings = create_montage(
+            photo_paths, settings, current_user.id
+        )
+        
+        if not success:
+            return jsonify({'success': False, 'error': file_path}), 500
+        
+        # Create new Photo record for the montage
+        montage_photo = Photo(
+            user_id=current_user.id,
+            filename=os.path.basename(file_path),
+            original_name=f"Montage_{len(vault_photos)}_photos.jpg",
+            file_path=file_path,
+            processing_notes=f"Montage created from {len(vault_photos)} vault photos",
+            enhancement_settings=str(applied_settings),
+            auto_enhanced=True,
+            upload_source='montage'
+        )
+        db.session.add(montage_photo)
+        db.session.flush()  # Get the photo ID
+        
+        # Share montage in vault
+        vault_photo = VaultPhoto(
+            vault_id=vault_id,
+            photo_id=montage_photo.id,
+            shared_by=current_user.id,
+            caption=f"Montage of {len(vault_photos)} photos" + (f": {settings['title']}" if settings['title'] else "")
+        )
+        db.session.add(vault_photo)
+        db.session.commit()
+        
+        logger.info(f"Montage created successfully for vault {vault_id} by user {current_user.id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Montage created successfully!',
+            'photo_id': montage_photo.id,
+            'vault_photo_id': vault_photo.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to create montage: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to create montage'}), 500
+
+# Photo Management Routes
+@family_bp.route('/vault/<int:vault_id>/photos/<int:vault_photo_id>/unshare', methods=['POST'])
+@login_required
+def unshare_photo(vault_id, vault_photo_id):
+    """Remove photo from vault (unshare)"""
+    vault = FamilyVault.query.get_or_404(vault_id)
+    vault_photo = VaultPhoto.query.get_or_404(vault_photo_id)
+    
+    # Verify vault_photo belongs to this vault
+    if vault_photo.vault_id != vault_id:
+        abort(404)
+    
+    # Check permissions: sharer, vault admin, or vault creator
+    user_role = vault.get_member_role(current_user.id)
+    can_unshare = (
+        vault_photo.shared_by == current_user.id or
+        user_role == 'admin' or
+        vault.created_by == current_user.id
+    )
+    
+    if not can_unshare:
+        return jsonify({'success': False, 'error': 'Permission denied'}), 403
+    
+    try:
+        photo_name = vault_photo.photo.original_name
+        db.session.delete(vault_photo)
+        db.session.commit()
+        
+        logger.info(f"Photo {photo_name} unshared from vault {vault_id} by user {current_user.id}")
+        return jsonify({
+            'success': True,
+            'message': f'Photo "{photo_name}" removed from vault'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to unshare photo: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to remove photo from vault'}), 500
+
+@family_bp.route('/vault/<int:vault_id>/photos/<int:vault_photo_id>/delete_original', methods=['POST'])
+@login_required
+def delete_original_photo(vault_id, vault_photo_id):
+    """Delete original photo file and database record"""
+    vault = FamilyVault.query.get_or_404(vault_id)
+    vault_photo = VaultPhoto.query.get_or_404(vault_photo_id)
+    
+    # Verify vault_photo belongs to this vault
+    if vault_photo.vault_id != vault_id:
+        abort(404)
+    
+    # Check permissions: only photo owner can delete original
+    if vault_photo.photo.user_id != current_user.id:
+        return jsonify({'success': False, 'error': 'Only the photo owner can delete the original'}), 403
+    
+    try:
+        photo = vault_photo.photo
+        
+        # Check if photo is shared in multiple vaults or albums
+        vault_shares_count = len(photo.vault_shares)
+        has_album = photo.album_id is not None
+        
+        if vault_shares_count > 1 or has_album:
+            return jsonify({
+                'success': False, 
+                'error': 'Photo is shared in multiple locations. Use "Remove from Vault" instead.',
+                'conflicts': {
+                    'vault_shares': vault_shares_count,
+                    'in_album': has_album
+                }
+            }), 409
+        
+        # Delete the file
+        file_deleted = delete_file_safely(photo.file_path)
+        if photo.thumbnail_path:
+            delete_file_safely(photo.thumbnail_path)
+        if photo.edited_path:
+            delete_file_safely(photo.edited_path)
+        
+        photo_name = photo.original_name
+        
+        # Delete from database (cascading will remove VaultPhoto)
+        db.session.delete(photo)
+        db.session.commit()
+        
+        logger.info(f"Photo {photo_name} deleted by user {current_user.id}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Photo "{photo_name}" deleted successfully',
+            'file_deleted': file_deleted
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to delete photo: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to delete photo'}), 500
