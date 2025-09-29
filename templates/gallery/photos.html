@@ -164,77 +164,61 @@ CALMIC SDN BHD - "Committed to Excellence"
                         {% endif %}
                     </div>
                     
-                    <!-- Enhanced Toolbar with Markup, View, and Delete Options -->
-                    <div class="btn-toolbar" role="toolbar">
-                        <!-- Primary Actions Group -->
-                        <div class="btn-group btn-group-sm me-2" role="group">
-                            <a href="{{ url_for('gallery.view_photo', photo_id=photo.id) }}" 
-                               class="btn btn-outline-primary" 
-                               title="View photo details">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                            <a href="{{ url_for('main.edit_photo', photo_id=photo.id) }}" 
-                               class="btn btn-outline-warning" 
-                               title="Edit/Markup photo">
-                                <i class="bi bi-palette"></i>
-                            </a>
-                            {% if photo.edited_filename %}
-                            <a href="{{ url_for('gallery.compare_single_photo', photo_id=photo.id) }}" 
-                               class="btn btn-outline-info" 
-                               title="Compare versions">
-                                <i class="bi bi-compare"></i>
-                            </a>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- View Actions Group -->
-                        <div class="btn-group btn-group-sm me-2" role="group">
-                            <button class="btn btn-outline-secondary" 
-                                    onclick="viewFullscreen({{ photo.id }})" 
-                                    title="View fullscreen">
-                                <i class="bi bi-arrows-fullscreen"></i>
+                    <!-- Compact Horizontal Photo Actions -->
+                    <div class="d-flex justify-content-center gap-1 flex-wrap" role="toolbar">
+                        <a href="{{ url_for('gallery.view_photo', photo_id=photo.id) }}" 
+                           class="btn btn-outline-secondary btn-sm px-2" 
+                           title="View photo details">
+                            <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
+                        </a>
+                        <a href="{{ url_for('main.edit_photo', photo_id=photo.id) }}" 
+                           class="btn btn-outline-warning btn-sm px-2" 
+                           title="Edit photo">
+                            <i class="bi bi-pencil" style="font-size: 0.8rem;"></i>
+                        </a>
+                        <button class="btn btn-outline-secondary btn-sm px-2" 
+                                onclick="viewFullscreen({{ photo.id }})" 
+                                title="View fullscreen">
+                            <i class="bi bi-arrows-fullscreen" style="font-size: 0.8rem;"></i>
+                        </button>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-success btn-sm px-2 dropdown-toggle" 
+                                    data-bs-toggle="dropdown" data-bs-auto-close="true" title="Download">
+                                <i class="bi bi-download" style="font-size: 0.8rem;"></i>
                             </button>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <button type="button" class="btn btn-outline-success dropdown-toggle" 
-                                        data-bs-toggle="dropdown" title="Download options">
-                                    <i class="bi bi-download"></i>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    {% if photo.edited_filename %}
-                                    <li><a class="dropdown-item" 
-                                           href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
-                                           download="{{ photo.original_name }}_edited">
-                                        <i class="bi bi-image"></i> Download Edited
-                                    </a></li>
-                                    <li><a class="dropdown-item" 
-                                           href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
-                                           download="{{ photo.original_name }}_original">
-                                        <i class="bi bi-camera"></i> Download Original
-                                    </a></li>
-                                    {% else %}
-                                    <li><a class="dropdown-item" 
-                                           href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
-                                           download="{{ photo.original_name }}">
-                                        <i class="bi bi-download"></i> Download Photo
-                                    </a></li>
-                                    {% endif %}
-                                </ul>
-                            </div>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                {% if photo.edited_filename %}
+                                <li><a class="dropdown-item" 
+                                       href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.edited_filename) }}" 
+                                       download="{{ photo.original_name }}_edited">
+                                    <i class="bi bi-image"></i> Download Edited
+                                </a></li>
+                                <li><a class="dropdown-item" 
+                                       href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                                       download="{{ photo.original_name }}_original">
+                                    <i class="bi bi-camera"></i> Download Original
+                                </a></li>
+                                {% else %}
+                                <li><a class="dropdown-item" 
+                                       href="{{ url_for('gallery.uploaded_file', user_id=photo.user_id, filename=photo.filename) }}" 
+                                       download="{{ photo.original_name }}">
+                                    <i class="bi bi-download"></i> Download Photo
+                                </a></li>
+                                {% endif %}
+                            </ul>
                         </div>
-                        
-                        <!-- Markup & Delete Actions Group -->
-                        <div class="btn-group btn-group-sm" role="group">
-                            <button class="btn btn-outline-info" 
-                                    onclick="quickMarkup({{ photo.id }})" 
-                                    title="Quick markup/annotation">
-                                <i class="bi bi-chat-square-text"></i>
-                            </button>
-                            <button class="btn btn-outline-danger" 
-                                    onclick="deletePhoto({{ photo.id }})" 
-                                    title="Delete photo with options">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
+                        <button class="btn btn-outline-danger btn-sm px-2" 
+                                onclick="deletePhoto({{ photo.id }})" 
+                                title="Delete photo">
+                            <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                        </button>
+                        {% if photo.edited_filename %}
+                        <a href="{{ url_for('gallery.compare_single_photo', photo_id=photo.id) }}" 
+                           class="btn btn-outline-info btn-sm px-2" 
+                           title="Compare versions">
+                            <i class="bi bi-compare" style="font-size: 0.8rem;"></i>
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
