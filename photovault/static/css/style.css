@@ -507,6 +507,57 @@ footer .text-muted {
     border: 1px solid var(--border-color);
 }
 
+/* Button toolbar optimization - FORCE HORIZONTAL LAYOUT FOR ALL SCREEN SIZES */
+.btn-toolbar {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    flex-direction: row !important;
+    gap: 0.15rem !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    padding-bottom: 0.25rem;
+    white-space: nowrap !important;
+}
+
+.btn-toolbar .btn-group {
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+    display: inline-flex !important;
+}
+
+.btn-toolbar .btn-group-sm .btn {
+    padding: 0.2rem 0.3rem !important;
+    font-size: 0.65rem !important;
+    border-radius: 0.2rem !important;
+    min-width: 26px !important;
+    height: 26px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+}
+
+.btn-toolbar .btn-group-sm .btn i {
+    font-size: 0.7rem !important;
+    margin: 0 !important;
+}
+
+/* Force all button groups to stay inline */
+.btn-toolbar > .btn-group:not(:last-child) {
+    margin-right: 0.15rem !important;
+}
+
+/* Hide dropdown arrows to save space */
+.btn-toolbar .dropdown-toggle::after {
+    display: none !important;
+}
+
+/* Compact dropdown menu */
+.btn-toolbar .dropdown-menu {
+    font-size: 0.7rem !important;
+    min-width: 100px !important;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     body {
@@ -612,56 +663,7 @@ footer .text-muted {
         word-break: break-all;
     }
     
-    /* Mobile button toolbar optimization - FORCE SINGLE LINE */
-    .btn-toolbar {
-        display: flex !important;
-        flex-wrap: nowrap !important;
-        flex-direction: row !important;
-        gap: 0.15rem !important;
-        justify-content: flex-start !important;
-        overflow-x: auto !important;
-        padding-bottom: 0.25rem;
-        white-space: nowrap !important;
-    }
-    
-    .btn-toolbar .btn-group {
-        margin: 0 !important;
-        flex-shrink: 0 !important;
-        display: inline-flex !important;
-    }
-    
-    .btn-toolbar .btn-group-sm .btn {
-        padding: 0.2rem 0.3rem !important;
-        font-size: 0.65rem !important;
-        border-radius: 0.2rem !important;
-        min-width: 26px !important;
-        height: 26px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        margin: 0 !important;
-    }
-    
-    .btn-toolbar .btn-group-sm .btn i {
-        font-size: 0.7rem !important;
-        margin: 0 !important;
-    }
-    
-    /* Force all button groups to stay inline */
-    .btn-toolbar > .btn-group:not(:last-child) {
-        margin-right: 0.15rem !important;
-    }
-    
-    /* Hide dropdown arrows to save space */
-    .btn-toolbar .dropdown-toggle::after {
-        display: none !important;
-    }
-    
-    /* Compact dropdown menu */
-    .btn-toolbar .dropdown-menu {
-        font-size: 0.7rem !important;
-        min-width: 100px !important;
-    }
+    /* Mobile-specific adjustments for button toolbar */
 }
 
 /* Extra small devices (phones, 576px and down) - Minimal Design */
