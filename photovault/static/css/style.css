@@ -1286,3 +1286,38 @@ footer .text-muted {
     margin-bottom: 0 !important;
 }
 
+/* CRITICAL: Force horizontal layout for photo action buttons on mobile devices */
+@media (max-width: 576px) {
+    .photo-item .photo-actions,
+    .photo-actions-bottom,
+    .photo-card .btn-toolbar,
+    .photo-grid .photo-item .btn-toolbar,
+    .card .photo-actions-bottom {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 8px !important;
+    }
+    
+    .photo-actions .btn,
+    .photo-actions-bottom .btn,
+    .photo-item .btn-toolbar .btn,
+    .card .photo-actions-bottom .btn {
+        flex: 1 1 auto !important;
+        min-width: 44px !important;
+        max-width: none !important;
+        width: auto !important;
+        white-space: nowrap !important;
+        font-size: 0.7rem !important;
+        padding: 0.3rem 0.4rem !important;
+    }
+    
+    /* Ensure voice memo controls stay vertical but photo actions stay horizontal */
+    .voice-memo .btn-toolbar,
+    .recording-controls {
+        flex-direction: column !important;
+    }
+}
+
