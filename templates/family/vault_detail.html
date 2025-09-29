@@ -43,6 +43,29 @@
     background: rgba(0, 0, 0, 0.9);
 }
 
+.photo-owner-badge {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.photo-owner-badge i {
+    margin-right: 0.25rem;
+}
+
+.photo-image-wrapper {
+    position: relative;
+}
+
 .montage-toolbar {
     position: sticky;
     top: 70px;
@@ -158,41 +181,50 @@
                                        onchange="togglePhotoSelection({{ vault_photo.id }})" 
                                        style="display: none;">
                                 
-                                <!-- Photo Actions Menu -->
-                                <div class="photo-actions dropdown">
-                                    <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                        <i class="bi bi-three-dots"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        {% if user_role == 'admin' or vault.created_by == current_user.id or vault_photo.shared_by == current_user.id %}
-                                        <li>
-                                            <a class="dropdown-item" href="#" onclick="unsharePhoto({{ vault_photo.id }}, '{{ vault_photo.photo.original_name }}')"
-                                               data-bs-toggle="tooltip" title="Remove from this vault">
-                                                <i class="bi bi-share text-warning"></i> Remove from Vault
-                                            </a>
-                                        </li>
-                                        {% endif %}
-                                        {% if vault_photo.photo.user_id == current_user.id %}
-                                        <li>
-                                            <a class="dropdown-item text-danger" href="#" onclick="deletePhoto({{ vault_photo.id }}, '{{ vault_photo.photo.original_name }}')"
-                                               data-bs-toggle="tooltip" title="Permanently delete this photo">
-                                                <i class="bi bi-trash text-danger"></i> Delete Photo
-                                            </a>
-                                        </li>
-                                        {% endif %}
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <span class="dropdown-item-text small text-muted">
-                                                <i class="bi bi-person"></i> {{ vault_photo.sharer.username }}<br>
-                                                <i class="bi bi-calendar"></i> {{ vault_photo.shared_at.strftime('%Y-%m-%d') }}
-                                            </span>
-                                        </li>
-                                    </ul>
+                                <!-- Photo Image Container -->
+                                <div class="photo-image-wrapper">
+                                    <!-- Owner Badge -->
+                                    <div class="photo-owner-badge">
+                                        <i class="bi bi-person-fill"></i>{{ vault_photo.sharer.username }}
+                                    </div>
+
+                                    <!-- Photo Actions Menu -->
+                                    <div class="photo-actions dropdown">
+                                        <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            {% if user_role == 'admin' or vault.created_by == current_user.id or vault_photo.shared_by == current_user.id %}
+                                            <li>
+                                                <a class="dropdown-item" href="#" onclick="unsharePhoto({{ vault_photo.id }}, '{{ vault_photo.photo.original_name }}')"
+                                                   data-bs-toggle="tooltip" title="Remove from this vault">
+                                                    <i class="bi bi-share text-warning"></i> Remove from Vault
+                                                </a>
+                                            </li>
+                                            {% endif %}
+                                            {% if vault_photo.photo.user_id == current_user.id %}
+                                            <li>
+                                                <a class="dropdown-item text-danger" href="#" onclick="deletePhoto({{ vault_photo.id }}, '{{ vault_photo.photo.original_name }}')"
+                                                   data-bs-toggle="tooltip" title="Permanently delete this photo">
+                                                    <i class="bi bi-trash text-danger"></i> Delete Photo
+                                                </a>
+                                            </li>
+                                            {% endif %}
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <span class="dropdown-item-text small text-muted">
+                                                    <i class="bi bi-person"></i> {{ vault_photo.sharer.username }}<br>
+                                                    <i class="bi bi-calendar"></i> {{ vault_photo.shared_at.strftime('%Y-%m-%d') }}
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <img src="{{ url_for('gallery.uploaded_file', user_id=vault_photo.photo.user_id, filename=vault_photo.photo.filename) }}" 
+                                         class="card-img-top" alt="Shared photo" style="height: 200px; object-fit: cover;"
+                                         onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/placeholder.png') }}'; this.style.cursor='default';">
                                 </div>
 
-                                <img src="{{ url_for('gallery.uploaded_file', user_id=vault_photo.photo.user_id, filename=vault_photo.photo.filename) }}" 
-                                     class="card-img-top" alt="Shared photo" style="height: 200px; object-fit: cover;"
-                                     onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/placeholder.png') }}'; this.style.cursor='default';">
                                 <div class="card-body p-2">
                                     <p class="card-text small">{{ vault_photo.caption or "No caption" }}</p>
                                     <small class="text-muted">Shared by {{ vault_photo.sharer.username }}</small>
