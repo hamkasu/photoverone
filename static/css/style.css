@@ -737,6 +737,23 @@ footer .text-muted {
         font-size: 0.85rem;
     }
     
+    /* Photo action buttons should stay horizontal on mobile */
+    .photo-actions-bottom .btn {
+        margin: 0.1rem 0.2rem !important;
+        width: auto !important;
+        font-size: 0.75rem !important;
+        padding: 0.3rem 0.6rem !important;
+        display: inline-block !important;
+    }
+    
+    .photo-actions-bottom {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
+        gap: 0.25rem !important;
+    }
+    
     /* Minimal card footers */
     .card-footer {
         padding: 0.5rem 0.75rem;
