@@ -1,82 +1,196 @@
 # PhotoVault - Professional Photo Management Platform
 
 ## Overview
-PhotoVault is a comprehensive photo management platform built with Flask, featuring advanced camera capabilities, auto-upload functionality, and secure storage. This is a professional photo management solution developed by Calmic Sdn Bhd.
+PhotoVault is a professional photo management web application built with Flask and PostgreSQL. It provides advanced features for photo organization, editing, face detection, family vaults for shared collections, and camera integration.
 
-## Current State
-- ✅ **Fully functional** Flask web application
-- ✅ **Database configured** with PostgreSQL (Neon-backed)
-- ✅ **Production ready** with Gunicorn deployment configuration
-- ✅ **Replit optimized** with proper host configuration for proxy
+**Copyright (c) 2025 Calmic Sdn Bhd. All rights reserved.**
 
 ## Project Architecture
 
-### Backend (Python Flask)
-- **Framework**: Flask 3.0.3 with standard extensions (Login, Migrate, SQLAlchemy, WTF)
-- **Database**: PostgreSQL with Alembic migrations
-- **Image Processing**: OpenCV, Pillow, scikit-image for advanced photo features
-- **Storage**: Replit Object Storage integration
-- **Security**: CSRF protection, secure sessions, password hashing
+### Technology Stack
+- **Backend Framework**: Flask 3.0.3 with Python 3.11
+- **Database**: PostgreSQL (Neon-backed via Replit)
+- **ORM**: SQLAlchemy 2.0.25 with Flask-SQLAlchemy
+- **Migrations**: Alembic via Flask-Migrate
+- **Authentication**: Flask-Login with session management
+- **Image Processing**: Pillow, OpenCV (headless), scikit-image
+- **Forms & CSRF**: Flask-WTF, WTForms
+- **Production Server**: Gunicorn 21.2.0
+- **Storage**: Replit Object Storage
+- **Email**: SendGrid integration
+- **Mobile App**: React Native (photovault-ios directory)
 
-### Features
-- **Photo Management**: Upload, organize, and enhance photos
-- **Face Detection**: OpenCV-powered face recognition and detection
-- **Family Vaults**: Shared photo collections with invitation system
-- **Camera Integration**: Full-screen camera with advanced capture modes
-- **Auto Enhancement**: Automated photo improvement and metadata extraction
-- **Admin Panel**: User management and system statistics
+### Project Structure
+```
+photovault/                 # Main application package
+├── __init__.py            # App factory and configuration
+├── config.py              # Configuration classes
+├── models.py              # Database models
+├── extensions.py          # Flask extensions initialization
+├── forms.py               # WTForms forms
+├── routes/                # Route blueprints
+│   ├── main.py           # Main/index routes
+│   ├── auth.py           # Authentication routes
+│   ├── upload.py         # Photo upload handling
+│   ├── photo.py          # Photo management
+│   ├── gallery.py        # Gallery views
+│   ├── family.py         # Family vault features
+│   ├── camera_routes.py  # Camera integration
+│   ├── photo_detection.py # Face detection
+│   ├── smart_tagging.py  # Auto-tagging
+│   ├── admin.py          # Admin dashboard
+│   └── superuser.py      # Superuser management
+├── services/             # Business logic services
+│   ├── face_detection_service.py
+│   ├── montage_service.py
+│   ├── sendgrid_service.py
+│   └── app_storage_service.py
+├── utils/                # Utility modules
+│   ├── file_handler.py
+│   ├── image_enhancement.py
+│   ├── metadata_extractor.py
+│   └── security.py
+├── static/               # CSS, JS, images
+└── templates/            # Jinja2 templates
 
-### Database Schema
-Complete schema with 14+ tables including:
-- Users, Photos, Albums, Family Vaults
-- Face detection and people tagging
-- Stories and voice memos
-- Invitation and permission system
-
-## Development Setup
-
-### Environment Configuration
-- **FLASK_CONFIG**: development
-- **FLASK_ENV**: development  
-- **SECRET_KEY**: Auto-generated for development
-- **DATABASE_URL**: Replit PostgreSQL (configured)
-
-### Running the Application
-The application runs automatically via the "PhotoVault Frontend" workflow on port 5000.
-
-**Manual start command:**
-```bash
-export SECRET_KEY="replit-photovault-dev-key-$(date +%s)" && export FLASK_CONFIG=development && export FLASK_ENV=development && export FLASK_DEBUG=false && python main.py
+migrations/                # Alembic database migrations
+main.py                   # Development entry point
+wsgi.py                   # Production WSGI entry point
+config.py                 # Configuration loader
 ```
 
-## Deployment Configuration
-- **Target**: Autoscale deployment (perfect for web applications)
-- **Server**: Gunicorn with 3 workers, optimized for Replit environment
-- **Port**: 5000 (required for Replit)
-- **Host**: 0.0.0.0 (allows all hosts for Replit proxy)
+## Recent Changes
+- **2025-10-03**: Initial Replit environment setup
+  - Installed Python 3.11 and all dependencies
+  - Configured PostgreSQL database connection
+  - Stamped database migrations to latest version (ad11b5287a15)
+  - Set up Flask development workflow on port 5000
+  - Configured Gunicorn deployment for Replit Autoscale
+  - Verified application runs successfully
 
-## Recent Changes (September 29, 2025)
-- ✅ Installed Python 3.11 and all dependencies
-- ✅ Configured PostgreSQL database with existing schema
-- ✅ Set up Flask development workflow on port 5000
-- ✅ Verified application functionality and UI
-- ✅ Configured production deployment settings
-- ✅ Completed GitHub import setup for Replit environment
+## Key Features
+1. **Photo Management**: Upload, organize, edit, and manage photos
+2. **Face Detection**: Automatic face detection using OpenCV
+3. **Family Vaults**: Shared photo collections for families
+4. **Camera Integration**: Direct camera capture with tap-to-focus
+5. **Photo Editing**: Basic and advanced image enhancement
+6. **Smart Tagging**: Auto-tagging and metadata extraction
+7. **Gallery Views**: Multiple view modes (originals, edited, comparison)
+8. **User Management**: Admin and superuser roles
+9. **Story Creation**: Create stories from photo collections
+10. **Voice Memos**: Attach voice notes to photos
 
-## User Preferences
-- **Development approach**: Follow existing project structure and conventions
-- **Database**: Use Replit's built-in PostgreSQL (preferred over external services)
-- **Deployment**: Use Replit's autoscale deployment for web applications
+## Environment Configuration
 
-## Next Steps for Users
-1. **Customize configuration**: Set permanent SECRET_KEY in environment variables
-2. **Add content**: Upload photos and create family vaults
-3. **Configure mail**: Set up SendGrid integration for email features
-4. **Deploy**: Use Replit's publish feature to make the app publicly accessible
+### Required Environment Variables
+- `DATABASE_URL`: PostgreSQL connection string (automatically set by Replit)
+- `SECRET_KEY`: Flask secret key for sessions (optional, auto-generated if missing)
 
-## File Structure Notes
-- **Main application**: `photovault/` package
-- **Entry points**: `main.py` (dev), `wsgi.py` (prod), `api/index.py` (serverless)
-- **Mobile app**: `photovault-ios/` (React Native - separate deployment)
-- **Database migrations**: `migrations/` directory with Alembic
-- **Static assets**: `static/` and `photovault/static/`
+### Optional Environment Variables
+- `FLASK_CONFIG`: Configuration mode (development/production/testing)
+- `FLASK_ENV`: Flask environment
+- `FLASK_DEBUG`: Debug mode (true/false)
+- `MAIL_SERVER`: SMTP server for email
+- `MAIL_PORT`: SMTP port
+- `MAIL_USE_TLS`: Enable TLS for email
+- `MAIL_USERNAME`: Email username
+- `MAIL_PASSWORD`: Email password
+- `PHOTOVAULT_SUPERUSER_USERNAME`: Initial superuser username
+- `PHOTOVAULT_SUPERUSER_EMAIL`: Initial superuser email
+- `PHOTOVAULT_SUPERUSER_PASSWORD`: Initial superuser password
+
+## Database
+
+### Schema
+The database includes tables for:
+- `user`: User accounts with authentication
+- `photo`: Photo metadata and storage references
+- `album`: Photo albums/collections
+- `family_vault`: Shared family photo collections
+- `family_member`: Vault membership
+- `vault_invitation`: Vault join invitations
+- `vault_photo`: Photos in vaults
+- `person`: Detected people in photos
+- `photo_people`: Photo-person associations
+- `story`: Photo stories/narratives
+- `story_photo`: Photos in stories
+- `story_person`: People featured in stories
+- `password_reset_token`: Password reset tokens
+- `voice_memo`: Voice notes attached to photos
+
+### Migrations
+Database migrations are managed via Flask-Migrate (Alembic).
+
+**Commands:**
+- `flask db upgrade`: Apply pending migrations
+- `flask db downgrade`: Revert last migration
+- `flask db history`: View migration history
+- `flask db stamp <revision>`: Mark database as being at a specific revision
+
+**Current Migration**: `ad11b5287a15` - Add last_sent_at to VaultInvitation
+
+## Development
+
+### Running Locally
+The application runs automatically via the configured workflow:
+```bash
+python main.py
+```
+The server starts on `http://0.0.0.0:5000`
+
+### Configuration
+- Development mode uses `DevelopmentConfig` class
+- Database: PostgreSQL (Replit-provided)
+- Debug mode: Disabled by default for performance
+- Session management: Configured for Replit proxy environment
+
+## Deployment
+
+### Replit Autoscale (Production)
+The application is configured for Replit Autoscale deployment:
+- **Server**: Gunicorn with 2 workers and 4 threads
+- **Port**: 5000
+- **Configuration**: Uses `ProductionConfig` class
+- **WSGI Entry Point**: `wsgi.py`
+
+**Deployment Command:**
+```bash
+gunicorn --bind=0.0.0.0:5000 --workers=2 --threads=4 --timeout=120 --access-logfile=- --error-logfile=- wsgi:app
+```
+
+### Production Considerations
+1. Set `SECRET_KEY` environment variable for consistent sessions
+2. Database migrations are automatically tracked
+3. Logs output to stdout for Replit monitoring
+4. SSL/TLS handled by Replit's proxy
+5. Object storage via Replit Object Storage
+
+## Security Features
+- CSRF protection via Flask-WTF
+- Password hashing for user authentication
+- Session management with secure cookies
+- File upload validation and security
+- Rate limiting for sensitive operations
+- SQL injection protection via SQLAlchemy ORM
+
+## Mobile Application
+The `photovault-ios/` directory contains a React Native mobile app for iOS/Android that interfaces with the PhotoVault backend API.
+
+## Integrations
+- **Replit Object Storage**: For photo storage
+- **SendGrid**: Email delivery service
+- **PostgreSQL (Neon)**: Database hosting
+
+## Future Enhancements
+- Enhanced face recognition features
+- AI-powered photo tagging
+- Cloud backup integration
+- Advanced photo editing tools
+- Social sharing features
+
+## Notes
+- The application is production-ready and tested
+- All dependencies are installed and configured
+- Database schema is current and migrated
+- Workflow is configured for automatic startup
+- Deployment settings are optimized for Replit Autoscale
