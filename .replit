@@ -98,5 +98,5 @@ outputType = "webview"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["gunicorn", "--bind=0.0.0.0:5000", "--workers=3", "--timeout=120", "--keep-alive=5", "--max-requests=1000", "--preload", "wsgi:app"]
+run = ["gunicorn", "--bind=0.0.0.0:5000", "--workers=2", "--threads=4", "--timeout=120", "--access-logfile=-", "--error-logfile=-", "wsgi:app"]
 build = ["python", "release.py"]
