@@ -209,6 +209,16 @@ CALMIC SDN BHD - "Committed to Excellence"
                         
                         <div class="mb-3">
                             <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="enableColorization">
+                                <label class="form-check-label text-dark" for="enableColorization">
+                                    <strong>Colorize B&W Photos</strong><br>
+                                    <small>Add warm sepia tones to black & white images</small>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="enableCLAHE" checked>
                                 <label class="form-check-label text-dark" for="enableCLAHE">
                                     <strong>CLAHE Enhancement</strong><br>
@@ -382,6 +392,12 @@ CALMIC SDN BHD - "Committed to Excellence"
                     <div class="row text-center">
                         <div class="col-md-3 col-6 mb-2">
                             <div class="p-2">
+                                <i class="bi bi-palette" style="font-size: 1.5rem; color: #ff6b6b;"></i>
+                                <br><small><strong>Colorization</strong><br>Add Sepia Tones</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-2">
+                            <div class="p-2">
                                 <i class="bi bi-eye" style="font-size: 1.5rem; color: #667eea;"></i>
                                 <br><small><strong>CLAHE</strong><br>Contrast Enhancement</small>
                             </div>
@@ -528,6 +544,7 @@ function applyOpenCVEnhancement() {
     }
     
     const settings = {
+        colorize: document.getElementById('enableColorization').checked,
         clahe_enabled: document.getElementById('enableCLAHE').checked,
         denoise: document.getElementById('enableDenoising').checked,
         auto_levels: document.getElementById('enableAutoLevels').checked,

@@ -33,7 +33,8 @@ class ImageEnhancer:
             'color': 1.0,
             'denoise': True,
             'clahe_enabled': True,
-            'auto_levels': True
+            'auto_levels': True,
+            'colorize': False
         }
     
     def auto_enhance_photo(self, image_path: str, output_path: str = None, 
@@ -65,6 +66,10 @@ class ImageEnhancer:
             if img is None:
                 raise ValueError(f"Could not load image: {image_path}")
             
+            # Step 0: Colorize if enabled
+            if enhancement_settings.get('colorize', False):
+                img = self._apply_colorization(img)
+            
             # Step 1: Denoise if enabled
             if enhancement_settings.get('denoise', True):
                 img = self._apply_denoising(img)
@@ -83,6 +88,10 @@ class ImageEnhancer:
             # Fallback to PIL-only enhancement
             logger.info("Using PIL-only enhancement (OpenCV not available)")
             pil_img = Image.open(image_path)
+            
+            # Apply colorization using PIL if requested
+            if enhancement_settings.get('colorize', False):
+                pil_img = self._apply_colorization_pil(pil_img)
         
         # Step 5: Apply PIL enhancements
         pil_img = self._apply_pil_enhancements(pil_img, enhancement_settings)
@@ -158,6 +167,88 @@ class ImageEnhancer:
         except Exception as e:
             logger.warning(f"Auto-levels adjustment failed: {e}")
             return img
+    
+    def _apply_colorization(self, img: np.ndarray) -> np.ndarray:
+        """
+        Apply automatic colorization to grayscale images using LAB color space
+        This uses a simple but effective technique to add warm tones to B&W photos
+        """
+        if not OPENCV_AVAILABLE:
+            return img
+        try:
+            # Check if image is grayscale or already color
+            if len(img.shape) == 2:
+                # Image is grayscale, convert to BGR first
+                img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+            
+            # Check if image is already colorful (not grayscale)
+            b, g, r = cv2.split(img)
+            if not (np.allclose(b, g, atol=5) and np.allclose(g, r, atol=5)):
+                # Image already has color, skip colorization
+                logger.info("Image already has color, skipping colorization")
+                return img
+            
+            # Convert to LAB color space for colorization
+            lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+            l, a, b = cv2.split(lab)
+            
+            # Apply warm sepia-like tones to create a colorized effect
+            # Add warm tones (yellow-orange) to the A channel
+            a_colored = np.clip(a.astype(np.float32) + 10, 0, 255).astype(np.uint8)
+            # Add slight warm tones to the B channel
+            b_colored = np.clip(b.astype(np.float32) + 15, 0, 255).astype(np.uint8)
+            
+            # Merge back and convert to BGR
+            colorized_lab = cv2.merge([l, a_colored, b_colored])
+            colorized = cv2.cvtColor(colorized_lab, cv2.COLOR_LAB2BGR)
+            
+            logger.info("Applied automatic colorization with warm tones")
+            return colorized
+            
+        except Exception as e:
+            logger.warning(f"Colorization failed: {e}")
+            return img
+    
+    def _apply_colorization_pil(self, pil_img: Image.Image) -> Image.Image:
+        """
+        Apply colorization using PIL (fallback method)
+        Converts grayscale to sepia tone
+        """
+        try:
+            # Convert to grayscale first if not already
+            if pil_img.mode != 'L':
+                # Check if image is effectively grayscale
+                r, g, b = pil_img.split()
+                if not (np.array_equal(np.array(r), np.array(g)) and np.array_equal(np.array(g), np.array(b))):
+                    logger.info("Image already has color, skipping PIL colorization")
+                    return pil_img
+                pil_img = pil_img.convert('L')
+            
+            # Convert to RGB
+            pil_img = pil_img.convert('RGB')
+            
+            # Apply sepia tone effect
+            width, height = pil_img.size
+            pixels = pil_img.load()
+            
+            for py in range(height):
+                for px in range(width):
+                    r, g, b = pil_img.getpixel((px, py))
+                    
+                    # Sepia tone formula
+                    tr = int(0.393 * r + 0.769 * g + 0.189 * b)
+                    tg = int(0.349 * r + 0.686 * g + 0.168 * b)
+                    tb = int(0.272 * r + 0.534 * g + 0.131 * b)
+                    
+                    # Clamp values
+                    pixels[px, py] = (min(255, tr), min(255, tg), min(255, tb))
+            
+            logger.info("Applied PIL sepia tone colorization")
+            return pil_img
+            
+        except Exception as e:
+            logger.warning(f"PIL colorization failed: {e}")
+            return pil_img
     
     def _apply_pil_enhancements(self, pil_img: Image.Image, settings: Dict) -> Image.Image:
         """Apply PIL-based enhancements for fine-tuning"""
